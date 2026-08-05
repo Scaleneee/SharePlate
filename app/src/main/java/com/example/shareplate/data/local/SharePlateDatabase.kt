@@ -1,4 +1,4 @@
-package com.example.shareplate
+package com.example.shareplate.data.local
 
 import android.content.Context
 import androidx.room.Database
