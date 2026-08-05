@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
             SharePlateTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
-                        name = "Yuexin",
+                        name = "Nicholas",
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
