@@ -10,6 +10,7 @@ kotlin = "2.2.10"
 composeBom = "2026.02.01"
 room = "2.8.4"
 ksp = "2.3.8"
+navigationCompose = "2.7.7"
 
 
 [libraries]
@@ -30,6 +31,7 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose"}
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
