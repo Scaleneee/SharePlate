@@ -17,11 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.NotificationsNone
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,10 +33,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.shareplate.R
 import com.example.shareplate.ui.theme.SharePlateTheme
 
 
@@ -167,7 +164,7 @@ fun BuyerHeaderSection() {
         ) {
 
             Icon(
-                imageVector = Icons.Outlined.NotificationsNone,
+                painter = painterResource(R.drawable.notification),
                 contentDescription = "Notification"
             )
         }
@@ -195,7 +192,7 @@ fun BuyerSearchField(
         leadingIcon = {
 
             Icon(
-                imageVector = Icons.Outlined.Search,
+                painter = painterResource(R.drawable.search),
                 contentDescription = "Search"
             )
         },
@@ -222,7 +219,7 @@ fun BuyerQuickButtons() {
         ) {
 
             Icon(
-                imageVector = Icons.Outlined.LocationOn,
+                painter = painterResource(R.drawable.location_on),
                 contentDescription = "Nearby"
             )
 
@@ -241,7 +238,7 @@ fun BuyerQuickButtons() {
         ) {
 
             Icon(
-                imageVector = Icons.Outlined.FavoriteBorder,
+                painter = painterResource(R.drawable.favourite),
                 contentDescription = "Favourite"
             )
 
