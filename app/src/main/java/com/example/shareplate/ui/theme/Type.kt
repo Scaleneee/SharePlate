@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.sp
 
 private val SharePlateFont = FontFamily.SansSerif
 
-val Typography = Typography(
+val SharePlateTypography = Typography(
     headlineLarge = TextStyle(
         fontFamily = SharePlateFont,
         fontWeight = FontWeight.Bold,
