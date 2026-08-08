@@ -54,7 +54,7 @@ fun SharePlateTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = SharePlateTypography,
         content = content
     )
 }

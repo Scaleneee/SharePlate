@@ -38,7 +38,7 @@ interface FoodItemDao {
     )
     suspend fun getFoodItemByID(
         foodItemID: Long
-    )
+    ): FoodItemEntity
 
     // update the whole food item obj
     @Update
