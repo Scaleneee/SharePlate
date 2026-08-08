@@ -215,7 +215,7 @@ fun BuyerSearchField(
 
             Text(
                 text = "Search...",
-                fontSize = 13.sp
+                style = MaterialTheme.typography.bodyMedium
             )
         },
         leadingIcon = {
