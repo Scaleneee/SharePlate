@@ -72,7 +72,7 @@ fun BuyerHomeScreen(
             shortName = "CB"
         ),
         Shop(
-            name = "Break History",
+            name = "Bread History",
             address = "Subang Jaya",
             shortName = "BH"
         )
