@@ -11,6 +11,9 @@ composeBom = "2026.02.01"
 room = "2.8.4"
 ksp = "2.3.8"
 navigationCompose = "2.7.7"
+navigationRuntimeKtx = "2.9.8"
+navigationComposeVersion = "2.9.8"
+uiText = "1.11.4"
 
 
 [libraries]
@@ -32,6 +35,9 @@ androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose"}
+androidx-navigation-runtime-ktx = { group = "androidx.navigation", name = "navigation-runtime-ktx", version.ref = "navigationRuntimeKtx" }
+navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationComposeVersion" }
+androidx-compose-ui-text = { group = "androidx.compose.ui", name = "ui-text", version.ref = "uiText" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

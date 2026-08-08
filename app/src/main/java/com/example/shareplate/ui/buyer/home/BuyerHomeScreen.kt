@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -77,6 +78,15 @@ fun BuyerHomeScreen(
         )
     )
 
+    val filteredShops = if (searchText.isBlank()){
+        shops
+    } else {
+        shops.filter { shop ->
+            shop.name.contains(searchText, ignoreCase = true) ||
+                    shop.address.contains(searchText, ignoreCase = true)
+        }
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -106,26 +116,45 @@ fun BuyerHomeScreen(
             Spacer(modifier = Modifier.height(28.dp))
 
             Text(
-                text = "RECOMMENDED SHOPS",
-                fontSize = 17.sp,
-                fontWeight = FontWeight.SemiBold
+                text = if (searchText.isBlank()){
+                    "RECOMMENDED SHOPS"
+                }else{
+                    "SEARCH RESULTS"
+                },
+                style = MaterialTheme.typography.bodyLarge
             )
 
             Spacer(modifier = Modifier.height(15.dp))
         }
 
-        items(shops) { shop ->
-
-            BuyerShopItem(
-                shop = shop,
-                onClick = {
-                    onShopClick(shop)
+        if(filteredShops.isEmpty()){
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 40.dp),
+                    contentAlignment = Alignment.Center
+                ){
+                    Text(
+                        text = "No shops found",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
+                    )
                 }
-            )
+            }
+        }else{
+            items(filteredShops){shop ->
 
-            HorizontalDivider(
-                color = Color.LightGray
-            )
+                BuyerShopItem(
+                    shop = shop,
+                    onClick = {
+                        onShopClick(shop)
+                    }
+                )
+                HorizontalDivider(
+                    color = Color.LightGray
+                )
+            }
         }
     }
 }
