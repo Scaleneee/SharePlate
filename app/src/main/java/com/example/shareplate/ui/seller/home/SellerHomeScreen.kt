@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.shareplate.R
+import com.example.shareplate.data.local.entity.SurplusListingEntity
 import com.example.shareplate.ui.theme.SharePlateTheme
 
 /**
@@ -100,8 +101,7 @@ fun SellerHomeScreen(
                     onProfileClick()
                 }
             )
-        },
-        modifier = Modifier.padding(8.dp)
+        }
     ) { innerPadding ->
         // Dashboard
         SellerDashboard(
@@ -343,3 +343,12 @@ fun SellerDashboard(
     }
 }
 
+/**
+ * display the food details and allow user to enter the quantity
+ */
+@Composable
+fun SurplusFoodRow(
+    surplusListing: SurplusListingEntity
+) {
+
+}
