@@ -15,12 +15,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -33,10 +36,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.shareplate.R
+import com.example.shareplate.data.local.entity.FoodItemEntity
 import com.example.shareplate.data.local.entity.SurplusListingEntity
 import com.example.shareplate.ui.theme.SharePlateTheme
 
@@ -277,13 +282,15 @@ fun SellerDashboard(
         )
         // dashboard box
         Row(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .padding(vertical = 14.dp),
             horizontalArrangement = Arrangement.Center
         ) {
             // Active Listing column
             Column(
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
                     .border(
                         width = 1.dp,
                         color = MaterialTheme.colorScheme.secondary,
@@ -312,7 +319,8 @@ fun SellerDashboard(
             }
             // Awaiting Pickup column
             Column(
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
                     .border(
                         width = 1.dp,
                         color = MaterialTheme.colorScheme.secondary,
@@ -348,7 +356,68 @@ fun SellerDashboard(
  */
 @Composable
 fun SurplusFoodRow(
-    surplusListing: SurplusListingEntity
+    foodItem: FoodItemEntity,
+    quantity: String,
+    onQuantityChange: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
+    // Outlined box
+    OutlinedCard(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = modifier.padding(16.dp)
+        ) {
+            // food name
+            Text(
+                text = foodItem.foodName,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
 
+            Spacer(modifier = modifier.height(4.dp))
+
+            // food price
+            Text(
+                // convert from cents to RM
+                text = "RM%.2f".format(
+                    foodItem.originalPriceCent / 100.0
+                ),
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Spacer(modifier = modifier.height(4.dp))
+
+            // quantity input box
+            OutlinedTextField(
+                value = quantity,
+                onValueChange = { newValue ->
+                    // only allow numbers
+                    if (newValue.all { it.isDigit() }) {
+                        onQuantityChange(newValue)
+                    }
+                },
+                label = {
+                    Text("Surplus Quantity")
+                },
+                placeholder = {
+                    Text("Enter quantity")
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number
+                ),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+fun PreviewSurplusFoodRow() {
+    SharePlateTheme() {
+        SurplusFoodRow(foodItem = FoodItemEntity(1, 1, "Blue Berry Bread", "Bread", 550, null, true),
+            quantity = "0", onQuantityChange = {})
+    }
 }
