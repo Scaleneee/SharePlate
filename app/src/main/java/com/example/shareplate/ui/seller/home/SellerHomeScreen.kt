@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +20,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -30,6 +32,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -44,6 +47,45 @@ import com.example.shareplate.R
 import com.example.shareplate.data.local.entity.FoodItemEntity
 import com.example.shareplate.data.local.entity.SurplusListingEntity
 import com.example.shareplate.ui.theme.SharePlateTheme
+import kotlin.collections.getValue
+
+/**
+ * temporary test data
+ */
+val foodItems = listOf(
+    FoodItemEntity(
+        foodItemID = 1,
+        sellerID = 1,
+        foodName = "Blue Berry Bread",
+        category = "Bread",
+        originalPriceCent = 550,
+        bestBeforeDays = 2,
+        imageUri = null,
+        isActive = true
+    ),
+
+    FoodItemEntity(
+        foodItemID = 2,
+        sellerID = 1,
+        foodName = "Chocolate Croissant",
+        category = "Pastry",
+        originalPriceCent = 650,
+        bestBeforeDays = 1,
+        imageUri = null,
+        isActive = true
+    ),
+
+    FoodItemEntity(
+        foodItemID = 3,
+        sellerID = 1,
+        foodName = "Chicken Sandwich",
+        category = "Sandwich",
+        originalPriceCent = 800,
+        bestBeforeDays = 1,
+        imageUri = null,
+        isActive = true
+    )
+)
 
 /**
  * Preview Function
@@ -74,6 +116,11 @@ fun SellerHomeScreen(
     // use to know which page are now
     var selectedNavigationItem by remember {
         mutableIntStateOf(0)
+    }
+
+    // use to store the surplus food quantity
+    val quantities = remember {
+        mutableStateMapOf<Long, String>()
     }
 
     /**
@@ -108,12 +155,37 @@ fun SellerHomeScreen(
             )
         }
     ) { innerPadding ->
-        // Dashboard
-        SellerDashboard(
-            Modifier.padding(innerPadding),
-            activeListings = activeListings,
-            awaitingPickup = awaitingPickup
-        )
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+
+            // Dashboard
+            item {
+                SellerDashboard(
+                    activeListings = activeListings,
+                    awaitingPickup = awaitingPickup
+                )
+            }
+
+            // space
+            item {
+                Spacer(modifier = Modifier.height(18.dp))
+            }
+
+            // surplus food list
+            item {
+                SurplusFoodList(
+                    foodItems,
+                    quantities = quantities,
+                    onQuantityChange = { foodItemID, quantity ->
+                        quantities[foodItemID] = quantity
+                    }
+                )
+            }
+        }
     }
 }
 
@@ -351,13 +423,58 @@ fun SellerDashboard(
     }
 }
 
+@Composable
+fun SurplusFoodList(
+    foodItems: List<FoodItemEntity>,
+    quantities: Map<Long, String>,
+    onQuantityChange: (Long, String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+    ) {
+
+        Text(
+            text = "Today's Surplus",
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Spacer(
+            modifier = Modifier.height(24.dp)
+        )
+
+        foodItems.forEach { foodItem ->
+
+            SurplusFoodRow(
+                foodItem = foodItem,
+
+                quantity =
+                    quantities[foodItem.foodItemID] ?: "",
+
+                onQuantityChange = { newQuantity ->
+                    onQuantityChange(
+                        foodItem.foodItemID,
+                        newQuantity
+                    )
+                }
+            )
+
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+        }
+    }
+}
+
 /**
  * display the food details and allow user to enter the quantity
  */
 @Composable
 fun SurplusFoodRow(
     foodItem: FoodItemEntity,
-    quantity: String,
+    quantity: String = "",
     onQuantityChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -365,28 +482,32 @@ fun SurplusFoodRow(
     OutlinedCard(
         modifier = modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = modifier.padding(16.dp)
+
+        Row(
+            modifier = Modifier.padding(16.dp)
         ) {
-            // food name
-            Text(
-                text = foodItem.foodName,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Column(
+                modifier = modifier.padding(16.dp)
+                    .weight(1f)
+            ) {
+                // food name
+                Text(
+                    text = foodItem.foodName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
 
-            Spacer(modifier = modifier.height(4.dp))
+                Spacer(modifier = modifier.height(4.dp))
 
-            // food price
-            Text(
-                // convert from cents to RM
-                text = "RM%.2f".format(
-                    foodItem.originalPriceCent / 100.0
-                ),
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Spacer(modifier = modifier.height(4.dp))
+                // food price
+                Text(
+                    // convert from cents to RM
+                    text = "RM%.2f".format(
+                        foodItem.originalPriceCent / 100.0
+                    ),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
 
             // quantity input box
             OutlinedTextField(
@@ -397,17 +518,15 @@ fun SurplusFoodRow(
                         onQuantityChange(newValue)
                     }
                 },
-                label = {
-                    Text("Surplus Quantity")
-                },
                 placeholder = {
-                    Text("Enter quantity")
+                    Text("0")
                 },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number
                 ),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .size(60.dp)
             )
         }
     }
@@ -417,7 +536,6 @@ fun SurplusFoodRow(
 @Composable
 fun PreviewSurplusFoodRow() {
     SharePlateTheme() {
-        SurplusFoodRow(foodItem = FoodItemEntity(1, 1, "Blue Berry Bread", "Bread", 550, null, true),
-            quantity = "0", onQuantityChange = {})
+        SurplusFoodRow(foodItems.get(0), onQuantityChange = {})
     }
 }
