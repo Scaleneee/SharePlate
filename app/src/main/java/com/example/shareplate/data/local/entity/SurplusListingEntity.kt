@@ -10,7 +10,6 @@ data class SurplusListingEntity(
     @PrimaryKey(autoGenerate = true)
     val listingId: Long = 0,
 
-
     val foodItemId: Long,
     val sellerId: Long,
 
