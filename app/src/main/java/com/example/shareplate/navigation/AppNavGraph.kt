@@ -9,11 +9,12 @@ import com.example.shareplate.ui.seller.home.SellerHomeScreen
 
 @Composable
 fun AppNavGraph(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    startDestination: String = "ngo_home"
 ){
     NavHost(
         navController = navController,
-        startDestination = "login"
+        startDestination = startDestination
     ) {
         composable("login") {
             // waiting for the implementation of LoginScreen
