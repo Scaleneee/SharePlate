@@ -11,6 +11,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.shareplate.navigation.AppNavGraph
 import com.example.shareplate.ui.buyer.home.BuyerHomeScreen
@@ -26,7 +27,9 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    AppNavGraph()
+                    SharePlateTheme {
+                        SellerHomeScreen()
+                    }
                 }
             }
         }
