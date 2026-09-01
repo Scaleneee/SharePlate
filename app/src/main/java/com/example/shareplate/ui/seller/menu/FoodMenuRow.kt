@@ -24,7 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.shareplate.R
-import com.example.shareplate.data.local.entity.FoodItemEntity
+import com.example.shareplate.data.entity.FoodItem
 import com.example.shareplate.ui.seller.home.foodItems
 import com.example.shareplate.ui.theme.SharePlateTheme
 
@@ -38,7 +38,7 @@ fun FoodMenuRowPreview() {
 
 @Composable
 fun FoodMenuRow(
-    foodItem: FoodItemEntity,
+    foodItem: FoodItem,
     onEditClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {

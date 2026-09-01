@@ -1,14 +1,9 @@
-package com.example.shareplate.data.local.entity
+package com.example.shareplate.data.entity
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-
-@Entity(tableName = "food_items")
-data class FoodItemEntity(
+data class FoodItem(
 
     // properties
     // primary key, Id
-    @PrimaryKey(autoGenerate = true)
     val foodItemId: Long = 0,
 
     val sellerId: Long,

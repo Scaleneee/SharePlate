@@ -16,7 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.shareplate.data.local.entity.FoodItemEntity
+import com.example.shareplate.data.entity.FoodItem
 import com.example.shareplate.ui.seller.home.foodItems
 import com.example.shareplate.ui.theme.SharePlateTheme
 
@@ -30,7 +30,7 @@ fun SellerMenuScreenPreview() {
 
 @Composable
 fun SellerMenuScreen(
-    foodItems: List<FoodItemEntity>,
+    foodItems: List<FoodItem>,
     onAddFoodClick: () -> Unit,
     onEditFoodClick: (Long) -> Unit,
     modifier: Modifier = Modifier
