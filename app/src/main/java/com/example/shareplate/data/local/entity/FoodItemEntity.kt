@@ -7,11 +7,11 @@ import androidx.room.PrimaryKey
 data class FoodItemEntity(
 
     // properties
-    // primary key, ID
+    // primary key, Id
     @PrimaryKey(autoGenerate = true)
-    val foodItemID: Long = 0,
+    val foodItemId: Long = 0,
 
-    val sellerID: Long,
+    val sellerId: Long,
     val foodName: String,
     val category: String,
     val originalPriceCent: Int, // RM 6.50 == 650 cents, double may cause calculation errors

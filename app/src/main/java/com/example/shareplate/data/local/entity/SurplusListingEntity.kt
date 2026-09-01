@@ -6,13 +6,13 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "surplus_listings")
 data class SurplusListingEntity(
     // properties
-    // primary key, ID
+    // primary key, Id
     @PrimaryKey(autoGenerate = true)
-    val listingID: Long = 0,
+    val listingId: Long = 0,
 
 
-    val foodItemID: Long,
-    val sellerID: Long,
+    val foodItemId: Long,
+    val sellerId: Long,
 
     // initially published quantity
     val publishedQuantity: Int,

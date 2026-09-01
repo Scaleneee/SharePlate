@@ -1,11 +1,11 @@
 package com.example.shareplate.ui.seller.home
 
-import android.graphics.Paint
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,11 +16,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -37,25 +39,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusModifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.example.shareplate.R
 import com.example.shareplate.data.local.entity.FoodItemEntity
-import com.example.shareplate.data.local.entity.SurplusListingEntity
 import com.example.shareplate.ui.theme.SharePlateTheme
-import kotlin.collections.getValue
 
 /**
  * temporary test data
  */
 val foodItems = listOf(
     FoodItemEntity(
-        foodItemID = 1,
-        sellerID = 1,
+        foodItemId = 1,
+        sellerId = 1,
         foodName = "Blue Berry Bread",
         category = "Bread",
         originalPriceCent = 550,
@@ -65,8 +71,8 @@ val foodItems = listOf(
     ),
 
     FoodItemEntity(
-        foodItemID = 2,
-        sellerID = 1,
+        foodItemId = 2,
+        sellerId = 1,
         foodName = "Chocolate Croissant",
         category = "Pastry",
         originalPriceCent = 650,
@@ -76,8 +82,8 @@ val foodItems = listOf(
     ),
 
     FoodItemEntity(
-        foodItemID = 3,
-        sellerID = 1,
+        foodItemId = 3,
+        sellerId = 1,
         foodName = "Chicken Sandwich",
         category = "Sandwich",
         originalPriceCent = 800,
@@ -180,9 +186,10 @@ fun SellerHomeScreen(
                 SurplusFoodList(
                     foodItems,
                     quantities = quantities,
-                    onQuantityChange = { foodItemID, quantity ->
-                        quantities[foodItemID] = quantity
-                    }
+                    onQuantityChange = { foodItemId, quantity ->
+                        quantities[foodItemId] = quantity
+                    },
+                    onPublishClick = {}
                 )
             }
         }
@@ -369,7 +376,7 @@ fun SellerDashboard(
                         shape = RoundedCornerShape(24.dp)
                     )
                     .height(120.dp)
-                    .width(160.dp),
+                    .weight(1f),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -428,6 +435,7 @@ fun SurplusFoodList(
     foodItems: List<FoodItemEntity>,
     quantities: Map<Long, String>,
     onQuantityChange: (Long, String) -> Unit,
+    onPublishClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -451,11 +459,11 @@ fun SurplusFoodList(
                 foodItem = foodItem,
 
                 quantity =
-                    quantities[foodItem.foodItemID] ?: "",
+                    quantities[foodItem.foodItemId] ?: "",
 
                 onQuantityChange = { newQuantity ->
                     onQuantityChange(
-                        foodItem.foodItemID,
+                        foodItem.foodItemId,
                         newQuantity
                     )
                 }
@@ -463,6 +471,27 @@ fun SurplusFoodList(
 
             Spacer(
                 modifier = Modifier.height(12.dp)
+            )
+        }
+        // if all the quantity is 0, false
+        val hasSurplus = quantities.values.any {
+            (it.toIntOrNull() ?: 0) > 0
+        }
+        Button(
+            onClick = onPublishClick,
+            enabled = hasSurplus, // the button enable only when there has surplus
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonColors(
+                // set the color
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                disabledContainerColor = MaterialTheme.colorScheme.secondary,
+                disabledContentColor = MaterialTheme.colorScheme.onSecondary,
+            )
+        ) {
+            Text(
+                text = "Publish Today's Surplus",
+                style = MaterialTheme.typography.bodyLarge
             )
         }
     }
@@ -486,8 +515,33 @@ fun SurplusFoodRow(
         Row(
             modifier = Modifier.padding(16.dp)
         ) {
+            if (foodItem.imageUri != null) {
+                // if got image
+                // food image
+                AsyncImage(
+                    model = foodItem.imageUri,
+                    contentDescription = foodItem.foodName,
+                    modifier = Modifier
+                        .size(70.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                // show a default icon
+                Image(
+                    painter = painterResource(R.drawable.food),
+                    contentDescription = "No food image",
+                    modifier = Modifier
+                        .size(70.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
             Column(
-                modifier = modifier.padding(16.dp)
+                modifier = modifier
                     .weight(1f)
             ) {
                 // food name
@@ -497,7 +551,53 @@ fun SurplusFoodRow(
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row (
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Quantity:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+                    // quantity input box
+                    Box(
+                        modifier = Modifier
+                            .width(30.dp)
+                            .height(20.dp)
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outline,
+                                shape = RoundedCornerShape(4.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        BasicTextField(
+                            value = quantity,
+                            onValueChange = { newValue ->
+                                if (
+                                    newValue.all { it.isDigit() } &&
+                                    newValue.length <= 3
+                                ) {
+                                    onQuantityChange(newValue)
+                                }
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number
+                            ),
+                            textStyle = MaterialTheme.typography.bodySmall.copy(
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurface
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // food price
                 Text(
@@ -508,26 +608,6 @@ fun SurplusFoodRow(
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-
-            // quantity input box
-            OutlinedTextField(
-                value = quantity,
-                onValueChange = { newValue ->
-                    // only allow numbers
-                    if (newValue.all { it.isDigit() }) {
-                        onQuantityChange(newValue)
-                    }
-                },
-                placeholder = {
-                    Text("0")
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number
-                ),
-                modifier = Modifier
-                    .size(60.dp)
-            )
         }
     }
 }
