@@ -136,9 +136,16 @@ fun DonationListScreen(onDonationClick: (FoodDonation) -> Unit) {
     var donations by remember {
         mutableStateOf(
             listOf(
-                FoodDonation("Sunrise Bakery", "Penang - 1.2 km", 25, listOf("Bread - 10", "Croissant - 8", "Muffin - 7"), true, false),
-                FoodDonation("Daily Bake", "Penang - 2.4 km", 18, listOf("Sandwich - 6", "Bun - 7", "Cake slice - 5"), true, false),
-                FoodDonation("Ondo Bakery", "George Town - 5.0 km", 12, listOf("Bread - 8", "Cookie pack - 4"), false, false)
+                FoodDonation(
+                    "Sunrise Bakery", "Penang - 1.2 km", 25,
+                    listOf("Bread - 10", "Croissant - 8", "Muffin - 7"),
+                    true, false),
+                FoodDonation("Daily Bake", "Penang - 2.4 km", 18,
+                    listOf("Sandwich - 6", "Bun - 7", "Cake slice - 5"),
+                    true, false),
+                FoodDonation("Ondo Bakery", "George Town - 5.0 km", 12,
+                    listOf("Bread - 8", "Cookie pack - 4"),
+                    false, false)
             )
         )
     }
@@ -213,14 +220,25 @@ fun DonationListScreen(onDonationClick: (FoodDonation) -> Unit) {
                     .padding(top = 10.dp)
                     .clickable { onDonationClick(donation) }
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(donation.name, fontWeight = FontWeight.Bold)
-                    Text(donation.location)
-                    Text("Total Surplus Food: ${donation.availableFood}")
+                Column(modifier = Modifier
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        donation.name, fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        donation.location
+                    )
+
+                    Text(
+                        "Total Surplus Food: ${donation.availableFood}"
+                    )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Row(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick = { onDonationClick(donation) },
                             modifier = Modifier.weight(1f)
