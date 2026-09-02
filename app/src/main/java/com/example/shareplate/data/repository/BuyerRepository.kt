@@ -1,6 +1,8 @@
 package com.example.shareplate.data.repository
 
+import com.example.shareplate.data.model.CreateOrder
 import com.example.shareplate.data.model.FoodItem
+import com.example.shareplate.data.model.Order
 import com.example.shareplate.data.model.SurplusListing
 import com.example.shareplate.data.model.User
 import com.example.shareplate.data.remote.SupabaseProvider
@@ -9,24 +11,28 @@ import io.github.jan.supabase.postgrest.from
 
 class BuyerRepository {
 
-    private val supabase = SupabaseProvider.client
+    private val supabase =
+        SupabaseProvider.client
 
-
-    // GET ALL SELLERS
+    // SELLER
     suspend fun getSellers(): List<User> {
 
         return supabase
             .from("users")
             .select {
+
                 filter {
-                    eq("role", "SELLER")
+
+                    eq(
+                        "role",
+                        "SELLER"
+                    )
                 }
             }
             .decodeList<User>()
     }
 
 
-    // GET ONE SELLER
     suspend fun getSellerById(
         sellerId: String
     ): User? {
@@ -34,30 +40,38 @@ class BuyerRepository {
         return supabase
             .from("users")
             .select {
+
                 filter {
-                    eq("user_id", sellerId)
+
+                    eq(
+                        "user_id",
+                        sellerId
+                    )
                 }
             }
             .decodeList<User>()
             .firstOrNull()
     }
 
-
-    // GET ALL ACTIVE FOOD ITEMS
+    // FOOD ITEM
     suspend fun getActiveFoodItems(): List<FoodItem> {
 
         return supabase
             .from("food_items")
             .select {
+
                 filter {
-                    eq("is_active", true)
+
+                    eq(
+                        "is_active",
+                        true
+                    )
                 }
             }
             .decodeList<FoodItem>()
     }
 
 
-    // GET ACTIVE FOOD ITEMS FROM ONE SELLER
     suspend fun getFoodItemsBySeller(
         sellerId: String
     ): List<FoodItem> {
@@ -65,6 +79,7 @@ class BuyerRepository {
         return supabase
             .from("food_items")
             .select {
+
                 filter {
 
                     eq(
@@ -82,7 +97,6 @@ class BuyerRepository {
     }
 
 
-    // GET ONE FOOD ITEM
     suspend fun getFoodItemById(
         foodItemId: Long
     ): FoodItem? {
@@ -90,7 +104,9 @@ class BuyerRepository {
         return supabase
             .from("food_items")
             .select {
+
                 filter {
+
                     eq(
                         "food_item_id",
                         foodItemId
@@ -101,25 +117,30 @@ class BuyerRepository {
             .firstOrNull()
     }
 
-
-    // GET ALL ACTIVE SURPLUS LISTINGS
-    suspend fun getActiveListings(): List<SurplusListing> {
+    // SURPLUS LISTING
+    suspend fun getActiveListings():
+            List<SurplusListing> {
 
         return supabase
             .from("surplus_listings")
             .select {
+
                 filter {
-                    eq("status", "ACTIVE")
+
+                    eq(
+                        "status",
+                        "ACTIVE"
+                    )
                 }
             }
             .decodeList<SurplusListing>()
-            .filter { listing ->
-                listing.availableQuantity > 0
+            .filter {
+
+                it.availableQuantity > 0
             }
     }
 
 
-    // GET ACTIVE SURPLUS LISTINGS FROM ONE SELLER
     suspend fun getActiveListingsBySeller(
         sellerId: String
     ): List<SurplusListing> {
@@ -127,6 +148,7 @@ class BuyerRepository {
         return supabase
             .from("surplus_listings")
             .select {
+
                 filter {
 
                     eq(
@@ -141,13 +163,13 @@ class BuyerRepository {
                 }
             }
             .decodeList<SurplusListing>()
-            .filter { listing ->
-                listing.availableQuantity > 0
+            .filter {
+
+                it.availableQuantity > 0
             }
     }
 
 
-    // GET ONE SURPLUS LISTING
     suspend fun getListingById(
         listingId: Long
     ): SurplusListing? {
@@ -155,7 +177,9 @@ class BuyerRepository {
         return supabase
             .from("surplus_listings")
             .select {
+
                 filter {
+
                     eq(
                         "listing_id",
                         listingId
@@ -164,5 +188,137 @@ class BuyerRepository {
             }
             .decodeList<SurplusListing>()
             .firstOrNull()
+    }
+
+    // ORDER
+    suspend fun createOrder(
+        order: CreateOrder
+    ) {
+
+        supabase
+            .from("orders")
+            .insert(order)
+    }
+
+
+    suspend fun getBuyerOrders(
+        buyerId: String
+    ): List<Order> {
+
+        return supabase
+            .from("orders")
+            .select {
+
+                filter {
+
+                    eq(
+                        "buyer_id",
+                        buyerId
+                    )
+                }
+            }
+            .decodeList<Order>()
+            .sortedByDescending {
+
+                it.orderedAt
+            }
+    }
+
+
+    suspend fun getOrderById(
+        orderId: Long
+    ): Order? {
+
+        return supabase
+            .from("orders")
+            .select {
+
+                filter {
+
+                    eq(
+                        "order_id",
+                        orderId
+                    )
+                }
+            }
+            .decodeList<Order>()
+            .firstOrNull()
+    }
+
+    // UPDATE SURPLUS QUANTITY AFTER ORDER
+    suspend fun reduceListingQuantity(
+        listingId: Long,
+        orderedQuantity: Int
+    ): Boolean {
+
+        val listing =
+            getListingById(
+                listingId
+            )
+                ?: return false
+
+
+        if (
+            listing.status != "ACTIVE"
+        ) {
+
+            return false
+        }
+
+
+        if (
+            listing.availableQuantity <
+            orderedQuantity
+        ) {
+
+            return false
+        }
+
+
+        val newQuantity =
+            listing.availableQuantity -
+                    orderedQuantity
+
+
+        val newStatus =
+
+            if (newQuantity == 0) {
+
+                "SOLD_OUT"
+
+            } else {
+
+                "ACTIVE"
+            }
+
+
+        val updatedListing =
+            listing.copy(
+
+                availableQuantity =
+                    newQuantity,
+
+                status =
+                    newStatus
+            )
+
+
+        supabase
+            .from("surplus_listings")
+            .update(
+                updatedListing
+            ) {
+
+                filter {
+
+                    eq(
+                        "listing_id",
+                        listingId
+                    )
+                }
+            }
+
+
+        return true
     }
 }
