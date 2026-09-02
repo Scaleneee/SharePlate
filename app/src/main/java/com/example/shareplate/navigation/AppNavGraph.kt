@@ -9,7 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.shareplate.data.FoodItems
-import com.example.shareplate.model.FoodItem
+//import com.example.shareplate.model.FoodItem
 import com.example.shareplate.ui.seller.home.SellerHomeScreen
 import com.example.shareplate.ui.seller.menu.AddFoodScreen
 import com.example.shareplate.ui.seller.menu.EditFoodScreen
