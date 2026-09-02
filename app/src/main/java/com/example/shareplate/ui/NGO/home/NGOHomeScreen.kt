@@ -34,7 +34,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.shareplate.ui.NGO.NgoViewModel
 
 data class FoodDonation(
     val name: String,
@@ -51,8 +50,9 @@ fun NGOHomeScreen() {
     var selectedDonation by remember { mutableStateOf<FoodDonation?>(null) }
     var showSuccess by remember { mutableStateOf(false) }
 
-    val ngoViewModel: NgoViewModel = viewModel()
+    val ngoViewModel: NGOViewModel = viewModel()
     val shops by ngoViewModel.shops.collectAsState()
+    val pickups by ngoViewModel.pickups.collectAsState()
     val isLoading by ngoViewModel.isLoading.collectAsState()
     val error by ngoViewModel.errorMessage.collectAsState()
 
@@ -102,7 +102,7 @@ fun NGOHomeScreen() {
                         onTakeAllClick = { showSuccess = true }
                     )
                 }
-                2 -> NGOActivityScreen()
+                2 -> NGOActivityScreen(pickups = pickups)
                 else -> PlaceholderScreen("Profile")
             }
         }
