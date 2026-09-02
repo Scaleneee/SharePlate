@@ -56,7 +56,7 @@ fun MenuFoodForm(
     initialCategory: String = "",
     initialPrice: String = "",
     initialBestBeforeDays: String = "",
-    initialImageUri: String? = null,
+    initialImageUrl: String? = null,
     initialIsActive: Boolean = true,
     buttonText: String,
     onBackClick: () -> Unit,
@@ -65,7 +65,7 @@ fun MenuFoodForm(
         category: String,
         originalPrice: String,
         bestBeforeDays: String,
-        imageURI: String?,
+        selectedImageUri: Uri?,
         isActive: Boolean
     ) -> Unit
 ) {
@@ -86,8 +86,8 @@ fun MenuFoodForm(
         mutableStateOf(initialBestBeforeDays)
     }
 
-    var imageUri by remember(initialImageUri) {
-        mutableStateOf(initialImageUri)
+    var selectedImageUri by remember {
+        mutableStateOf<Uri?>(null)
     }
 
     var isActive by remember(initialIsActive) {
@@ -98,7 +98,7 @@ fun MenuFoodForm(
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.PickVisualMedia()
         ) { uri ->
-            imageUri = uri?.toString()
+            selectedImageUri = uri
         }
 
     Scaffold(
@@ -147,10 +147,10 @@ fun MenuFoodForm(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (imageUri != null) {
+                    if (selectedImageUri != null || initialImageUrl != null) {
                         // if user selected an image
                         AsyncImage(
-                            model = imageUri,
+                            model = selectedImageUri ?: initialImageUrl,
                             contentDescription = "Selected food image",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -278,7 +278,7 @@ fun MenuFoodForm(
                         category,
                         price,
                         bestBeforeDays,
-                        imageUri,
+                        selectedImageUri,
                         isActive
                     )
                 },

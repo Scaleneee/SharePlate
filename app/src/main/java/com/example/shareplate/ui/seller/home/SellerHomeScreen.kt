@@ -351,11 +351,11 @@ fun SurplusFoodRow(
         Row(
             modifier = Modifier.padding(16.dp)
         ) {
-            if (foodItem.imageUri != null) {
+            if (foodItem.imageUrl != null) {
                 // if got image
                 // food image
                 AsyncImage(
-                    model = foodItem.imageUri,
+                    model = foodItem.imageUrl,
                     contentDescription = foodItem.foodName,
                     modifier = Modifier
                         .size(70.dp)

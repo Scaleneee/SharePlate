@@ -53,10 +53,10 @@ fun FoodMenuRow(
             horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally)
         ) {
             // food image
-            if (foodItem.imageUri != null) {
+            if (foodItem.imageUrl != null) {
                 // if got image
                 AsyncImage(
-                    model = foodItem.imageUri,
+                    model = foodItem.imageUrl,
                     contentDescription = foodItem.foodName,
                     modifier = Modifier
                         .size(70.dp)

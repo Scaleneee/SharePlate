@@ -12,7 +12,7 @@ fun EditFoodScreen(
         category: String,
         originalPrice: String,
         bestBeforeDays: String,
-        imageURI: String?,
+        imageUri: String?,
         isActive: Boolean
     ) -> Unit
 ) {
@@ -27,7 +27,7 @@ fun EditFoodScreen(
             foodItem.originalPriceCent / 100.0
         ),
         initialBestBeforeDays = foodItem.bestBeforeDays.toString(),
-        initialImageUri = foodItem.imageUri,
+        initialImageUri = foodItem.imageUrl,
         initialIsActive = foodItem.isActive,
         buttonText = "Update Food",
         onBackClick = onBackClick,
