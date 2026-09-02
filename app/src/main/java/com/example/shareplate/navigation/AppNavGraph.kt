@@ -1,6 +1,5 @@
 package com.example.shareplate.navigation
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -9,7 +8,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.shareplate.data.FoodItems
-import com.example.shareplate.model.FoodItem
 import com.example.shareplate.ui.seller.home.SellerHomeScreen
 import com.example.shareplate.ui.seller.menu.AddFoodScreen
 import com.example.shareplate.ui.seller.menu.EditFoodScreen

@@ -89,4 +89,5 @@ dependencies {
     implementation(
         "io.ktor:ktor-client-android:3.0.3"
     )
+    implementation("io.github.jan-tennert.supabase:supabase-kt")
 }

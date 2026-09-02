@@ -1,4 +1,4 @@
-package com.example.shareplate.model
+package com.example.shareplate.data.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

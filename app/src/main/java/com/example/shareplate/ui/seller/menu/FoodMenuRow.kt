@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.shareplate.R
 import com.example.shareplate.data.FoodItems
-import com.example.shareplate.model.FoodItem
+import com.example.shareplate.data.model.FoodItem
 import com.example.shareplate.ui.theme.SharePlateTheme
 
 @Preview
