@@ -1,10 +1,10 @@
-package com.example.shareplate.data.entity
+package com.example.shareplate.model
 
 data class FoodItem(
 
     // properties
     // primary key, Id
-    val foodItemId: Long = 0,
+    val foodItemId: Long,
 
     val sellerId: Long,
     val foodName: String,

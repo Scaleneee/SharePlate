@@ -1,9 +1,9 @@
-package com.example.shareplate.data.entity
+package com.example.shareplate.model
 
 data class SurplusListing(
     // properties
     // primary key, Id
-    val listingId: Long = 0,
+    val listingId: Long,
 
     val foodItemId: Long,
     val sellerId: Long,

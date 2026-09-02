@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,47 +41,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.shareplate.R
-import com.example.shareplate.data.entity.FoodItem
+import com.example.shareplate.data.FoodItems
+import com.example.shareplate.model.FoodItem
 import com.example.shareplate.ui.seller.navigation.SellerBottomBar
 import com.example.shareplate.ui.theme.SharePlateTheme
-
-/**
- * temporary test data
- */
-val foodItems = listOf(
-    FoodItem(
-        foodItemId = 1,
-        sellerId = 1,
-        foodName = "Blue Berry Bread",
-        category = "Bread",
-        originalPriceCent = 550,
-        bestBeforeDays = 2,
-        imageUri = null,
-        isActive = true
-    ),
-
-    FoodItem(
-        foodItemId = 2,
-        sellerId = 1,
-        foodName = "Chocolate Croissant",
-        category = "Pastry",
-        originalPriceCent = 650,
-        bestBeforeDays = 1,
-        imageUri = null,
-        isActive = true
-    ),
-
-    FoodItem(
-        foodItemId = 3,
-        sellerId = 1,
-        foodName = "Chicken Sandwich",
-        category = "Sandwich",
-        originalPriceCent = 800,
-        bestBeforeDays = 1,
-        imageUri = null,
-        isActive = true
-    )
-)
 
 /**
  * Preview Function
@@ -158,7 +120,7 @@ fun SellerHomeScreen(
             // surplus food list
             item {
                 SurplusFoodList(
-                    foodItems,
+                    FoodItems.foodItems,
                     quantities = quantities,
                     onQuantityChange = { foodItemId, quantity ->
                         quantities[foodItemId] = quantity
@@ -490,6 +452,6 @@ fun SurplusFoodRow(
 @Composable
 fun PreviewSurplusFoodRow() {
     SharePlateTheme() {
-        SurplusFoodRow(foodItems.get(0), onQuantityChange = {})
+        SurplusFoodRow(FoodItems.foodItems.get(0), onQuantityChange = {})
     }
 }

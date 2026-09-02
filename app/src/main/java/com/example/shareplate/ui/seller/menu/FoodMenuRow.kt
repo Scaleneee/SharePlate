@@ -24,22 +24,22 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.shareplate.R
-import com.example.shareplate.data.entity.FoodItem
-import com.example.shareplate.ui.seller.home.foodItems
+import com.example.shareplate.data.FoodItems
+import com.example.shareplate.model.FoodItem
 import com.example.shareplate.ui.theme.SharePlateTheme
 
 @Preview
 @Composable
 fun FoodMenuRowPreview() {
     SharePlateTheme {
-        FoodMenuRow(foodItem = foodItems.get(0), onEditClick = {})
+        FoodMenuRow(foodItem = FoodItems.foodItems[0], onEditClick = {})
     }
 }
 
 @Composable
 fun FoodMenuRow(
     foodItem: FoodItem,
-    onEditClick: () -> Unit,
+    onEditClick: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     OutlinedCard(
@@ -100,7 +100,7 @@ fun FoodMenuRow(
             }
             // edit button
             TextButton(
-                onClick = onEditClick,
+                onClick = {onEditClick(foodItem.foodItemId)},
             ) {
                 Text(text = "Edit")
             }
