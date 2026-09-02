@@ -23,7 +23,7 @@ fun SellerBottomBar(
     selectedIndex: Int,
     onHomeClick: () -> Unit,
     onMenuClick: () -> Unit,
-    onHistoryClick: () -> Unit,
+    onActivityClick: () -> Unit,
     onProfileClick: () -> Unit
 ) {
     NavigationBar {
@@ -72,16 +72,16 @@ fun SellerBottomBar(
         NavigationBarItem(
             selected = selectedIndex == 2,
             onClick = {
-                onHistoryClick()
+                onActivityClick()
             },
             icon = {
                 Icon(
                     painter = painterResource(R.drawable.history),
-                    contentDescription = "History"
+                    contentDescription = "Activity"
                 )
             },
             label = {
-                Text("History")
+                Text("Activity")
             }
         )
 

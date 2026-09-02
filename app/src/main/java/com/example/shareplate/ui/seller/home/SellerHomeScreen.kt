@@ -23,18 +23,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -109,7 +104,7 @@ fun SellerHomeScreen(
     sellerName: String = "Bread History",
     onHomeClick: () -> Unit = {},
     onMenuClick: () -> Unit = {},
-    onHistoryClick: () -> Unit = {},
+    onActivityClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
     activeListings: Int = 0,
@@ -135,7 +130,7 @@ fun SellerHomeScreen(
                 selectedIndex = 0,
                 onHomeClick = onHomeClick,
                 onMenuClick = onMenuClick,
-                onHistoryClick = onHistoryClick,
+                onActivityClick = onActivityClick,
                 onProfileClick = onProfileClick
             )
         }
@@ -367,13 +362,6 @@ fun SurplusFoodList(
             onClick = onPublishClick,
             enabled = hasSurplus, // the button enable only when there has surplus
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonColors(
-                // set the color
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                disabledContainerColor = MaterialTheme.colorScheme.secondary,
-                disabledContentColor = MaterialTheme.colorScheme.onSecondary,
-            )
         ) {
             Text(
                 text = "Publish Today's Surplus",

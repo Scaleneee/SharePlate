@@ -1,14 +1,15 @@
 package com.example.shareplate.ui.seller.menu
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -38,7 +39,7 @@ fun SellerMenuScreen(
     // for navigation bar
     onHomeClick: () -> Unit,
     onMenuClick: () -> Unit,
-    onHistoryClick: () -> Unit,
+    onActivityClick: () -> Unit,
     onProfileClick: () -> Unit,
     foodItems: List<FoodItem>,
     onAddFoodClick: () -> Unit,
@@ -61,7 +62,7 @@ fun SellerMenuScreen(
                 selectedIndex = 1,
                 onHomeClick = onHomeClick,
                 onMenuClick = onMenuClick,
-                onHistoryClick = onHistoryClick,
+                onActivityClick = onActivityClick,
                 onProfileClick = onProfileClick
             )
         },
@@ -79,7 +80,7 @@ fun SellerMenuScreen(
         }
 
     ) { innerPadding ->
-
+        Spacer(modifier = Modifier.height(8.dp))
         LazyColumn(
             modifier = modifier
                 .padding(innerPadding)
