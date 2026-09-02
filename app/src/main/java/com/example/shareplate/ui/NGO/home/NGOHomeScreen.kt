@@ -1,6 +1,8 @@
-package com.example.assignment.ngo
+package com.example.shareplate.ui.NGO
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,8 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.OutlinedButton
@@ -34,9 +34,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.assignment.NGO.NgoViewModel
-import com.example.shareplate.ui.NGO.menu.NGOActivityScreen
-import com.example.shareplate.ui.NGO.menu.NGOSuccessScreen
 
 data class FoodDonation(
     val name: String,
@@ -47,36 +44,27 @@ data class FoodDonation(
     val liked: Boolean
 )
 
-/**
- * NGO Home Screen Function
- * */
 @Composable
 fun NGOHomeScreen() {
-    var selectedDonation by remember { mutableStateOf<FoodDonation?>(null) }
     var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedDonation by remember { mutableStateOf<FoodDonation?>(null) }
+    var showSuccess by remember { mutableStateOf(false) }
 
     val ngoViewModel: NgoViewModel = viewModel()
-    val items by ngoViewModel.foodItems.collectAsState()
+    val shops by ngoViewModel.shops.collectAsState()
     val isLoading by ngoViewModel.isLoading.collectAsState()
     val error by ngoViewModel.errorMessage.collectAsState()
 
-    LaunchedEffect(Unit) { ngoViewModel.loadFoodItems() }
-    var showSuccess by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { ngoViewModel.loadShops() }
 
     if (showSuccess) {
         NGOSuccessScreen(onBackClick = { showSuccess = false })
         return
     }
 
-
-    /**
-     * Screen Scaffold
-     */
     Scaffold(
-        // bottom navigation bar
         bottomBar = {
             NGOBottomBar(
-                //selected index
                 selectedIndex = selectedTab,
                 onHomeClick = { selectedTab = 0 },
                 onMenuClick = { selectedTab = 1 },
@@ -91,9 +79,10 @@ fun NGOHomeScreen() {
                     SupabaseStatusBanner(
                         isLoading = isLoading,
                         errorMessage = error,
-                        itemCount = items.size
+                        itemCount = shops.size
                     )
                     DonationListScreen(
+                        donations = shops,
                         onDonationClick = { donation ->
                             selectedDonation = donation
                             selectedTab = 1
@@ -132,28 +121,38 @@ private fun PlaceholderScreen(title: String) {
 }
 
 @Composable
-fun DonationListScreen(onDonationClick: (FoodDonation) -> Unit) {
-    var donations by remember {
-        mutableStateOf(
-            listOf(
-                FoodDonation(
-                    "Sunrise Bakery", "Penang - 1.2 km", 25,
-                    listOf("Bread - 10", "Croissant - 8", "Muffin - 7"),
-                    true, false),
-                FoodDonation("Daily Bake", "Penang - 2.4 km", 18,
-                    listOf("Sandwich - 6", "Bun - 7", "Cake slice - 5"),
-                    true, false),
-                FoodDonation("Ondo Bakery", "George Town - 5.0 km", 12,
-                    listOf("Bread - 8", "Cookie pack - 4"),
-                    false, false)
+private fun SupabaseStatusBanner(
+    isLoading: Boolean,
+    errorMessage: String?,
+    itemCount: Int
+) {
+    Text(
+        text = when {
+            isLoading -> "Loading from Supabase…"
+            errorMessage != null -> "Supabase error: $errorMessage"
+            else -> "Synced $itemCount shops"
+        },
+        fontSize = 13.sp,
+        color = if (errorMessage != null) Color(0xFFB00020) else Color.Gray,
+        modifier = Modifier
+            .padding(
+                horizontal = 20.dp,
+                vertical = 8.dp
             )
-        )
-    }
+    )
+}
+
+@Composable
+fun DonationListScreen(
+    donations: List<FoodDonation>,
+    onDonationClick: (FoodDonation) -> Unit
+) {
+    var localDonations by remember(donations) { mutableStateOf(donations) }
 
     var searchText by remember { mutableStateOf("") }
     var filter by remember { mutableStateOf("All") }
 
-    val shownDonations = donations.filter { donation ->
+    val shownDonations = localDonations.filter { donation ->
         val matchesSearch = donation.name.contains(searchText, ignoreCase = true)
 
         val matchesFilter = when (filter) {
@@ -179,7 +178,9 @@ fun DonationListScreen(onDonationClick: (FoodDonation) -> Unit) {
         OutlinedTextField(
             value = searchText,
             onValueChange = { searchText = it },
-            label = { Text("Search free food") },
+            label = {
+                Text("Search free food")
+                    },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -207,7 +208,7 @@ fun DonationListScreen(onDonationClick: (FoodDonation) -> Unit) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        Text("NEARBY FREE FOOD", fontWeight = FontWeight.Bold)
+        Text("RECOMMENDED SHOPS", fontWeight = FontWeight.Bold)
 
         if (shownDonations.isEmpty()) {
             Text("No food donations found")
@@ -220,9 +221,8 @@ fun DonationListScreen(onDonationClick: (FoodDonation) -> Unit) {
                     .padding(top = 10.dp)
                     .clickable { onDonationClick(donation) }
             ) {
-                Column(modifier = Modifier
-                        .padding(16.dp)
-                ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+
                     Text(
                         donation.name, fontWeight = FontWeight.Bold
                     )
@@ -237,8 +237,7 @@ fun DonationListScreen(onDonationClick: (FoodDonation) -> Unit) {
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth()) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick = { onDonationClick(donation) },
                             modifier = Modifier.weight(1f)
@@ -250,7 +249,7 @@ fun DonationListScreen(onDonationClick: (FoodDonation) -> Unit) {
 
                         OutlinedButton(
                             onClick = {
-                                donations = donations.map {
+                                localDonations = localDonations.map {
                                     if (it.name == donation.name) it.copy(liked = !it.liked) else it
                                 }
                             },
@@ -269,27 +268,6 @@ fun DonationListScreen(onDonationClick: (FoodDonation) -> Unit) {
     }
 }
 
-@Composable
-private fun SupabaseStatusBanner(
-    isLoading: Boolean,
-    errorMessage: String?,
-    itemCount: Int
-) {
-    Text(
-        text = when {
-            isLoading -> "Loading from Supabase…"
-            errorMessage != null -> "Supabase error: $errorMessage"
-            else -> "Synced $itemCount food items from Supabase"
-        },
-        fontSize = 13.sp,
-        color = if (errorMessage != null) Color(0xFFB00020) else Color.Gray,
-        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-    )
-}
-
-/**
- * Preview Function
- */
 @Preview(showBackground = true)
 @Composable
 fun NGOHomeScreenPreview(){

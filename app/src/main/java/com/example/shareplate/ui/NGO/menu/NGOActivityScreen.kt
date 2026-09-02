@@ -1,4 +1,4 @@
-package com.example.shareplate.ui.NGO.menu
+package com.example.shareplate.ui.NGO
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.rememberScrollState

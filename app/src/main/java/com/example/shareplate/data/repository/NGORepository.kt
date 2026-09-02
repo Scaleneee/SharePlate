@@ -1,4 +1,4 @@
-package com.example.assignment.data.repository
+package com.example.shareplate.data.repository
 
 import com.example.shareplate.data.model.FoodItem
 import com.example.shareplate.data.model.SurplusListing
@@ -8,7 +8,8 @@ import io.github.jan.supabase.postgrest.from
 
 class NGORepository {
 
-    private val supabase = SupabaseProvider.client
+    private val supabase =
+        SupabaseProvider.client
 
     // GET ALL SELLERS
     suspend fun getSellers(): List<User> {
@@ -35,26 +36,21 @@ class NGORepository {
             .firstOrNull()
     }
 
-    // GET ALL ACTIVE FOOD ITEMS
+    // GET ALL FOOD ITEMS
     suspend fun getActiveFoodItems(): List<FoodItem> {
         return supabase
             .from("food_items")
-            .select {
-                filter {
-                    eq("is_active", true)
-                }
-            }
+            .select { }
             .decodeList<FoodItem>()
     }
 
-    // GET ACTIVE FOOD ITEMS FROM ONE SELLER
+    // GET FOOD ITEMS FOR ONE SELLER
     suspend fun getFoodItemsBySeller(sellerId: String): List<FoodItem> {
         return supabase
             .from("food_items")
             .select {
                 filter {
                     eq("seller_id", sellerId)
-                    eq("is_active", true)
                 }
             }
             .decodeList<FoodItem>()

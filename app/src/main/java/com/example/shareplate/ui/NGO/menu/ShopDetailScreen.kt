@@ -1,4 +1,4 @@
-package com.example.assignment.ngo
+package com.example.shareplate.ui.NGO
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -37,7 +37,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
 
 data class MenuFoodItem(
     val name: String,
@@ -118,9 +117,13 @@ fun ShopDetailScreen(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(donation.name, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+
                 Spacer(modifier = Modifier.height(2.dp))
-                Text("Today Sunrise Food $totalSurplus", fontSize = 12.sp, color = Color.Gray)
+
+                Text("Today's Surplus Food: $totalSurplus", fontSize = 12.sp, color = Color.Gray)
+
                 Spacer(modifier = Modifier.height(2.dp))
+
                 Text(
                     "Surplus available for consumption, don't miss the food!",
                     fontSize = 11.sp,
@@ -150,6 +153,7 @@ fun ShopDetailScreen(
 
         if (items.isEmpty()) {
             Spacer(modifier = Modifier.height(40.dp))
+
             Text("No surplus food available", color = Color.Gray)
         } else {
             items.forEach { item ->
@@ -185,9 +189,14 @@ fun ShopDetailScreen(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(item.name, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+
                         Spacer(modifier = Modifier.height(3.dp))
-                        Text("Best Before: 2 days • Surplus Food: ${item.surplus}", fontSize = 10.sp, color = Color.Gray)
+
+                        Text("Best Before: 2 days • Surplus Food: ${item.surplus}",
+                            fontSize = 10.sp, color = Color.Gray)
+
                         Spacer(modifier = Modifier.height(6.dp))
+
                         Text("FREE", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
