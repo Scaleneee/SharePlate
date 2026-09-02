@@ -1,6 +1,7 @@
 package com.example.assignment.ngo
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -35,12 +36,15 @@ data class FoodDonation(
 )
 
 @Composable
-fun NGOHomeScreen() {
+fun NGOHomeScreen(
+    onProfileClick: () -> Unit = {}
+) {
     var selectedDonation by remember { mutableStateOf<FoodDonation?>(null) }
 
     if (selectedDonation == null) {
         DonationListScreen(
-            onDonationClick = { selectedDonation = it }
+            onDonationClick = { selectedDonation = it },
+            onProfileClick = onProfileClick
         )
     } else {
         ShopDetailScreen(
@@ -51,7 +55,10 @@ fun NGOHomeScreen() {
 }
 
 @Composable
-fun DonationListScreen(onDonationClick: (FoodDonation) -> Unit) {
+fun DonationListScreen(
+    onDonationClick: (FoodDonation) -> Unit,
+    onProfileClick: () -> Unit = {}
+) {
     var donations by remember {
         mutableStateOf(
             listOf(
@@ -82,6 +89,17 @@ fun DonationListScreen(onDonationClick: (FoodDonation) -> Unit) {
             .fillMaxSize()
             .padding(20.dp)
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            OutlinedButton(onClick = onProfileClick) {
+                Text("Profile")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         Text("Good evening, Hope Orphanage", fontWeight = FontWeight.Bold)
         Text("Penang")
 

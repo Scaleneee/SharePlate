@@ -4,6 +4,8 @@ object AppRoutes {
 
     const val LOGIN = "login"
     const val REGISTER = "register"
+    const val PROFILE = "profile"
+    const val NEW_PASSWORD = "new_password"
 
     const val SELLER_HOME = "seller/home"
     const val SELLER_MENU = "seller/menu"

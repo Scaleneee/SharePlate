@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -47,6 +47,11 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.5.0"))
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    implementation("io.github.jan-tennert.supabase:auth-kt")
+    implementation("io.github.jan-tennert.supabase:storage-kt")
+    implementation("io.ktor:ktor-client-okhttp:3.4.2")
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.navigation.compose)
@@ -57,37 +62,5 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
     implementation(libs.coil.compose)
-
-    // supabase
-    implementation(
-        platform(
-            "io.github.jan-tennert.supabase:bom:3.5.0"
-        )
-    )
-
-    // Supabase database
-    implementation(
-        "io.github.jan-tennert.supabase:postgrest-kt"
-    )
-
-    // Supabase authentication
-    implementation(
-        "io.github.jan-tennert.supabase:auth-kt"
-    )
-
-    // Supabase Storage
-    // For food/profile images
-    implementation(
-        "io.github.jan-tennert.supabase:storage-kt"
-    )
-
-    // Required HTTP client for Supabase
-    implementation(
-        "io.ktor:ktor-client-android:3.0.3"
-    )
-    implementation("io.github.jan-tennert.supabase:supabase-kt")
 }
