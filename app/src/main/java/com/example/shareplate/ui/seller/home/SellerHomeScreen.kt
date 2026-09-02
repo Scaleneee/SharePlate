@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.shareplate.R
 import com.example.shareplate.data.entity.FoodItem
+import com.example.shareplate.ui.seller.navigation.SellerBottomBar
 import com.example.shareplate.ui.theme.SharePlateTheme
 
 /**
@@ -114,11 +115,6 @@ fun SellerHomeScreen(
     activeListings: Int = 0,
     awaitingPickup: Int = 0
 ) {
-    // use to know which page are now
-    var selectedNavigationItem by remember {
-        mutableIntStateOf(0)
-    }
-
     // use to store the surplus food quantity
     val quantities = remember {
         mutableStateMapOf<Long, String>()
@@ -136,23 +132,11 @@ fun SellerHomeScreen(
         bottomBar = {
             SellerBottomBar(
                 // selected index
-                selectedNavigationItem,
-                onHomeClick = {
-                    selectedNavigationItem = 0
-                    onHomeClick()
-                },
-                onMenuClick = {
-                    selectedNavigationItem = 1
-                    onMenuClick()
-                },
-                onHistoryClick = {
-                    selectedNavigationItem = 2
-                    onHistoryClick()
-                },
-                onProfileClick = {
-                    selectedNavigationItem = 3
-                    onProfileClick()
-                }
+                selectedIndex = 0,
+                onHomeClick = onHomeClick,
+                onMenuClick = onMenuClick,
+                onHistoryClick = onHistoryClick,
+                onProfileClick = onProfileClick
             )
         }
     ) { innerPadding ->
@@ -238,99 +222,6 @@ fun SellerTopBar(
             }
         }
     )
-}
-
-/**
- * Seller Bottom Navigation Bar
- *  displays the navigation selection for users
- *  home, menu, history, profile
- *  allow users navigate to another page
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SellerBottomBar(
-    selectedIndex: Int,
-    onHomeClick: () -> Unit = {},
-    onMenuClick: () -> Unit = {},
-    onHistoryClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {}
-) {
-    NavigationBar {
-        // homepage navigation
-        NavigationBarItem(
-            selected = selectedIndex == 0,
-            onClick = {
-                onHomeClick()
-            },
-            icon = {
-                Icon(
-                    painter = painterResource(R.drawable.home),
-                    contentDescription = "Home"
-                )
-            },
-            label = {
-                Text(
-                    text = "Home",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        )
-        // frequently wasted menu navigation
-        NavigationBarItem(
-            selected = selectedIndex == 1,
-            onClick = {
-                onMenuClick()
-            },
-            icon = {
-                Icon(
-                    painter = painterResource(R.drawable.bakery_menu),
-                    contentDescription = "Menu"
-                )
-            },
-            label = {
-                Text(
-                    text = "Menu",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        )
-
-        // history navigation
-        NavigationBarItem(
-            selected = selectedIndex == 2,
-            onClick = {
-                onHistoryClick()
-            },
-            icon = {
-                Icon(
-                    painter = painterResource(R.drawable.history),
-                    contentDescription = "History"
-                )
-            },
-            label = {
-                Text("History")
-            }
-        )
-
-        // profile navigation
-        NavigationBarItem(
-            selected = selectedIndex == 3,
-            onClick = {
-                onProfileClick()
-            },
-            icon = {
-                Icon(
-                    painter = painterResource(R.drawable.person),
-                    contentDescription = "Profile"
-                )
-            },
-            label = {
-                Text("Profile")
-            }
-        )
-    }
 }
 
 /**
