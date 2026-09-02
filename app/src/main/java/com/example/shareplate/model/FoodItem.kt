@@ -1,17 +1,44 @@
 package com.example.shareplate.model
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class FoodItem(
 
     // properties
     // primary key, Id
+    @SerialName("food_item_id")
     val foodItemId: Long,
 
-    val sellerId: Long,
-    val foodName: String,
-    val category: String,
-    val originalPriceCent: Int, // RM 6.50 == 650 cents, double may cause calculation errors
-    val bestBeforeDays: Int,
-    val imageUri: String? = null, // ? means this value is optional
-    val isActive: Boolean = true
-)
+    @SerialName("seller_id")
+    val sellerId: String,
 
+    @SerialName("food_name")
+    val foodName: String,
+
+    val description: String? = null,
+
+    val category: String,
+
+    @SerialName("original_price_cent")
+    val originalPriceCent: Int,
+
+    @SerialName("best_before_days")
+    val bestBeforeDays: Int,
+
+    @SerialName("allergen_information")
+    val allergenInformation: String? = null,
+
+    @SerialName("image_url")
+    val imageUrl: String? = null,
+
+    @SerialName("is_active")
+    val isActive: Boolean = true,
+
+    @SerialName("created_at")
+    val createdAt: String? = null,
+
+    @SerialName("updated_at")
+    val updatedAt: String? = null
+)

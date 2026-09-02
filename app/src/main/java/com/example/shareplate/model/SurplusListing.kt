@@ -1,35 +1,56 @@
 package com.example.shareplate.model
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class SurplusListing(
-    // properties
-    // primary key, Id
+
+    // primary key
+    @SerialName("listing_id")
     val listingId: Long,
 
+    @SerialName("food_item_id")
     val foodItemId: Long,
-    val sellerId: Long,
+
+    @SerialName("seller_id")
+    val sellerId: String,
 
     // initially published quantity
+    @SerialName("published_quantity")
     val publishedQuantity: Int,
 
-    // remains quantity
+    // remaining quantity
+    @SerialName("available_quantity")
     val availableQuantity: Int,
 
     // original price of the food
+    @SerialName("original_price_cent")
     val originalPriceCents: Int,
 
-    // discount percentage (from 60% -> 70% -> 80%)
+    // discount percentage: 60 -> 70 -> 80
+    @SerialName("current_discount_percent")
     val currentDiscountPercent: Int,
 
     // discounted price
+    @SerialName("current_price_cent")
     val currentPriceCents: Int,
 
-    // date and time when the seller published it
-    // store using currentTimeMills()
+    // date and time when seller published it
+    @SerialName("published_at")
     val publishedAt: Long,
 
-    // date and time when the store close
+    // date and time when store closes
+    @SerialName("closing_at")
     val closingAt: Long,
 
-    // status of the listing, "SELLING", "DONATING", "SOLD_OUT"
-    val status: String = "SELLING"
+    // last allowed pickup time
+    @SerialName("pickup_end_at")
+    val pickupEndAt: Long,
+
+    // listing status
+    val status: String = "ACTIVE",
+
+    @SerialName("created_at")
+    val createdAt: String? = null
 )

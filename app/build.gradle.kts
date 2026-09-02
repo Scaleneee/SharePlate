@@ -61,4 +61,32 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.coil.compose)
+
+    // supabase
+    implementation(
+        platform(
+            "io.github.jan-tennert.supabase:bom:3.5.0"
+        )
+    )
+
+    // Supabase database
+    implementation(
+        "io.github.jan-tennert.supabase:postgrest-kt"
+    )
+
+    // Supabase authentication
+    implementation(
+        "io.github.jan-tennert.supabase:auth-kt"
+    )
+
+    // Supabase Storage
+    // For food/profile images
+    implementation(
+        "io.github.jan-tennert.supabase:storage-kt"
+    )
+
+    // Required HTTP client for Supabase
+    implementation(
+        "io.ktor:ktor-client-android:3.0.3"
+    )
 }
