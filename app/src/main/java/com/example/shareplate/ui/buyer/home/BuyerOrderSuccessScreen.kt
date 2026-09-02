@@ -122,50 +122,42 @@ fun BuyerOrderSuccessScreen(
 
 
                 Text(
-                    text =
-                        "Order Successful!",
+                    text = "Order Successful!",
                     fontSize = 26.sp,
-                    fontWeight =
-                        FontWeight.Bold
+                    fontWeight = FontWeight.Bold
                 )
 
 
                 Spacer(
-                    modifier =
-                        Modifier.height(8.dp)
+                    modifier = Modifier.height(8.dp)
                 )
 
 
                 Text(
-                    text =
-                        "Your order has been placed successfully.",
+                    text = "Your order has been placed successfully.",
                     fontSize = 14.sp,
-                    color =
-                        Color.Gray
+                    color = Color.Gray
                 )
 
 
                 Spacer(
-                    modifier =
-                        Modifier.height(32.dp)
+                    modifier = Modifier.height(32.dp)
                 )
 
 
                 // PICKUP CODE CARD
                 Card(
 
-                    modifier =
-                        Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
 
-                    shape =
-                        RoundedCornerShape(
+                    shape = RoundedCornerShape
+                        (
                             16.dp
                         ),
 
                     colors =
                         CardDefaults.cardColors(
-                            containerColor =
-                                Color.White
+                            containerColor = Color.White
                         )
 
                 ) {
@@ -177,66 +169,54 @@ fun BuyerOrderSuccessScreen(
                             .fillMaxWidth()
                             .padding(24.dp),
 
-                        horizontalAlignment =
-                            Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.CenterHorizontally
 
                     ) {
 
 
                         Text(
-                            text =
-                                "Pickup Code",
+                            text = "Pickup Code",
                             fontSize = 14.sp,
-                            color =
-                                Color.Gray
+                            color = Color.Gray
                         )
 
 
                         Spacer(
-                            modifier =
-                                Modifier.height(10.dp)
+                            modifier = Modifier.height(10.dp)
                         )
 
 
                         Text(
-                            text =
-                                pickupCode,
+                            text =pickupCode,
                             fontSize = 32.sp,
-                            fontWeight =
-                                FontWeight.Bold,
-                            color =
-                                Color(0xFF4CAF50)
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF4CAF50)
                         )
 
 
                         Spacer(
-                            modifier =
-                                Modifier.height(16.dp)
+                            modifier = Modifier.height(16.dp)
                         )
 
 
                         Text(
-                            text =
-                                "Show this code to the seller when collecting your food.",
+                            text = "Show this code to the seller when collecting your food.",
                             fontSize = 13.sp,
-                            color =
-                                Color.DarkGray
+                            color = Color.DarkGray
                         )
                     }
                 }
 
 
                 Spacer(
-                    modifier =
-                        Modifier.height(18.dp)
+                    modifier = Modifier.height(18.dp)
                 )
 
 
                 // PAYMENT SUMMARY
                 Card(
 
-                    modifier =
-                        Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
 
                     shape =
                         RoundedCornerShape(
@@ -262,96 +242,74 @@ fun BuyerOrderSuccessScreen(
 
 
                         Text(
-                            text =
-                                "Order Summary",
+                            text = "Order Summary",
                             fontSize = 17.sp,
-                            fontWeight =
-                                FontWeight.Bold
+                            fontWeight = FontWeight.Bold
                         )
 
 
                         Spacer(
-                            modifier =
-                                Modifier.height(16.dp)
+                            modifier = Modifier.height(16.dp)
                         )
 
 
                         Row(
 
-                            modifier =
-                                Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth(),
 
-                            horizontalArrangement =
-                                Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween
 
                         ) {
 
 
                             Text(
-                                text =
-                                    "Order Status",
-                                fontSize =
-                                    14.sp,
-                                color =
-                                    Color.DarkGray
+                                text = "Order Status",
+                                fontSize = 14.sp,
+                                color = Color.DarkGray
                             )
 
 
                             Text(
-                                text =
-                                    "Pending Pickup",
-                                fontSize =
-                                    14.sp,
-                                fontWeight =
-                                    FontWeight.SemiBold,
-                                color =
-                                    Color(0xFFFF9800)
+                                text = "Pending Pickup",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFFFF9800)
                             )
                         }
 
 
                         Spacer(
-                            modifier =
-                                Modifier.height(12.dp)
+                            modifier = Modifier.height(12.dp)
                         )
 
 
                         Row(
 
-                            modifier =
-                                Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth(),
 
-                            horizontalArrangement =
-                                Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween
 
                         ) {
 
 
                             Text(
-                                text =
-                                    "Total Payment",
-                                fontSize =
-                                    15.sp,
-                                color =
-                                    Color.DarkGray
+                                text = "Total Payment",
+                                fontSize = 15.sp,
+                                color = Color.DarkGray
                             )
 
 
                             Text(
 
-                                text =
-                                    "RM %.2f".format(
+                                text = "RM %.2f".format(
                                         totalPrice
                                     ),
 
-                                fontSize =
-                                    18.sp,
+                                fontSize = 18.sp,
 
-                                fontWeight =
-                                    FontWeight.Bold,
+                                fontWeight = FontWeight.Bold,
 
-                                color =
-                                    Color(0xFF4CAF50)
+                                color = Color(0xFF4CAF50)
                             )
                         }
                     }
@@ -359,8 +317,7 @@ fun BuyerOrderSuccessScreen(
 
 
                 Spacer(
-                    modifier =
-                        Modifier.weight(1f)
+                    modifier = Modifier.weight(1f)
                 )
 
 
@@ -389,29 +346,23 @@ fun BuyerOrderSuccessScreen(
 
 
                     Text(
-                        text =
-                            "View My Order",
-                        fontSize =
-                            16.sp,
-                        fontWeight =
-                            FontWeight.Bold,
-                        color =
-                            Color.White
+                        text = "View My Order",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
 
 
                 Spacer(
-                    modifier =
-                        Modifier.height(12.dp)
+                    modifier = Modifier.height(12.dp)
                 )
 
 
                 // HOME BUTTON
                 OutlinedButton(
 
-                    onClick =
-                        onHomeClick,
+                    onClick = onHomeClick,
 
                     modifier = Modifier
                         .fillMaxWidth()
@@ -426,19 +377,15 @@ fun BuyerOrderSuccessScreen(
 
 
                     Text(
-                        text =
-                            "Back to Home",
-                        fontSize =
-                            16.sp,
-                        fontWeight =
-                            FontWeight.SemiBold
+                        text = "Back to Home",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
 
 
                 Spacer(
-                    modifier =
-                        Modifier.height(15.dp)
+                    modifier = Modifier.height(15.dp)
                 )
             }
         }
@@ -461,8 +408,7 @@ fun BuyerOrderSuccessScreenPreview() {
 
         BuyerOrderSuccessScreen(
 
-            pickupCode =
-                "SP4821",
+            pickupCode = "SP4821",
 
             totalPriceCent =
                 350
