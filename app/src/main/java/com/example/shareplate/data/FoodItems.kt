@@ -1,6 +1,6 @@
 package com.example.shareplate.data
 
-import com.example.shareplate.model.FoodItem
+import com.example.shareplate.data.model.FoodItem
 
 object FoodItems {
     /**

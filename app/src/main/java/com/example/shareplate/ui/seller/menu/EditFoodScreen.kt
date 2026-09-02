@@ -1,7 +1,7 @@
 package com.example.shareplate.ui.seller.menu
 
 import androidx.compose.runtime.Composable
-import com.example.shareplate.model.FoodItem
+import com.example.shareplate.data.model.FoodItem
 
 @Composable
 fun EditFoodScreen(
