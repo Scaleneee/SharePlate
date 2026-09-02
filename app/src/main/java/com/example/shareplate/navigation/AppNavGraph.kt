@@ -1,15 +1,28 @@
 package com.example.shareplate.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.assignment.ngo.NGOHomeScreen
 import com.example.shareplate.data.FoodItems
+import com.example.shareplate.data.local.SessionManager
 import com.example.shareplate.model.FoodItem
+import com.example.shareplate.ui.login.login.LoginScreen
+import com.example.shareplate.ui.login.profile.ProfileScreen
+import com.example.shareplate.ui.login.register.RegisterScreen
+import com.example.shareplate.ui.buyer.home.BuyerActivityScreen
+import com.example.shareplate.ui.buyer.home.BuyerHomeScreen
 import com.example.shareplate.ui.seller.home.SellerHomeScreen
 import com.example.shareplate.ui.seller.menu.AddFoodScreen
 import com.example.shareplate.ui.seller.menu.EditFoodScreen
@@ -17,79 +30,201 @@ import com.example.shareplate.ui.seller.menu.SellerMenuScreen
 
 @Composable
 fun AppNavGraph(
-    navController: NavHostController = rememberNavController(),
+    navController: NavHostController = rememberNavController()
 ) {
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+
+    // If someone is already logged in, go straight to their home screen.
+    val startDestination = remember {
+        if (sessionManager.isLoggedIn()) {
+            homeRouteFor(sessionManager.getRole())
+        } else {
+            AppRoutes.LOGIN
+        }
+    }
+
     NavHost(
-        navController = navController, startDestination = AppRoutes.SELLER_HOME
+        navController = navController,
+        startDestination = startDestination
     ) {
-        composable("login") {
-            // waiting for the implementation of LoginScreen
+        composable(AppRoutes.LOGIN) {
+            LoginScreen(
+                onLoginSuccess = { role, userId ->
+                    sessionManager.saveSession(userId, role)
+                    navController.navigate(homeRouteFor(role)) {
+                        popUpTo(AppRoutes.LOGIN) { inclusive = true }
+                    }
+                },
+                onNavigateToRegister = {
+                    navController.navigate(AppRoutes.REGISTER)
+                }
+            )
         }
 
-        // seller home screen
+        composable(AppRoutes.REGISTER) {
+            RegisterScreen(
+                onRegisterSuccess = { role, userId ->
+                    sessionManager.saveSession(userId, role)
+                    navController.navigate(homeRouteFor(role)) {
+                        popUpTo(AppRoutes.LOGIN) { inclusive = true }
+                    }
+                },
+                onNavigateToLogin = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Profile for any logged-in role (kept as a generic route too).
+        composable(
+            route = "profile/{userId}",
+            arguments = listOf(navArgument("userId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getLong("userId") ?: sessionManager.getUserId()
+            ProfileScreen(
+                userId = userId,
+                onLoggedOut = {
+                    sessionManager.clearSession()
+                    navController.navigate(AppRoutes.LOGIN) {
+                        popUpTo(0)
+                    }
+                }
+            )
+        }
+
+        // ---------------- Seller ----------------
         composable(AppRoutes.SELLER_HOME) {
-            SellerHomeScreen(onHomeClick = {
-                // already on home
-            }, onMenuClick = {
-                navController.navigate(AppRoutes.SELLER_MENU)
-            }, onActivityClick = {
-                navController.navigate(AppRoutes.SELLER_ACTIVITY)
-            }, onProfileClick = {
-                navController.navigate(AppRoutes.SELLER_PROFILE)
-            })
+            SellerHomeScreen(
+                sellerName = "Brian Chew",
+                onHomeClick = {},
+                onMenuClick = {
+                    navController.navigate(AppRoutes.SELLER_MENU)
+                },
+                onActivityClick = {
+                    navController.navigate(AppRoutes.SELLER_ACTIVITY)
+                },
+                onProfileClick = {
+                    navController.navigate(AppRoutes.SELLER_PROFILE)
+                },
+                onNotificationClick = {}
+            )
         }
-        // seller menu screen
+
         composable(AppRoutes.SELLER_MENU) {
-            SellerMenuScreen(foodItems = FoodItems.foodItems, onHomeClick = {
-                navController.navigate(AppRoutes.SELLER_HOME)
-            }, onMenuClick = {
-                // already on menu
-            }, onActivityClick = {
-                navController.navigate(AppRoutes.SELLER_ACTIVITY)
-            }, onProfileClick = {
-                navController.navigate(AppRoutes.SELLER_PROFILE)
-            }, onAddFoodClick = {
-                navController.navigate(AppRoutes.SELLER_ADD_FOOD)
-            }, onEditFoodClick = { foodItemId ->
-                navController.navigate("seller/edit-food/$foodItemId")
-            })
+            SellerMenuScreen(
+                onHomeClick = {
+                    navController.navigate(AppRoutes.SELLER_HOME)
+                },
+                onMenuClick = {},
+                onActivityClick = {
+                    navController.navigate(AppRoutes.SELLER_ACTIVITY)
+                },
+                onProfileClick = {
+                    navController.navigate(AppRoutes.SELLER_PROFILE)
+                },
+                foodItems = FoodItems.foodItems,
+                onAddFoodClick = {
+                    navController.navigate(AppRoutes.SELLER_ADD_FOOD)
+                },
+                onEditFoodClick = { foodItemId ->
+                    navController.navigate("seller/edit-food/$foodItemId")
+                }
+            )
         }
-        // seller add food screen
+
+        composable(AppRoutes.SELLER_ACTIVITY) {
+            PlaceholderScreen("Seller activity is under development")
+        }
+
+        composable(AppRoutes.SELLER_PROFILE) {
+            ProfileScreen(
+                userId = sessionManager.getUserId(),
+                onLoggedOut = {
+                    sessionManager.clearSession()
+                    navController.navigate(AppRoutes.LOGIN) {
+                        popUpTo(0)
+                    }
+                }
+            )
+        }
+
         composable(AppRoutes.SELLER_ADD_FOOD) {
             AddFoodScreen(
-                onBackClick = {
+                onBackClick = { navController.popBackStack() },
+                onSaveClick = { _, _, _, _, _, _ ->
                     navController.popBackStack()
-                },
-                onSaveClick = { foodName, category, originalPrice, bestBeforeDays, imageURI, isActive ->
-                    // ViewModel saves food
-                    navController.popBackStack()
-                })
+                }
+            )
         }
-        // seller edit food screen
+
         composable(
             route = AppRoutes.SELLER_EDIT_FOOD,
             arguments = listOf(
-                navArgument("foodItemId") {
-                    type = NavType.LongType
-                }
+                navArgument("foodItemId") { type = NavType.LongType }
             )
         ) { backStackEntry ->
-            // get the food item id from the route
-            val foodItemId = backStackEntry.arguments?.getLong("foodItemId") ?: -1
-
-            // get the food obj using the id
-            val foodItem = FoodItems.getFoodItemById(foodItemId)
-            FoodItems.getFoodItemById(foodItemId)?.let { foodItem ->
-                // call the screen
+            val foodItemId = backStackEntry.arguments?.getLong("foodItemId") ?: -1L
+            val foodItem: FoodItem? = FoodItems.getFoodItemById(foodItemId)
+            if (foodItem != null) {
                 EditFoodScreen(
                     foodItem = foodItem,
                     onBackClick = { navController.popBackStack() },
-                    onSaveClick = { foodName, category, originalPrice, bestBeforeDays, imageURI, isActive ->
-                        // ViewModel saves food
+                    onSaveClick = { _, _, _, _, _, _ ->
                         navController.popBackStack()
                     }
                 )
             }
         }
+
+        // ---------------- Buyer ----------------
+        composable(AppRoutes.BUYER_HOME) {
+            BuyerHomeScreen(
+                onHomeClick = {},
+                onOrderClick = {},
+                onActivityClick = {
+                    navController.navigate(AppRoutes.BUYER_ACTIVITY)
+                },
+                onProfileClick = {
+                    navController.navigate("profile/${sessionManager.getUserId()}")
+                }
+            )
+        }
+
+        composable(AppRoutes.BUYER_ACTIVITY) {
+            BuyerActivityScreen(
+                onHomeClick = {
+                    navController.navigate(AppRoutes.BUYER_HOME)
+                },
+                onOrderClick = {},
+                onActivityClick = {},
+                onProfileClick = {
+                    navController.navigate("profile/${sessionManager.getUserId()}")
+                },
+                onQrCodeClick = {}
+            )
+        }
+
+        // ---------------- NGO ----------------
+        composable(AppRoutes.NGO_HOME) {
+            NGOHomeScreen()
+        }
     }
+}
+
+@Composable
+private fun PlaceholderScreen(text: String) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text)
+    }
+}
+
+private fun homeRouteFor(role: String?): String = when (role) {
+    "SELLER" -> AppRoutes.SELLER_HOME
+    "BUYER" -> AppRoutes.BUYER_HOME
+    "NGO" -> AppRoutes.NGO_HOME
+    else -> AppRoutes.LOGIN
 }
