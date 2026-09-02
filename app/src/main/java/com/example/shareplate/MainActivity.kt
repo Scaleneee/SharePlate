@@ -16,6 +16,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.shareplate.navigation.AppNavGraph
 import com.example.shareplate.ui.buyer.home.BuyerHomeScreen
 import com.example.shareplate.ui.seller.home.SellerHomeScreen
+import com.example.shareplate.ui.seller.menu.AddFoodScreen
 import com.example.shareplate.ui.theme.SharePlateTheme
 
 class MainActivity : ComponentActivity() {
@@ -28,7 +29,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize()
                 ) {
                     SharePlateTheme {
-                        SellerHomeScreen()
+                        AppNavGraph()
                     }
                 }
             }
