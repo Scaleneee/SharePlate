@@ -23,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,7 +41,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shareplate.R
+import com.example.shareplate.ui.buyer.home.navigation.BuyerBottomBar
 import com.example.shareplate.ui.theme.SharePlateTheme
+
 
 data class Shop(
     val id: Int,
@@ -49,9 +52,14 @@ data class Shop(
     val shortName: String
 )
 
+
 @Composable
 fun BuyerHomeScreen(
-    onShopClick: (Shop) -> Unit = {}
+    onShopClick: (Shop) -> Unit = {},
+    onHomeClick: () -> Unit = {},
+    onOrderClick: () -> Unit = {},
+    onActivityClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {}
 ) {
 
     var searchText by rememberSaveable {
@@ -59,18 +67,21 @@ fun BuyerHomeScreen(
     }
 
     val shops = listOf(
+
         Shop(
             id = 1,
             name = "Ondo Bakery",
             address = "Petaling Jaya",
             shortName = "OB"
         ),
+
         Shop(
             id = 2,
             name = "The Coffee Bean & Tea Leaf",
             address = "Kuala Lumpur",
             shortName = "CB"
         ),
+
         Shop(
             id = 3,
             name = "Bread History",
@@ -79,10 +90,15 @@ fun BuyerHomeScreen(
         )
     )
 
+
     val filteredShops = if (searchText.isBlank()) {
+
         shops
+
     } else {
+
         shops.filter { shop ->
+
             shop.name.contains(
                 searchText,
                 ignoreCase = true
@@ -94,98 +110,137 @@ fun BuyerHomeScreen(
         }
     }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 20.dp),
-        contentPadding = PaddingValues(bottom = 90.dp)
-    ) {
 
-        item {
+    Scaffold(
 
-            Spacer(
-                modifier = Modifier.height(30.dp)
-            )
+        bottomBar = {
 
-            BuyerHeaderSection()
-
-            Spacer(
-                modifier = Modifier.height(20.dp)
-            )
-
-            BuyerSearchField(
-                searchText = searchText,
-                onSearchTextChange = {
-                    searchText = it
-                }
-            )
-
-            Spacer(
-                modifier = Modifier.height(20.dp)
-            )
-
-            BuyerQuickButtons()
-
-            Spacer(
-                modifier = Modifier.height(28.dp)
-            )
-
-            Text(
-                text = if (searchText.isBlank()) {
-                    "RECOMMENDED SHOPS"
-                } else {
-                    "SEARCH RESULTS"
-                },
-                style = MaterialTheme.typography.bodyLarge
-            )
-
-            Spacer(
-                modifier = Modifier.height(15.dp)
+            BuyerBottomBar(
+                selectedIndex = 0,
+                onHomeClick = onHomeClick,
+                onOrderClick = onOrderClick,
+                onActivityClick = onActivityClick,
+                onProfileClick = onProfileClick
             )
         }
 
-        if (filteredShops.isEmpty()) {
+    ) { innerPadding ->
+
+
+        LazyColumn(
+
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 20.dp),
+
+            contentPadding = PaddingValues(
+                bottom = 20.dp
+            )
+        ) {
+
 
             item {
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 40.dp),
-                    contentAlignment = Alignment.Center
-                ) {
+                Spacer(
+                    modifier = Modifier.height(30.dp)
+                )
 
-                    Text(
-                        text = "No shops found",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                }
-            }
 
-        } else {
+                BuyerHeaderSection()
 
-            items(
-                items = filteredShops,
-                key = { shop ->
-                    shop.id
-                }
-            ) { shop ->
 
-                BuyerShopItem(
-                    shop = shop,
-                    onClick = {
-                        onShopClick(shop)
+                Spacer(
+                    modifier = Modifier.height(20.dp)
+                )
+
+
+                BuyerSearchField(
+                    searchText = searchText,
+                    onSearchTextChange = {
+                        searchText = it
                     }
                 )
 
-                HorizontalDivider(
-                    color = Color.LightGray
+
+                Spacer(
+                    modifier = Modifier.height(20.dp)
                 )
+
+
+                BuyerQuickButtons()
+
+
+                Spacer(
+                    modifier = Modifier.height(28.dp)
+                )
+
+
+                Text(
+                    text = if (searchText.isBlank()) {
+                        "RECOMMENDED SHOPS"
+                    } else {
+                        "SEARCH RESULTS"
+                    },
+                    style = MaterialTheme.typography.bodyLarge
+                )
+
+
+                Spacer(
+                    modifier = Modifier.height(15.dp)
+                )
+            }
+
+
+            if (filteredShops.isEmpty()) {
+
+
+                item {
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 40.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+
+                        Text(
+                            text = "No shops found",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                    }
+                }
+
+
+            } else {
+
+
+                items(
+                    items = filteredShops,
+                    key = { shop ->
+                        shop.id
+                    }
+                ) { shop ->
+
+
+                    BuyerShopItem(
+                        shop = shop,
+                        onClick = {
+                            onShopClick(shop)
+                        }
+                    )
+
+
+                    HorizontalDivider(
+                        color = Color.LightGray
+                    )
+                }
             }
         }
     }
 }
+
 
 @Composable
 fun BuyerHeaderSection() {
@@ -196,6 +251,7 @@ fun BuyerHeaderSection() {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
 
+
         Column {
 
             Text(
@@ -204,9 +260,11 @@ fun BuyerHeaderSection() {
                 fontWeight = FontWeight.SemiBold
             )
 
+
             Spacer(
                 modifier = Modifier.height(4.dp)
             )
+
 
             Text(
                 text = "Discover food, save money, reduce waste.",
@@ -214,6 +272,7 @@ fun BuyerHeaderSection() {
                 color = Color.Gray
             )
         }
+
 
         IconButton(
             onClick = {}
@@ -229,6 +288,7 @@ fun BuyerHeaderSection() {
     }
 }
 
+
 @Composable
 fun BuyerSearchField(
     searchText: String,
@@ -236,9 +296,13 @@ fun BuyerSearchField(
 ) {
 
     OutlinedTextField(
+
         value = searchText,
+
         onValueChange = onSearchTextChange,
+
         modifier = Modifier.fillMaxWidth(),
+
         placeholder = {
 
             Text(
@@ -246,6 +310,7 @@ fun BuyerSearchField(
                 style = MaterialTheme.typography.bodyMedium
             )
         },
+
         leadingIcon = {
 
             Icon(
@@ -255,10 +320,13 @@ fun BuyerSearchField(
                 contentDescription = "Search"
             )
         },
+
         singleLine = true,
+
         shape = RoundedCornerShape(10.dp)
     )
 }
+
 
 @Composable
 fun BuyerQuickButtons() {
@@ -267,6 +335,7 @@ fun BuyerQuickButtons() {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+
 
         OutlinedButton(
             onClick = {},
@@ -281,14 +350,17 @@ fun BuyerQuickButtons() {
                 contentDescription = "Nearby"
             )
 
+
             Spacer(
                 modifier = Modifier.width(6.dp)
             )
+
 
             Text(
                 text = "Near Me"
             )
         }
+
 
         OutlinedButton(
             onClick = {},
@@ -303,9 +375,11 @@ fun BuyerQuickButtons() {
                 contentDescription = "Favourite"
             )
 
+
             Spacer(
                 modifier = Modifier.width(6.dp)
             )
+
 
             Text(
                 text = "Favourite"
@@ -313,6 +387,7 @@ fun BuyerQuickButtons() {
         }
     }
 }
+
 
 @Composable
 fun BuyerShopItem(
@@ -329,6 +404,7 @@ fun BuyerShopItem(
             .padding(vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+
 
         Surface(
             modifier = Modifier
@@ -350,9 +426,11 @@ fun BuyerShopItem(
             }
         }
 
+
         Spacer(
             modifier = Modifier.width(15.dp)
         )
+
 
         Column {
 
@@ -362,9 +440,11 @@ fun BuyerShopItem(
                 fontWeight = FontWeight.Medium
             )
 
+
             Spacer(
                 modifier = Modifier.height(4.dp)
             )
+
 
             Text(
                 text = shop.address,
@@ -375,7 +455,11 @@ fun BuyerShopItem(
     }
 }
 
-@Preview(showBackground = true)
+
+@Preview(
+    showBackground = true,
+    showSystemUi = true
+)
 @Composable
 fun BuyerHomeScreenPreview() {
 
