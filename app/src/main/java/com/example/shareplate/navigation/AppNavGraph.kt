@@ -4,6 +4,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -48,12 +49,10 @@ fun AppNavGraph(
         }
         // seller menu screen
         composable(AppRoutes.SELLER_MENU) {
+            // get the food items of the seller
             val foodItems by sellerViewModel.foodItems.collectAsStateWithLifecycle()
-
-            val sellerId =
-                SupabaseProvider.client.auth
-                    .currentUserOrNull()
-                    ?.id
+            // get the seller id
+            val sellerId = SupabaseProvider.client.auth.currentUserOrNull()?.id
 
             LaunchedEffect(sellerId) {
                 if (sellerId != null) {
@@ -61,29 +60,56 @@ fun AppNavGraph(
                 }
             }
 
-            SellerMenuScreen(foodItems = FoodItems.foodItems, onHomeClick = {
-                navController.navigate(AppRoutes.SELLER_HOME)
-            }, onMenuClick = {
-                // already on menu
-            }, onActivityClick = {
-                navController.navigate(AppRoutes.SELLER_ACTIVITY)
-            }, onProfileClick = {
-                navController.navigate(AppRoutes.SELLER_PROFILE)
-            }, onAddFoodClick = {
-                navController.navigate(AppRoutes.SELLER_ADD_FOOD)
-            }, onEditFoodClick = { foodItemId ->
-                navController.navigate("seller/edit-food/$foodItemId")
-            })
+            SellerMenuScreen(
+                foodItems = foodItems,
+                onHomeClick = {
+                    navController.navigate(AppRoutes.SELLER_HOME)
+                }, onMenuClick = {
+                    // already on menu
+                }, onActivityClick = {
+                    navController.navigate(AppRoutes.SELLER_ACTIVITY)
+                }, onProfileClick = {
+                    navController.navigate(AppRoutes.SELLER_PROFILE)
+                }, onAddFoodClick = {
+                    navController.navigate(AppRoutes.SELLER_ADD_FOOD)
+                }, onEditFoodClick = { foodItemId ->
+                    navController.navigate("seller/edit-food/$foodItemId")
+                })
         }
         // seller add food screen
         composable(AppRoutes.SELLER_ADD_FOOD) {
+            val context = LocalContext.current
+            val sellerId = SupabaseProvider.client.auth.currentUserOrNull()?.id
+
             AddFoodScreen(
                 onBackClick = {
                     navController.popBackStack()
                 },
-                onSaveClick = { foodName, category, originalPrice, bestBeforeDays, imageURI, isActive ->
+                onSaveClick = { foodName, category, originalPrice, bestBeforeDays, imageUri, isActive ->
                     // ViewModel saves food
-                    navController.popBackStack()
+                    if (sellerId != null) {
+                        val originalPriceCent =
+                            (originalPrice.toDouble() * 100)
+                                .toInt()
+
+                        sellerViewModel.addFood(
+                            context = context,
+                            sellerId = sellerId,
+                            foodName = foodName,
+                            category = category,
+                            originalPriceCent =
+                                originalPriceCent,
+                            bestBeforeDays =
+                                bestBeforeDays.toInt(),
+                            selectedImageUri =
+                                imageUri,
+                            isActive = isActive,
+
+                            onSuccess = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
                 })
         }
         // seller edit food screen
