@@ -63,7 +63,8 @@ class NGOViewModel(
                             price = 0.0,
                             pickupTime = formatPickupTime(listing.pickupEndAt),
                             availableQuantity = listing.availableQuantity,
-                            quantity = listing.availableQuantity
+                            quantity = listing.availableQuantity,
+                            imageUrl = food.imageUrl
                         )
                     }
                     val itemStrings = sellerInventory.map { "${it.foodName} - ${it.availableQuantity}" }
