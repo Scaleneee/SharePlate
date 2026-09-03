@@ -30,26 +30,19 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import com.example.shareplate.ui.buyer.order.BuyerCartStore
+import com.example.shareplate.data.model.UserRole
 
 
 data class FoodDeal(
 
     val listingId: Long,
-
     val foodItemId: Long,
-
     val sellerId: String,
-
     val name: String,
-
     val description: String,
-
     val price: String,
-
     val pickupTime: String,
-
     val availableQuantity: Int,
-
     val discountPercent: Int
 )
 
@@ -110,18 +103,12 @@ fun ShopDetailScreen(
         if (isPreview) {
 
             seller = User(
-                userId =
-                    "preview-seller-1",
-                name =
-                    "Ondo Bakery",
-                email =
-                    "preview@email.com",
-                role =
-                    "SELLER",
-                organisationName =
-                    "Ondo Bakery",
-                address =
-                    "Petaling Jaya"
+                userId = "preview-seller-1",
+                name = "Ondo Bakery",
+                email = "preview@email.com",
+                role = UserRole.SELLER,
+                organisationName = "Ondo Bakery",
+                address = "Petaling Jaya"
             )
 
 
@@ -130,16 +117,11 @@ fun ShopDetailScreen(
                 FoodDeal(
                     listingId = 1,
                     foodItemId = 1,
-                    sellerId =
-                        "preview-seller-1",
-                    name =
-                        "Blueberry Bread",
-                    description =
-                        "Best Before: 3 days • Surplus Food: 7",
-                    price =
-                        "RM 1.00",
-                    pickupTime =
-                        "Pickup today",
+                    sellerId = "preview-seller-1",
+                    name = "Blueberry Bread",
+                    description = "Best Before: 3 days • Surplus Food: 7",
+                    price = "RM 1.00",
+                    pickupTime = "Pickup today",
                     availableQuantity = 7,
                     discountPercent = 80
                 ),
@@ -147,39 +129,25 @@ fun ShopDetailScreen(
                 FoodDeal(
                     listingId = 2,
                     foodItemId = 2,
-                    sellerId =
-                        "preview-seller-1",
-                    name =
-                        "Sausage Bread",
-                    description =
-                        "Best Before: 3 days • Surplus Food: 5",
-                    price =
-                        "RM 1.50",
-                    pickupTime =
-                        "Pickup today",
+                    sellerId = "preview-seller-1",
+                    name = "Sausage Bread",
+                    description = "Best Before: 3 days • Surplus Food: 5",
+                    price = "RM 1.50",
+                    pickupTime = "Pickup today",
                     availableQuantity = 5,
                     discountPercent = 70
                 )
             )
 
-
             isLoading = false
-
             return@LaunchedEffect
         }
 
 
         try {
-
             isLoading = true
-
             errorMessage = null
-
-
-            val sellerResult =
-                repository.getSellerById(
-                    sellerId
-                )
+            val sellerResult = repository.getSellerById(sellerId)
 
 
             if (sellerResult == null) {
@@ -192,104 +160,41 @@ fun ShopDetailScreen(
                 return@LaunchedEffect
             }
 
-
-            seller =
-                sellerResult
-
-
-            val foodItems =
-                repository
-                    .getFoodItemsBySeller(
-                        sellerId
-                    )
+            seller = sellerResult
+            val foodItems = repository.getFoodItemsBySeller(sellerId)
+            val listings = repository.getActiveListingsBySeller(sellerId)
+            val foodItemMap = foodItems.associateBy { it.foodItemId }
 
 
-            val listings =
-                repository
-                    .getActiveListingsBySeller(
-                        sellerId
-                    )
-
-
-            val foodItemMap =
-                foodItems.associateBy {
-                    it.foodItemId
-                }
-
-
-            foodDeals =
-                listings
-                    .sortedByDescending {
-                        it.publishedAt
-                    }
+            foodDeals = listings
+                    .sortedByDescending { it.publishedAt }
                     .mapNotNull { listing ->
-
-
-                        val food =
-                            foodItemMap[
-                                listing.foodItemId
-                            ]
-
-
+                        val food = foodItemMap[listing.foodItemId]
                         if (food == null) {
-
                             null
-
                         } else {
-
-
                             FoodDeal(
-
-                                listingId =
-                                    listing.listingId,
-
-                                foodItemId =
-                                    food.foodItemId,
-
-                                sellerId =
-                                    listing.sellerId,
-
-                                name =
-                                    food.foodName,
-
-                                description =
-                                    buildFoodDescription(
-                                        foodDescription =
-                                            food.description,
-                                        bestBeforeDays =
-                                            food.bestBeforeDays,
-                                        availableQuantity =
-                                            listing.availableQuantity
+                                listingId = listing.listingId,
+                                foodItemId = food.foodItemId,
+                                sellerId = listing.sellerId,
+                                name = food.foodName,
+                                description = buildFoodDescription(
+                                        foodDescription = food.description,
+                                        bestBeforeDays = food.bestBeforeDays,
+                                        availableQuantity = listing.availableQuantity
                                     ),
 
-                                price =
-                                    formatPrice(
-                                        listing.currentPriceCents
-                                    ),
-
-                                pickupTime =
-                                    formatPickupTime(
-                                        listing.pickupEndAt
-                                    ),
-
-                                availableQuantity =
-                                    listing.availableQuantity,
-
-                                discountPercent =
-                                    listing.currentDiscountPercent
+                                price = formatPrice(listing.currentPriceCents),
+                                pickupTime = formatPickupTime(listing.pickupEndAt),
+                                availableQuantity = listing.availableQuantity,
+                                discountPercent = listing.currentDiscountPercent
                             )
                         }
                     }
-
-
         } catch (e: Exception) {
-
-            errorMessage =
-                e.message
-                    ?: "Unable to load shop information."
+            errorMessage = e.message ?: "Unable to load shop information."
 
         } finally {
-
             isLoading = false
         }
     }
@@ -301,20 +206,14 @@ fun ShopDetailScreen(
 
             BuyerBottomBar(
                 selectedIndex = 0,
-                onHomeClick =
-                    onHomeClick,
-                onOrderClick =
-                    onOrderClick,
-                onActivityClick =
-                    onActivityClick,
-                onProfileClick =
-                    onProfileClick
+                onHomeClick = onHomeClick,
+                onOrderClick = onOrderClick,
+                onActivityClick = onActivityClick,
+                onProfileClick = onProfileClick
             )
         }
 
     ) { innerPadding ->
-
-
         Column(
 
             modifier = Modifier
@@ -327,59 +226,46 @@ fun ShopDetailScreen(
 
 
             Spacer(
-                modifier =
-                    Modifier.height(24.dp)
+                modifier = Modifier.height(24.dp)
             )
 
 
             Row(
-                modifier =
-                    Modifier.fillMaxWidth(),
-                verticalAlignment =
-                    Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
 
 
                 IconButton(
-                    onClick =
-                        onBackClick
+                    onClick = onBackClick
                 ) {
 
                     Icon(
-                        imageVector =
-                            Icons.Default.ArrowBack,
-                        contentDescription =
-                            "Back"
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back"
                     )
                 }
 
 
                 Text(
-                    text =
-                        "Shop Details",
+                    text = "Shop Details",
                     fontSize = 20.sp,
-                    fontWeight =
-                        FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold
                 )
 
 
                 Spacer(
-                    modifier =
-                        Modifier.weight(1f)
+                    modifier = Modifier.weight(1f)
                 )
 
-
                 TextButton(
-                    onClick =
-                        onOrderClick
+                    onClick = onOrderClick
                 ) {
 
                     Text(
                         text = "Cart",
-                        color =
-                            Color(0xFF4CAF50),
-                        fontWeight =
-                            FontWeight.SemiBold
+                        color = Color(0xFF4CAF50),
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }
@@ -390,10 +276,8 @@ fun ShopDetailScreen(
                 isLoading -> {
 
                     Box(
-                        modifier =
-                            Modifier.fillMaxSize(),
-                        contentAlignment =
-                            Alignment.Center
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
 
                         CircularProgressIndicator()
@@ -404,16 +288,12 @@ fun ShopDetailScreen(
                 errorMessage != null -> {
 
                     Box(
-                        modifier =
-                            Modifier.fillMaxSize(),
-                        contentAlignment =
-                            Alignment.Center
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
 
                         Text(
-                            text =
-                                errorMessage
-                                    ?: "Something went wrong.",
+                            text = errorMessage ?: "Something went wrong.",
                             color = Color.Red
                         )
                     }
@@ -423,15 +303,11 @@ fun ShopDetailScreen(
                 seller == null -> {
 
                     Box(
-                        modifier =
-                            Modifier.fillMaxSize(),
-                        contentAlignment =
-                            Alignment.Center
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-
                         Text(
-                            text =
-                                "Seller not found."
+                            text = "Seller not found."
                         )
                     }
                 }
@@ -439,9 +315,7 @@ fun ShopDetailScreen(
 
                 else -> {
 
-                    val currentSeller =
-                        seller!!
-
+                    val currentSeller = seller!!
 
                     val shopName =
                         currentSeller
@@ -453,8 +327,7 @@ fun ShopDetailScreen(
 
 
                     Spacer(
-                        modifier =
-                            Modifier.height(18.dp)
+                        modifier = Modifier.height(18.dp)
                     )
 
 
@@ -462,100 +335,64 @@ fun ShopDetailScreen(
 
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(
-                                horizontal = 8.dp
-                            ),
+                            .padding(horizontal = 8.dp),
 
-                        verticalAlignment =
-                            Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
 
 
                         Surface(
-
-                            modifier =
-                                Modifier.size(
-                                    82.dp
-                                ),
-
-                            shape =
-                                CircleShape,
-
-                            color =
-                                Color(0xFFFFF4D6)
+                            modifier = Modifier.size(82.dp),
+                            shape = CircleShape,
+                            color = Color(0xFFFFF4D6)
                         ) {
 
 
                             Box(
-                                contentAlignment =
-                                    Alignment.Center
+                                contentAlignment = Alignment.Center
                             ) {
 
                                 Text(
-                                    text =
-                                        createShopShortName(
-                                            shopName
-                                        ),
+                                    text = createShopShortName(shopName),
                                     fontSize = 22.sp,
-                                    fontWeight =
-                                        FontWeight.Bold,
-                                    color =
-                                        Color(0xFFD99B00)
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFD99B00)
                                 )
                             }
                         }
 
 
                         Spacer(
-                            modifier =
-                                Modifier.width(
-                                    16.dp
-                                )
+                            modifier = Modifier.width(16.dp)
                         )
 
 
                         Column(
-                            modifier =
-                                Modifier.weight(
-                                    1f
-                                )
+                            modifier = Modifier.weight(1f)
                         ) {
 
 
                             Text(
-                                text =
-                                    shopName,
-                                fontSize =
-                                    18.sp,
-                                fontWeight =
-                                    FontWeight.SemiBold
+                                text = shopName,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
 
 
                             Spacer(
-                                modifier =
-                                    Modifier.height(
-                                        4.dp
-                                    )
+                                modifier = Modifier.height(4.dp)
                             )
 
 
                             Text(
-                                text =
-                                    currentSeller.address
-                                        ?: "Address not provided",
-                                fontSize =
-                                    12.sp,
-                                color =
-                                    Color.Gray
+                                text = currentSeller.address ?: "Address not provided",
+                                fontSize = 12.sp,
+                                color = Color.Gray
                             )
 
 
                             Spacer(
-                                modifier =
-                                    Modifier.height(
-                                        6.dp
-                                    )
+                                modifier = Modifier.height(6.dp)
                             )
 
 
@@ -565,33 +402,24 @@ fun ShopDetailScreen(
                                         currentSeller.closingTime
                                             .isNullOrBlank()
                                     ) {
-
                                         "Save surplus food and reduce food waste."
-
                                     } else {
-
                                         "Closing time: ${currentSeller.closingTime}"
                                     },
-                                fontSize =
-                                    11.sp,
-                                color =
-                                    Color.Gray
+                                fontSize = 11.sp,
+                                color = Color.Gray
                             )
                         }
                     }
 
 
                     Spacer(
-                        modifier =
-                            Modifier.height(
-                                18.dp
-                            )
+                        modifier = Modifier.height(18.dp)
                     )
 
 
                     HorizontalDivider(
-                        color =
-                            Color.LightGray
+                        color = Color.LightGray
                     )
 
 
@@ -606,17 +434,13 @@ fun ShopDetailScreen(
                                 .padding(
                                     top = 50.dp
                                 ),
-                            contentAlignment =
-                                Alignment.TopCenter
+                            contentAlignment = Alignment.TopCenter
                         ) {
 
                             Text(
-                                text =
-                                    "No surplus food available right now.",
-                                fontSize =
-                                    14.sp,
-                                color =
-                                    Color.Gray
+                                text = "No surplus food available right now.",
+                                fontSize = 14.sp,
+                                color = Color.Gray
                             )
                         }
 
@@ -846,28 +670,21 @@ private fun formatPickupTime(
     pickupEndAt: Long
 ): String {
 
-
     if (
         pickupEndAt <= 0
     ) {
-
         return "Pickup time not available"
     }
 
 
     return try {
-
-
         val milliseconds =
 
             if (
                 pickupEndAt < 100_000_000_000L
             ) {
-
                 pickupEndAt * 1000
-
             } else {
-
                 pickupEndAt
             }
 
@@ -918,9 +735,7 @@ private fun createShopShortName(
                 .take(2)
                 .uppercase()
         }
-
         else -> {
-
             "${words[0].first()}${words[1].first()}"
                 .uppercase()
         }
