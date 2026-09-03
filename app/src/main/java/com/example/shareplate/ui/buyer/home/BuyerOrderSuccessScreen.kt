@@ -410,8 +410,7 @@ fun BuyerOrderSuccessScreenPreview() {
 
             pickupCode = "SP4821",
 
-            totalPriceCent =
-                350
+            totalPriceCent = 350
 
         )
     }
