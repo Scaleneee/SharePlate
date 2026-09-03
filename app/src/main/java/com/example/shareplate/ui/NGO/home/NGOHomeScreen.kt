@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -57,13 +58,15 @@ fun NGOHomeScreen(
     onActivityClick: () -> Unit = {},
     onProfileClick: () -> Unit = {}
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
-    var selectedDonation by remember { mutableStateOf<FoodDonation?>(null) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var selectedDonationId by rememberSaveable { mutableStateOf<String?>(null) }
 
     val ngoViewModel: NGOViewModel = viewModel()
     val shops by ngoViewModel.shops.collectAsState()
     val isLoading by ngoViewModel.isLoading.collectAsState()
     val error by ngoViewModel.errorMessage.collectAsState()
+
+    val selectedDonation = selectedDonationId?.let { id -> shops.find { it.name == id } }
 
     LaunchedEffect(Unit) { ngoViewModel.loadShops() }
 
@@ -81,15 +84,10 @@ fun NGOHomeScreen(
         Box(modifier = Modifier.padding(innerPadding)) {
             when (selectedTab) {
                 0 -> Column {
-                    SupabaseStatusBanner(
-                        isLoading = isLoading,
-                        errorMessage = error,
-                        itemCount = shops.size
-                    )
                     DonationListScreen(
                         donations = shops,
                         onDonationClick = { donation ->
-                            selectedDonation = donation
+                            selectedDonationId = donation.name
                             selectedTab = 1
                         }
                     )
@@ -100,7 +98,7 @@ fun NGOHomeScreen(
                     ShopDetailScreen(
                         donation = selectedDonation!!,
                         onBackClick = {
-                            selectedDonation = null
+                            selectedDonationId = null
                             selectedTab = 0
                         },
                         onAcceptClick = { items ->
