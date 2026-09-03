@@ -1,7 +1,9 @@
 package com.example.shareplate.navigation
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,22 +50,54 @@ import com.example.shareplate.ui.buyer.order.BuyerCartScreen
 import com.example.shareplate.ui.buyer.order.BuyerCheckoutScreen
 import com.example.shareplate.ui.buyer.order.BuyerPaymentScreen
 import com.example.shareplate.ui.buyer.profile.BuyerProfileScreen
+import io.github.jan.supabase.auth.status.SessionStatus
 
 @Composable
 fun AppNavGraph(
     navController: NavHostController = rememberNavController(),
 ) {
+    val context = LocalContext.current
+
+    val sessionManager = remember {
+        SessionManager(context)
+    }
+
+    // Supabase authentication state
+    val sessionStatus by
+    SupabaseProvider.client.auth
+        .sessionStatus
+        .collectAsStateWithLifecycle()
+
+    // Wait for Supabase to restore saved session
+    if (sessionStatus == SessionStatus.Initializing) {
+
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+
+        return
+    }
+
+    // Create SellerViewModel AFTER Supabase finished restoring session
     val sellerViewModel: SellerViewModel = viewModel()
 
-    val context = LocalContext.current
-    val sessionManager = remember { SessionManager(context) }
-    val startDestination = remember {
-        if (sessionManager.isLoggedIn()) {
-            homeRouteFor(sessionManager.getRole())
-        } else {
-            AppRoutes.LOGIN
+    // Decide startup screen using Supabase Auth
+    val startDestination =
+        when (sessionStatus) {
+
+            is SessionStatus.Authenticated -> {
+                homeRouteFor(
+                    sessionManager.getRole()
+                )
+            }
+
+            else -> {
+                AppRoutes.LOGIN
+            }
         }
-    }
 
     NavHost(
         navController = navController, startDestination = startDestination
@@ -147,7 +181,7 @@ fun AppNavGraph(
         }
 
         // NGO cart screen
-                composable(AppRoutes.NGO_CART) {
+        composable(AppRoutes.NGO_CART) {
             NGOCartScreen(
                 onBackClick = { navController.popBackStack() },
                 onCheckoutClick = { navController.navigate(AppRoutes.NGO_CHECKOUT) }
@@ -204,15 +238,24 @@ fun AppNavGraph(
 
         // seller home screen
         composable(AppRoutes.SELLER_HOME) {
-            SellerHomeScreen(onHomeClick = {
-                // already on home
-            }, onMenuClick = {
-                navController.navigate(AppRoutes.SELLER_MENU)
-            }, onActivityClick = {
-                navController.navigate(AppRoutes.SELLER_ACTIVITY)
-            }, onProfileClick = {
-                navController.navigate(AppRoutes.SELLER_PROFILE)
-            })
+            // get the organization name of the seller
+            val sellerName by sellerViewModel.sellerName.collectAsStateWithLifecycle()
+
+            // get the food items of the seller
+            val foodItems by sellerViewModel.foodItems.collectAsStateWithLifecycle()
+
+            SellerHomeScreen(
+                sellerName,
+                foodItems,
+                onHomeClick = {
+                    // already on home
+                }, onMenuClick = {
+                    navController.navigate(AppRoutes.SELLER_MENU)
+                }, onActivityClick = {
+                    navController.navigate(AppRoutes.SELLER_ACTIVITY)
+                }, onProfileClick = {
+                    navController.navigate(AppRoutes.SELLER_PROFILE)
+                })
         }
         // seller menu screen
         composable(AppRoutes.SELLER_MENU) {
@@ -228,7 +271,7 @@ fun AppNavGraph(
             }
 
             SellerMenuScreen(
-                foodItems = FoodItems.foodItems,
+                foodItems = foodItems,
                 onHomeClick = {
                     navController.navigate(AppRoutes.SELLER_HOME)
                 }, onMenuClick = {
@@ -245,37 +288,85 @@ fun AppNavGraph(
         }
         // seller add food screen
         composable(AppRoutes.SELLER_ADD_FOOD) {
+
             val context = LocalContext.current
-            val sellerId = SupabaseProvider.client.auth.currentUserOrNull()?.id
+
+            val sellerId =
+                SupabaseProvider.client.auth
+                    .currentUserOrNull()
+                    ?.id
+
+            // Observe error from SellerViewModel
+            val errorMessage by
+            sellerViewModel.errorMessage
+                .collectAsStateWithLifecycle()
+
+            // Show error when ViewModel reports one
+            LaunchedEffect(errorMessage) {
+                errorMessage?.let { message ->
+
+                    Toast.makeText(
+                        context,
+                        message,
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    sellerViewModel.clearError()
+                }
+            }
 
             AddFoodScreen(
                 onBackClick = {
                     navController.popBackStack()
                 },
-                onSaveClick = { foodName, category, originalPrice, bestBeforeDays, imageUri, isActive ->
-                    // ViewModel saves food
+
+                onSaveClick = {
+                        foodName,
+                        category,
+                        originalPrice,
+                        bestBeforeDays,
+                        imageUri,
+                        isActive ->
+
                     if (sellerId != null) {
-                        val originalPriceCent = (originalPrice.toDouble() * 100).toInt()
+
+                        val originalPriceCent =
+                            (originalPrice.toDouble() * 100)
+                                .toInt()
 
                         sellerViewModel.addFood(
                             context = context,
                             sellerId = sellerId,
                             foodName = foodName,
                             category = category,
-                            originalPriceCent =
-                                originalPriceCent,
+                            originalPriceCent = originalPriceCent,
                             bestBeforeDays =
                                 bestBeforeDays.toInt(),
-                            selectedImageUri =
-                                imageUri,
+                            selectedImageUri = imageUri,
                             isActive = isActive,
 
                             onSuccess = {
+
+                                Toast.makeText(
+                                    context,
+                                    "Food added successfully",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
                                 navController.popBackStack()
                             }
                         )
+
+                    } else {
+
+                        Toast.makeText(
+                            context,
+                            "Error: Supabase user session is null",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
-                })
+                }
+            )
         }
         // seller edit food screen
         composable(
@@ -515,9 +606,8 @@ fun AppNavGraph(
                         .popBackStack()
                 },
 
-                onPaymentSuccess = {
-                        pickupCode,
-                        totalPriceCent ->
+                onPaymentSuccess = { pickupCode,
+                                     totalPriceCent ->
 
 
                     navController.navigate(
@@ -544,7 +634,7 @@ fun AppNavGraph(
             )
         }
 
-    // BUYER ORDER SUCCESS
+        // BUYER ORDER SUCCESS
         composable(
 
             route =
@@ -625,7 +715,7 @@ fun AppNavGraph(
             )
         }
 
-    // BUYER ACTIVITY
+        // BUYER ACTIVITY
         composable(
             AppRoutes.BUYER_ACTIVITY
         ) {
@@ -718,7 +808,7 @@ fun AppNavGraph(
             )
         }
 
-    // BUYER PROFILE
+        // BUYER PROFILE
 
         composable(
             AppRoutes.BUYER_PROFILE

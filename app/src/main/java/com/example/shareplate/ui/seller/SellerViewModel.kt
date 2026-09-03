@@ -2,6 +2,7 @@ package com.example.shareplate.ui.seller
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shareplate.data.repository.SellerRepository
@@ -23,15 +24,33 @@ class SellerViewModel(
     // view only food items
     val foodItems: StateFlow<List<FoodItem>> = _foodItems.asStateFlow()
 
-
     // LOADING STATE
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-
     // ERROR MESSAGE
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    // seller name
+    private val _sellerName = MutableStateFlow("Seller")
+    val sellerName: StateFlow<String> = _sellerName
+
+    init {
+        fetchSellerName()
+    }
+
+    private fun fetchSellerName() {
+        viewModelScope.launch {
+            try {
+                val user = repository.getCurrentSeller()
+                _sellerName.value = user?.organisationName ?: "Seller"
+            } catch (e: Exception) {
+                // keep default "Seller", optionally log e
+                _errorMessage.value = e.message
+            }
+        }
+    }
 
     // LOAD FOOD ITEMS
     fun loadFoodItems(
@@ -77,7 +96,6 @@ class SellerViewModel(
             _errorMessage.value = null
 
             try {
-
                 // Image URL after uploading to Supabase
                 var imageUrl: String? = null
 
@@ -108,11 +126,15 @@ class SellerViewModel(
                 onSuccess()
 
             } catch (e: Exception) {
+                Log.e(
+                    "AddFood",
+                    "Failed to add food: ${e.message}",
+                    e
+                )
 
-                _errorMessage.value = e.message
-
+                _errorMessage.value =
+                    e.message ?: "Failed to add food"
             } finally {
-
                 _isLoading.value = false
             }
         }
@@ -189,7 +211,6 @@ class SellerViewModel(
             }
         }
     }
-
 
     // CLEAR ERROR
     fun clearError() {

@@ -1,5 +1,6 @@
 package com.example.shareplate.data.supabase
 
+import com.example.shareplate.data.remote.SupabaseProvider
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.from
@@ -24,7 +25,7 @@ class AuthRepository {
             val normalizedEmail = email.trim().lowercase()
 
             // Create Supabase Auth account
-            SupabaseClient.client.auth.signUpWith(Email) {
+            SupabaseProvider.client.auth.signUpWith(Email) {
                 this.email = normalizedEmail
                 this.password = password
             }
@@ -32,7 +33,7 @@ class AuthRepository {
             // Confirm Email is OFF,
             // so Supabase should automatically log the user in
             val user =
-                SupabaseClient.client.auth.currentUserOrNull() ?: throw IllegalStateException(
+                SupabaseProvider.client.auth.currentUserOrNull() ?: throw IllegalStateException(
                     "Unable to get newly created user."
                 )
 
@@ -60,7 +61,7 @@ class AuthRepository {
             )
 
             // Insert SharePlate profile
-            SupabaseClient.client.from("users").insert(profile)
+            SupabaseProvider.client.from("users").insert(profile)
 
             Result.success(profile)
 
@@ -72,12 +73,12 @@ class AuthRepository {
 
     suspend fun signIn(email: String, password: String): Result<Profile> {
         return try {
-            SupabaseClient.client.auth.signInWith(Email) {
+            SupabaseProvider.client.auth.signInWith(Email) {
                 this.email = email.trim().lowercase()
                 this.password = password
             }
 
-            val user = SupabaseClient.client.auth.currentUserOrNull()
+            val user = SupabaseProvider.client.auth.currentUserOrNull()
                 ?: throw IllegalStateException("Incorrect email or password.")
 
             val profile = fetchProfile(user.id)
@@ -91,7 +92,7 @@ class AuthRepository {
 
     suspend fun resetPassword(email: String, redirectTo: String?): Result<Unit> {
         return try {
-            SupabaseClient.client.auth.resetPasswordForEmail(email, redirectUrl = redirectTo)
+            SupabaseProvider.client.auth.resetPasswordForEmail(email, redirectUrl = redirectTo)
             Result.success(Unit)
         } catch (e: Throwable) {
             Result.failure(e)
@@ -99,13 +100,13 @@ class AuthRepository {
     }
 
     suspend fun getCurrentProfile(): Profile? {
-        val userId = SupabaseClient.client.auth.currentUserOrNull()?.id ?: return null
+        val userId = SupabaseProvider.client.auth.currentUserOrNull()?.id ?: return null
         return fetchProfile(userId)
     }
 
     suspend fun updateProfile(profile: Profile): Result<Profile> {
         return try {
-            SupabaseClient.client.from("users").upsert(profile)
+            SupabaseProvider.client.from("users").upsert(profile)
             Result.success(profile)
         } catch (e: Throwable) {
             Result.failure(e)
@@ -114,7 +115,7 @@ class AuthRepository {
 
     suspend fun updatePassword(newPassword: String): Result<Unit> {
         return try {
-            SupabaseClient.client.auth.updateUser {
+            SupabaseProvider.client.auth.updateUser {
                 password = newPassword
             }
             Result.success(Unit)
@@ -124,11 +125,11 @@ class AuthRepository {
     }
 
     suspend fun signOut() {
-        SupabaseClient.client.auth.signOut()
+        SupabaseProvider.client.auth.signOut()
     }
 
     private suspend fun fetchProfile(userId: String): Profile? =
-        SupabaseClient.client.from("users")
+        SupabaseProvider.client.from("users")
             .select {
                 filter {
                     eq("user_id", userId)

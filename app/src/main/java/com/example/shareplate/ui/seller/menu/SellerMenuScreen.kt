@@ -17,11 +17,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.shareplate.data.FoodItems
 import com.example.shareplate.data.model.FoodItem
+import com.example.shareplate.ui.seller.SellerViewModel
 import com.example.shareplate.ui.seller.navigation.SellerBottomBar
 import com.example.shareplate.ui.theme.SharePlateTheme
 
@@ -29,7 +33,6 @@ import com.example.shareplate.ui.theme.SharePlateTheme
 @Preview
 fun SellerMenuScreenPreview() {
     SharePlateTheme {
-        SellerMenuScreen({}, {}, {}, {}, FoodItems.foodItems, {}, {})
     }
 }
 
@@ -88,15 +91,25 @@ fun SellerMenuScreen(
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // show all foods inside the frequently wasted menu
-            items(
-                items = foodItems,
-                key = { it.foodItemId }
-            ) { item ->
-                FoodMenuRow(
-                    foodItem = item,
-                    onEditClick = { onEditFoodClick(item.foodItemId) },
-                )
+            if (foodItems.isNotEmpty()) {// show all foods inside the frequently wasted menu
+                items(
+                    items = foodItems,
+                    key = { it.foodItemId }
+                ) { item ->
+                    FoodMenuRow(
+                        foodItem = item,
+                        onEditClick = { onEditFoodClick(item.foodItemId) },
+                    )
+                }
+            } else {
+                item {
+                    // no item yet
+                    Text(
+                        text = "No items in menu yet. Press + to add item.",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
             }
         }
     }
