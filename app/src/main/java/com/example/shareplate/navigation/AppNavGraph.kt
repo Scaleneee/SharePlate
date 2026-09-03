@@ -42,18 +42,20 @@ import io.github.jan.supabase.auth.auth
 import com.example.shareplate.ui.buyer.home.BuyerActivityScreen
 import com.example.shareplate.ui.buyer.home.BuyerHomeScreen
 import com.example.shareplate.ui.buyer.home.BuyerOrderSuccessScreen
-import com.example.shareplate.ui.buyer.home.BuyerQrCodeScreen
 import com.example.shareplate.ui.buyer.home.ShopDetailScreen
 import com.example.shareplate.ui.buyer.order.BuyerCartScreen
 import com.example.shareplate.ui.buyer.order.BuyerCheckoutScreen
 import com.example.shareplate.ui.buyer.order.BuyerPaymentScreen
 import com.example.shareplate.ui.buyer.profile.BuyerProfileScreen
+import com.example.shareplate.ui.buyer.BuyerViewModel
+import com.example.shareplate.ui.buyer.order.BuyerQrCodeScreen
 
 @Composable
 fun AppNavGraph(
     navController: NavHostController = rememberNavController(),
 ) {
     val sellerViewModel: SellerViewModel = viewModel()
+    val buyerViewModel: BuyerViewModel = viewModel()
 
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
@@ -310,6 +312,8 @@ fun AppNavGraph(
 
             BuyerHomeScreen(
 
+                buyerViewModel = buyerViewModel,
+
                 onShopClick = { shop ->
 
                     navController.navigate(
@@ -382,9 +386,9 @@ fun AppNavGraph(
 
             ShopDetailScreen(
 
-                sellerId =
-                    sellerId,
+                sellerId = sellerId,
 
+                buyerViewModel = buyerViewModel,
                 onBackClick = {
 
                     navController
@@ -435,6 +439,8 @@ fun AppNavGraph(
         ) {
 
             BuyerCartScreen(
+
+                buyerViewModel = buyerViewModel,
 
                 onBackClick = {
                     navController.popBackStack()
@@ -488,6 +494,8 @@ fun AppNavGraph(
 
             BuyerCheckoutScreen(
 
+                buyerViewModel = buyerViewModel,
+
                 onBackClick = {
 
                     navController.popBackStack()
@@ -509,6 +517,8 @@ fun AppNavGraph(
         ) {
 
             BuyerPaymentScreen(
+
+                buyerViewModel = buyerViewModel,
 
                 onBackClick = {
 
@@ -633,6 +643,8 @@ fun AppNavGraph(
 
             BuyerActivityScreen(
 
+                buyerViewModel = buyerViewModel,
+
                 onHomeClick = {
 
                     navController.navigate(
@@ -708,8 +720,9 @@ fun AppNavGraph(
 
             BuyerQrCodeScreen(
 
-                orderId =
-                    orderId,
+                orderId = orderId,
+
+                buyerViewModel = buyerViewModel,
 
                 onBackClick = {
 
@@ -726,6 +739,8 @@ fun AppNavGraph(
         ) {
 
             BuyerProfileScreen(
+
+                buyerViewModel = buyerViewModel,
 
                 onHomeClick = {
 

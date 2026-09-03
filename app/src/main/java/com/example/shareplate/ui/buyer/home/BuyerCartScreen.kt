@@ -29,16 +29,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.shareplate.ui.buyer.BuyerViewModel
 import com.example.shareplate.ui.buyer.navigation.BuyerBottomBar
 import com.example.shareplate.ui.theme.SharePlateTheme
 
 
 @Composable
 fun BuyerCartScreen(
+
+    buyerViewModel: BuyerViewModel? = null,
 
     onBackClick: () -> Unit = {},
 
@@ -51,10 +56,115 @@ fun BuyerCartScreen(
     onActivityClick: () -> Unit = {},
 
     onProfileClick: () -> Unit = {}
+
 ) {
 
+    val isPreview = LocalInspectionMode.current
+
+
+    val actualViewModel: BuyerViewModel? =
+
+        if (isPreview) {
+
+            null
+
+        } else {
+
+            buyerViewModel ?: viewModel()
+        }
+
+
+    // PREVIEW CART
+    val previewCartItems = listOf(
+
+        BuyerCartItem(
+
+            listingId = 1,
+
+            foodItemId = 1,
+
+            sellerId = "preview-seller-1",
+
+            shopName = "Ondo Bakery",
+
+            foodName = "Blueberry Bread",
+
+            price = 1.00,
+
+            pickupTime = "Pickup before 8:00 PM",
+
+            availableQuantity = 7,
+
+            quantity = 2
+        ),
+
+
+        BuyerCartItem(
+
+            listingId = 2,
+
+            foodItemId = 2,
+
+            sellerId = "preview-seller-1",
+
+            shopName = "Ondo Bakery",
+
+            foodName = "Sausage Bread",
+
+            price = 1.50,
+
+            pickupTime = "Pickup before 8:00 PM",
+
+            availableQuantity = 5,
+
+            quantity = 1
+        )
+    )
+
+
+    // CART ITEMS
     val cartItems =
-        BuyerCartStore.cartItems
+
+        if (isPreview) {
+
+            previewCartItems
+
+        } else {
+
+            actualViewModel?.cartItems ?: emptyList()
+        }
+
+
+    // TOTAL QUANTITY
+    val totalQuantity =
+
+        if (isPreview) {
+
+            previewCartItems.sumOf {
+
+                    it.quantity
+                }
+
+        } else {
+
+            actualViewModel?.getCartQuantity() ?: 0
+        }
+
+
+    // TOTAL PRICE
+    val totalPrice =
+
+        if (isPreview) {
+
+            previewCartItems.sumOf {
+
+                    it.price * it.quantity
+                }
+
+        } else {
+
+            actualViewModel?.getCartTotal() ?: 0.0
+        }
 
 
     Scaffold(
@@ -62,10 +172,15 @@ fun BuyerCartScreen(
         bottomBar = {
 
             BuyerBottomBar(
+
                 selectedIndex = 1,
+
                 onHomeClick = onHomeClick,
+
                 onOrderClick = onOrderClick,
+
                 onActivityClick = onActivityClick,
+
                 onProfileClick = onProfileClick
             )
         }
@@ -77,16 +192,21 @@ fun BuyerCartScreen(
 
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(
+                    innerPadding
+                ),
 
-            color =
-                Color(0xFFF7F7F7)
+            color = Color(
+                0xFFF7F7F7
+            )
+
         ) {
 
 
             Column(
-                modifier =
-                    Modifier.fillMaxSize()
+
+                modifier = Modifier.fillMaxSize()
+
             ) {
 
 
@@ -95,53 +215,66 @@ fun BuyerCartScreen(
 
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color.White)
+                        .background(
+                            Color.White
+                        )
                         .padding(
+
                             horizontal = 16.dp,
+
                             vertical = 12.dp
                         ),
 
-                    verticalAlignment =
-                        Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
+
                 ) {
 
 
                     IconButton(
-                        onClick =
-                            onBackClick
+
+                        onClick = onBackClick
+
                     ) {
 
+
                         Text(
+
                             text = "←",
+
                             fontSize = 26.sp,
-                            fontWeight =
-                                FontWeight.Bold
+
+                            fontWeight = FontWeight.Bold
                         )
                     }
 
 
                     Text(
+
                         text = "My Cart",
+
                         fontSize = 21.sp,
-                        fontWeight =
-                            FontWeight.Bold
+
+                        fontWeight = FontWeight.Bold
                     )
 
 
                     Spacer(
-                        modifier =
-                            Modifier.weight(1f)
+
+                        modifier = Modifier.weight(
+                            1f
+                        )
                     )
 
 
-                    if (
-                        cartItems.isNotEmpty()
-                    ) {
+                    if (cartItems.isNotEmpty()) {
+
 
                         Text(
-                            text =
-                                "${BuyerCartStore.getTotalQuantity()} items",
+
+                            text = "$totalQuantity items",
+
                             fontSize = 13.sp,
+
                             color = Color.Gray
                         )
                     }
@@ -149,50 +282,55 @@ fun BuyerCartScreen(
 
 
                 HorizontalDivider(
-                    color =
-                        Color(0xFFE0E0E0)
+
+                    color = Color(
+                        0xFFE0E0E0
+                    )
                 )
 
 
-                if (
-                    cartItems.isEmpty()
-                ) {
+                // EMPTY CART
+                if (cartItems.isEmpty()) {
 
 
                     EmptyCartContent(
-                        onBackClick =
-                            onBackClick
+
+                        onBackClick = onBackClick
                     )
 
 
                 } else {
 
 
+                    // CART LIST
                     LazyColumn(
 
                         modifier = Modifier
-                            .weight(1f)
+                            .weight(
+                                1f
+                            )
                             .fillMaxWidth(),
 
-                        contentPadding =
-                            PaddingValues(
-                                horizontal = 16.dp,
-                                vertical = 16.dp
-                            ),
+                        contentPadding = PaddingValues(
 
-                        verticalArrangement =
-                            Arrangement.spacedBy(
-                                12.dp
-                            )
+                            horizontal = 16.dp,
+
+                            vertical = 16.dp
+                        ),
+
+                        verticalArrangement = Arrangement.spacedBy(
+                            12.dp
+                        )
+
                     ) {
 
 
                         itemsIndexed(
 
-                            items =
-                                cartItems,
+                            items = cartItems,
 
                             key = { _, item ->
+
                                 item.listingId
                             }
 
@@ -203,37 +341,46 @@ fun BuyerCartScreen(
 
                                 item = item,
 
+
+                                // INCREASE
                                 onIncrease = {
 
-                                    BuyerCartStore
-                                        .increaseQuantity(
+                                    actualViewModel?.increaseCartQuantity(
                                             index
                                         )
                                 },
 
+
+                                // DECREASE
                                 onDecrease = {
 
-                                    BuyerCartStore
-                                        .decreaseQuantity(
+                                    actualViewModel?.decreaseCartQuantity(
                                             index
                                         )
                                 },
 
+
+                                // REMOVE
                                 onRemove = {
 
-                                    BuyerCartStore
-                                        .removeItem(
+                                    actualViewModel?.removeCartItem(
                                             index
                                         )
-                                }
-                            )
+                                })
                         }
                     }
 
 
+                    // SUMMARY
                     BuyerCartSummary(
-                        onCheckoutClick =
-                            onCheckoutClick
+
+                        totalQuantity = totalQuantity,
+
+                        totalPrice = totalPrice,
+
+                        isCartEmpty = cartItems.isEmpty(),
+
+                        onCheckoutClick = onCheckoutClick
                     )
                 }
             }
@@ -242,92 +389,110 @@ fun BuyerCartScreen(
 }
 
 
+// EMPTY CART
 @Composable
 private fun EmptyCartContent(
+
     onBackClick: () -> Unit
+
 ) {
+
 
     Box(
 
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(
+                24.dp
+            ),
 
-        contentAlignment =
-            Alignment.Center
+        contentAlignment = Alignment.Center
+
     ) {
 
 
         Column(
-            horizontalAlignment =
-                Alignment.CenterHorizontally
+
+            horizontalAlignment = Alignment.CenterHorizontally
+
         ) {
 
 
             Text(
+
                 text = "🛒",
+
                 fontSize = 60.sp
             )
 
 
             Spacer(
-                modifier =
-                    Modifier.height(16.dp)
+
+                modifier = Modifier.height(
+                    16.dp
+                )
             )
 
 
             Text(
+
                 text = "Your cart is empty",
+
                 fontSize = 20.sp,
-                fontWeight =
-                    FontWeight.Bold
+
+                fontWeight = FontWeight.Bold
             )
 
 
             Spacer(
-                modifier =
-                    Modifier.height(8.dp)
+
+                modifier = Modifier.height(
+                    8.dp
+                )
             )
 
 
             Text(
-                text =
-                    "Add surplus food from a shop first.",
+
+                text = "Add surplus food from a shop first.",
+
                 fontSize = 14.sp,
+
                 color = Color.Gray
             )
 
 
             Spacer(
-                modifier =
-                    Modifier.height(24.dp)
+
+                modifier = Modifier.height(
+                    24.dp
+                )
             )
 
 
             Button(
 
-                onClick =
-                    onBackClick,
+                onClick = onBackClick,
 
-                colors =
-                    ButtonDefaults
-                        .buttonColors(
-                            containerColor =
-                                Color(0xFF4CAF50)
-                        ),
+                colors = ButtonDefaults.buttonColors(
 
-                shape =
-                    RoundedCornerShape(
-                        10.dp
-                    )
+                        containerColor = Color(
+                            0xFF4CAF50
+                        )
+                    ),
+
+                shape = RoundedCornerShape(
+                    10.dp
+                )
+
             ) {
 
 
                 Text(
-                    text =
-                        "Continue Shopping",
-                    color =
-                        Color.White
+
+                    text = "Continue Shopping",
+
+                    color = Color.White
                 )
             }
         }
@@ -335,6 +500,7 @@ private fun EmptyCartContent(
 }
 
 
+// CART ITEM
 @Composable
 private fun BuyerCartItemCard(
 
@@ -345,24 +511,21 @@ private fun BuyerCartItemCard(
     onDecrease: () -> Unit,
 
     onRemove: () -> Unit
+
 ) {
 
 
     Card(
 
-        modifier =
-            Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
 
-        shape =
-            RoundedCornerShape(
-                14.dp
-            ),
+        shape = RoundedCornerShape(14.dp),
 
-        colors =
-            CardDefaults.cardColors(
-                containerColor =
-                    Color.White
+        colors = CardDefaults.cardColors(
+
+                containerColor = Color.White
             )
+
     ) {
 
 
@@ -370,287 +533,279 @@ private fun BuyerCartItemCard(
 
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(
+                    16.dp
+                )
+
         ) {
 
 
-            // SHOP NAME
+            // SHOP
+
             Text(
-                text =
-                    item.shopName,
+
+                text = item.shopName,
+
                 fontSize = 13.sp,
+
                 color = Color.Gray
             )
 
 
             Spacer(
-                modifier =
-                    Modifier.height(4.dp)
+
+                modifier = Modifier.height(4.dp)
             )
 
 
             // FOOD NAME
             Text(
-                text =
-                    item.foodName,
+
+                text = item.foodName,
+
                 fontSize = 18.sp,
-                fontWeight =
-                    FontWeight.Bold,
-                color =
-                    Color.Black
+
+                fontWeight = FontWeight.Bold,
+
+                color = Color.Black
             )
 
 
             Spacer(
-                modifier =
-                    Modifier.height(5.dp)
+
+                modifier = Modifier.height(5.dp)
             )
 
 
             // PICKUP
             Text(
-                text =
-                    item.pickupTime,
+
+                text = item.pickupTime,
+
                 fontSize = 12.sp,
-                color =
-                    Color.DarkGray
+
+                color = Color.DarkGray
             )
 
 
             Spacer(
-                modifier =
-                    Modifier.height(5.dp)
+
+                modifier = Modifier.height(5.dp)
             )
 
 
             // STOCK
             Text(
-                text =
-                    "${item.availableQuantity} available",
+
+                text = "${item.availableQuantity} available",
+
                 fontSize = 12.sp,
-                color =
-                    Color(0xFF388E3C)
+
+                color = Color(0xFF388E3C)
             )
 
 
             Spacer(
-                modifier =
-                    Modifier.height(12.dp)
+
+                modifier = Modifier.height(12.dp)
             )
 
 
             Row(
 
-                modifier =
-                    Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
 
-                verticalAlignment =
-                    Alignment.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically,
 
-                horizontalArrangement =
-                    Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween
+
             ) {
 
 
                 // PRICE
                 Text(
-                    text =
-                        "RM %.2f".format(
-                            item.price
-                        ),
+
+                    text = "RM %.2f".format(
+                        item.price
+                    ),
+
                     fontSize = 17.sp,
-                    fontWeight =
-                        FontWeight.Bold,
-                    color =
-                        Color(0xFF4CAF50)
+
+                    fontWeight = FontWeight.Bold,
+
+                    color = Color(0xFF4CAF50)
                 )
 
 
                 // QUANTITY
                 Row(
-                    verticalAlignment =
-                        Alignment.CenterVertically
+
+                    verticalAlignment = Alignment.CenterVertically
+
                 ) {
 
 
                     OutlinedButton(
 
-                        onClick =
-                            onDecrease,
+                        onClick = onDecrease,
 
-                        modifier =
-                            Modifier.size(
-                                42.dp
-                            ),
+                        modifier = Modifier.size(42.dp),
 
-                        contentPadding =
-                            PaddingValues(0.dp)
+                        contentPadding = PaddingValues(0.dp)
+
                     ) {
 
 
                         Text(
+
                             text = "−",
-                            fontSize =
-                                19.sp
+
+                            fontSize = 19.sp
                         )
                     }
 
 
                     Text(
 
-                        text =
-                            item.quantity
-                                .toString(),
+                        text = item.quantity.toString(),
 
-                        modifier =
-                            Modifier.padding(
-                                horizontal =
-                                    14.dp
-                            ),
+                        modifier = Modifier.padding(
 
-                        fontSize =
-                            16.sp,
+                            horizontal = 14.dp
+                        ),
 
-                        fontWeight =
-                            FontWeight.Bold
+                        fontSize = 16.sp,
+
+                        fontWeight = FontWeight.Bold
                     )
 
 
                     OutlinedButton(
 
-                        onClick =
-                            onIncrease,
+                        onClick = onIncrease,
 
-                        enabled =
-                            item.quantity <
-                                    item.availableQuantity,
+                        enabled = item.quantity < item.availableQuantity,
 
-                        modifier =
-                            Modifier.size(
-                                42.dp
-                            ),
+                        modifier = Modifier.size(42.dp),
 
-                        contentPadding =
-                            PaddingValues(0.dp)
+                        contentPadding = PaddingValues(0.dp)
+
                     ) {
 
 
                         Text(
+
                             text = "+",
-                            fontSize =
-                                19.sp
+
+                            fontSize = 19.sp
                         )
                     }
                 }
             }
 
 
-            if (
-                item.quantity >=
-                item.availableQuantity
-            ) {
+            // MAXIMUM QUANTITY MESSAGE
+            if (item.quantity >= item.availableQuantity) {
 
 
                 Spacer(
-                    modifier =
-                        Modifier.height(8.dp)
+
+                    modifier = Modifier.height(
+                        8.dp
+                    )
                 )
 
 
                 Text(
-                    text =
-                        "Maximum available quantity reached",
-                    fontSize =
-                        11.sp,
-                    color =
-                        Color.Red
+
+                    text = "Maximum available quantity reached",
+
+                    fontSize = 11.sp,
+
+                    color = Color.Red
                 )
             }
 
 
             Spacer(
-                modifier =
-                    Modifier.height(12.dp)
+
+                modifier = Modifier.height(12.dp)
             )
 
 
             HorizontalDivider(
-                color =
-                    Color(0xFFEAEAEA)
+
+                color = Color(0xFFEAEAEA)
             )
 
 
             Spacer(
-                modifier =
-                    Modifier.height(10.dp)
+
+                modifier = Modifier.height(10.dp)
             )
 
 
+            // SUBTOTAL
             Row(
 
-                modifier =
-                    Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
 
-                horizontalArrangement =
-                    Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.SpaceBetween,
 
-                verticalAlignment =
-                    Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
+
             ) {
 
 
                 Text(
+
                     text = "Subtotal",
-                    fontSize =
-                        14.sp,
-                    color =
-                        Color.Gray
+
+                    fontSize = 14.sp,
+
+                    color = Color.Gray
                 )
 
 
                 Text(
 
-                    text =
-                        "RM %.2f".format(
-                            item.price *
-                                    item.quantity
-                        ),
+                    text = "RM %.2f".format(
 
-                    fontSize =
-                        15.sp,
+                        item.price * item.quantity
+                    ),
 
-                    fontWeight =
-                        FontWeight.Bold
+                    fontSize = 15.sp,
+
+                    fontWeight = FontWeight.Bold
                 )
             }
 
 
             Spacer(
-                modifier =
-                    Modifier.height(12.dp)
+
+                modifier = Modifier.height(12.dp)
             )
 
 
+            // REMOVE
             OutlinedButton(
 
-                onClick =
-                    onRemove,
+                onClick = onRemove,
 
-                modifier =
-                    Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
 
-                shape =
-                    RoundedCornerShape(
-                        10.dp
-                    )
+                shape = RoundedCornerShape(
+                    10.dp
+                )
+
             ) {
 
 
                 Text(
-                    text =
-                        "Remove",
-                    color =
-                        Color.Red
+
+                    text = "Remove",
+
+                    color = Color.Red
                 )
             }
         }
@@ -658,10 +813,18 @@ private fun BuyerCartItemCard(
 }
 
 
+// ORDER SUMMARY
 @Composable
 private fun BuyerCartSummary(
 
+    totalQuantity: Int,
+
+    totalPrice: Double,
+
+    isCartEmpty: Boolean,
+
     onCheckoutClick: () -> Unit
+
 ) {
 
 
@@ -671,226 +834,141 @@ private fun BuyerCartSummary(
             .fillMaxWidth()
             .background(Color.White)
             .padding(20.dp)
+
     ) {
 
 
         Text(
-            text =
-                "Order Summary",
-            fontSize =
-                18.sp,
-            fontWeight =
-                FontWeight.Bold
+
+            text = "Order Summary",
+
+            fontSize = 18.sp,
+
+            fontWeight = FontWeight.Bold
         )
 
 
         Spacer(
-            modifier =
-                Modifier.height(14.dp)
-        )
 
-
-        Row(
-
-            modifier =
-                Modifier.fillMaxWidth(),
-
-            horizontalArrangement =
-                Arrangement.SpaceBetween
-        ) {
-
-
-            Text(
-                text =
-                    "Total Items",
-                fontSize =
-                    15.sp,
-                color =
-                    Color.DarkGray
-            )
-
-
-            Text(
-                text =
-                    BuyerCartStore
-                        .getTotalQuantity()
-                        .toString(),
-                fontSize =
-                    15.sp,
-                fontWeight =
-                    FontWeight.Medium
-            )
-        }
-
-
-        Spacer(
-            modifier =
-                Modifier.height(10.dp)
+            modifier = Modifier.height(14.dp)
         )
 
 
         Row(
 
-            modifier =
-                Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
 
-            horizontalArrangement =
-                Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween
+
         ) {
 
 
             Text(
-                text =
-                    "Total",
-                fontSize =
-                    18.sp,
-                fontWeight =
-                    FontWeight.Bold
+
+                text = "Total Items",
+
+                fontSize = 15.sp,
+
+                color = Color.DarkGray
             )
 
 
             Text(
 
-                text =
-                    "RM %.2f".format(
-                        BuyerCartStore
-                            .getTotalPrice()
-                    ),
+                text = totalQuantity.toString(),
 
-                fontSize =
-                    20.sp,
+                fontSize = 15.sp,
 
-                fontWeight =
-                    FontWeight.Bold,
-
-                color =
-                    Color(0xFF4CAF50)
+                fontWeight = FontWeight.Medium
             )
         }
 
 
         Spacer(
-            modifier =
-                Modifier.height(18.dp)
+
+            modifier = Modifier.height(10.dp)
+        )
+
+
+        Row(
+
+            modifier = Modifier.fillMaxWidth(),
+
+            horizontalArrangement = Arrangement.SpaceBetween
+
+        ) {
+
+
+            Text(
+
+                text = "Total",
+
+                fontSize = 18.sp,
+
+                fontWeight = FontWeight.Bold
+            )
+
+
+            Text(
+
+                text = "RM %.2f".format(
+                    totalPrice
+                ),
+
+                fontSize = 20.sp,
+
+                fontWeight = FontWeight.Bold,
+
+                color = Color(0xFF4CAF50)
+            )
+        }
+
+
+        Spacer(
+
+            modifier = Modifier.height(18.dp)
         )
 
 
         Button(
 
-            onClick =
-                onCheckoutClick,
+            onClick = onCheckoutClick,
 
-            enabled =
-                !BuyerCartStore
-                    .isCartEmpty(),
+            enabled = !isCartEmpty,
 
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
 
-            shape =
-                RoundedCornerShape(
-                    12.dp
-                ),
+            shape = RoundedCornerShape(12.dp),
 
-            colors =
-                ButtonDefaults
-                    .buttonColors(
-                        containerColor =
-                            Color(0xFF4CAF50)
-                    )
+            colors = ButtonDefaults.buttonColors(
+
+                    containerColor = Color(0xFF4CAF50)
+                )
+
         ) {
 
 
             Text(
-                text =
-                    "Proceed to Checkout",
-                fontSize =
-                    16.sp,
-                fontWeight =
-                    FontWeight.Bold,
-                color =
-                    Color.White
+
+                text = "Proceed to Checkout",
+
+                fontSize = 16.sp,
+
+                fontWeight = FontWeight.Bold,
+
+                color = Color.White
             )
         }
     }
 }
 
-
 @Preview(
-    showBackground = true,
-    showSystemUi = true
+    showBackground = true, showSystemUi = true
 )
 @Composable
 fun BuyerCartScreenPreview() {
-
-
-    if (
-        BuyerCartStore
-            .cartItems
-            .isEmpty()
-    ) {
-
-
-        BuyerCartStore
-            .cartItems
-            .addAll(
-
-                listOf(
-
-                    BuyerCartItem(
-
-                        listingId = 1,
-
-                        foodItemId = 1,
-
-                        sellerId =
-                            "preview-seller-1",
-
-                        shopName =
-                            "Ondo Bakery",
-
-                        foodName =
-                            "Blueberry Bread",
-
-                        price = 1.00,
-
-                        pickupTime =
-                            "Pickup before 8:00 PM",
-
-                        availableQuantity = 7,
-
-                        quantity = 2
-                    ),
-
-
-                    BuyerCartItem(
-
-                        listingId = 2,
-
-                        foodItemId = 2,
-
-                        sellerId =
-                            "preview-seller-1",
-
-                        shopName =
-                            "Ondo Bakery",
-
-                        foodName =
-                            "Sausage Bread",
-
-                        price = 1.50,
-
-                        pickupTime =
-                            "Pickup before 8:00 PM",
-
-                        availableQuantity = 5,
-
-                        quantity = 1
-                    )
-                )
-            )
-    }
 
 
     SharePlateTheme(

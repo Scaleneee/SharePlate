@@ -32,10 +32,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -47,11 +46,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shareplate.R
-import com.example.shareplate.data.remote.SupabaseProvider
-import com.example.shareplate.data.repository.BuyerRepository
+import com.example.shareplate.ui.buyer.BuyerViewModel
 import com.example.shareplate.ui.theme.SharePlateTheme
-import io.github.jan.supabase.auth.auth
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -72,7 +70,7 @@ data class BuyerOrderDisplay(
     val pickupEndAt: Long
 )
 
-
+//bottom bar
 @Composable
 fun BuyerActivityBottomBar(
     selectedIndex: Int,
@@ -84,63 +82,41 @@ fun BuyerActivityBottomBar(
 
     NavigationBar(
         containerColor = Color.White
-    ) {
 
+    ) {
         NavigationBarItem(
 
-            selected =
-                selectedIndex == 0,
-
-            onClick =
-                onHomeClick,
-
+            selected = selectedIndex == 0,
+            onClick = onHomeClick,
             icon = {
-
                 Icon(
-                    painter =
-                        painterResource(
-                            R.drawable.home
-                        ),
-                    contentDescription =
-                        "Home"
+                    painter = painterResource(
+                        R.drawable.home
+                    ),
+                    contentDescription = "Home"
                 )
             },
 
             label = {
-
                 Text(
                     text = "Home",
-                    style =
-                        MaterialTheme
-                            .typography
-                            .bodySmall
+                    style = MaterialTheme.typography.bodySmall
                 )
-            }
-        )
-
+            })
 
         NavigationBarItem(
-
-            selected =
-                selectedIndex == 1,
-
-            onClick =
-                onOrderClick,
-
+            selected = selectedIndex == 1,
+            onClick = onOrderClick,
             icon = {
-
                 Icon(
-                    painter =
-                        painterResource(
+                    painter = painterResource(
                             R.drawable.bakery_menu
                         ),
-                    contentDescription =
-                        "Order"
+                    contentDescription = "Order"
                 )
             },
 
             label = {
-
                 Text(
                     text = "Order",
                     style =
@@ -153,60 +129,38 @@ fun BuyerActivityBottomBar(
 
 
         NavigationBarItem(
-
-            selected =
-                selectedIndex == 2,
-
-            onClick =
-                onActivityClick,
-
+            selected = selectedIndex == 2,
+            onClick = onActivityClick,
             icon = {
-
                 Icon(
-                    painter =
-                        painterResource(
-                            R.drawable.history
-                        ),
-                    contentDescription =
-                        "Activity"
+                    painter = painterResource(
+                        R.drawable.history
+                    ),
+                    contentDescription = "Activity"
                 )
             },
 
             label = {
-
                 Text(
                     text = "Activity",
-                    style =
-                        MaterialTheme
-                            .typography
-                            .bodySmall
+                    style = MaterialTheme.typography.bodySmall
                 )
-            }
-        )
-
+            })
 
         NavigationBarItem(
-
-            selected =
-                selectedIndex == 3,
-
-            onClick =
-                onProfileClick,
-
+            selected = selectedIndex == 3,
+            onClick = onProfileClick,
             icon = {
-
                 Icon(
-                    painter =
-                        painterResource(
+                    painter = painterResource(
                             R.drawable.person
                         ),
-                    contentDescription =
-                        "Profile"
+
+                    contentDescription = "Profile"
                 )
             },
 
             label = {
-
                 Text(
                     text = "Profile",
                     style =
@@ -220,309 +174,147 @@ fun BuyerActivityBottomBar(
 }
 
 
+//activity screen
 @Composable
 fun BuyerActivityScreen(
 
+    buyerViewModel: BuyerViewModel? = null,
     onHomeClick: () -> Unit = {},
     onOrderClick: () -> Unit = {},
     onActivityClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onQrCodeClick: (Long) -> Unit = {}
-
 ) {
 
-    val repository =
-        remember {
-            BuyerRepository()
-        }
+    val isPreview = LocalInspectionMode.current
 
+    //view model
+    val actualViewModel: BuyerViewModel? =
 
-    val supabase =
-        SupabaseProvider.client
-
-
-    val isPreview =
-        LocalInspectionMode.current
-
-
-    var selectedTab by rememberSaveable {
-
-        mutableIntStateOf(0)
-    }
-
-
-    var orders by remember {
-
-        mutableStateOf<
-                List<BuyerOrderDisplay>
-                >(
-            emptyList()
-        )
-    }
-
-
-    var isLoading by remember {
-
-        mutableStateOf(true)
-    }
-
-
-    var errorMessage by remember {
-
-        mutableStateOf<String?>(null)
-    }
-
-
-    LaunchedEffect(Unit) {
-
-
-        // PREVIEW DATA
         if (isPreview) {
-
-            orders = listOf(
-
-                BuyerOrderDisplay(
-
-                    orderId = 1,
-
-                    listingId = 1,
-
-                    foodName =
-                        "Blueberry Bread",
-
-                    shopName =
-                        "Ondo Bakery",
-
-                    shopAddress =
-                        "Petaling Jaya",
-
-                    quantity = 2,
-
-                    totalPriceCent = 200,
-
-                    pickupCode =
-                        "SP4821",
-
-                    status =
-                        "PENDING",
-
-                    orderedAt =
-                        "2026-09-02T10:00:00.000Z",
-
-                    pickupEndAt =
-                        System.currentTimeMillis() +
-                                3_600_000
-                ),
-
-
-                BuyerOrderDisplay(
-
-                    orderId = 2,
-
-                    listingId = 2,
-
-                    foodName =
-                        "Sausage Bread",
-
-                    shopName =
-                        "Ondo Bakery",
-
-                    shopAddress =
-                        "Petaling Jaya",
-
-                    quantity = 1,
-
-                    totalPriceCent = 150,
-
-                    pickupCode =
-                        "SP4821",
-
-                    status =
-                        "COMPLETED",
-
-                    orderedAt =
-                        "2026-09-01T10:00:00.000Z",
-
-                    pickupEndAt =
-                        System.currentTimeMillis()
-                )
-            )
-
-
-            isLoading = false
-
-            return@LaunchedEffect
+            null
+        } else {
+            buyerViewModel ?: viewModel()
         }
 
 
-        try {
+    //tab
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
 
-            isLoading = true
+   //view model state
+    val ordersState = actualViewModel?.orders?.collectAsState()
+    val loadingState = actualViewModel?.isLoading?.collectAsState()
+    val errorState = actualViewModel?.errorMessage?.collectAsState()
 
-            errorMessage = null
+    val isLoading =
+        if (isPreview) {
+            false
+        } else {
+            loadingState
+                ?.value
+                ?: false
+        }
 
-
-            // ==========================================
-            // GET CURRENT LOGGED-IN BUYER
-            // ==========================================
-
-            val currentUser =
-                supabase
-                    .auth
-                    .currentUserOrNull()
-
-
-            if (currentUser == null) {
-
-                errorMessage =
-                    "Please log in to view your orders."
-
-                isLoading = false
-
-                return@LaunchedEffect
-            }
+    val errorMessage =
+        if (isPreview) {
+            null
+        } else {
+            errorState
+                ?.value
+        }
 
 
-            val buyerId =
-                currentUser.id
+    //preview order
+    val previewOrders =
+        listOf(
+            BuyerOrderDisplay(
+                orderId = 1,
+                listingId = 1,
+                foodName = "Blueberry Bread",
+                shopName = "Ondo Bakery",
+                shopAddress = "Petaling Jaya",
+                quantity = 2,
+                totalPriceCent = 200,
+                pickupCode = "SP4821",
+                status = "PENDING",
+                orderedAt = "2026-09-02T10:00:00.000Z",
+                pickupEndAt = System.currentTimeMillis() + 3_600_000
+            ),
+
+            BuyerOrderDisplay(
+                orderId = 2,
+                listingId = 2,
+                foodName = "Sausage Bread",
+                shopName = "Ondo Bakery",
+                shopAddress = "Petaling Jaya",
+                quantity = 1,
+                totalPriceCent = 150,
+                pickupCode = "SP4821",
+                status = "COMPLETED",
+                orderedAt = "2026-09-01T10:00:00.000Z",
+                pickupEndAt = System.currentTimeMillis()
+            )
+        )
 
 
-            // ==========================================
-            // GET BUYER ORDERS
-            // ==========================================
+   //convert view model order to display order
+    val orders: List<BuyerOrderDisplay> =
+        if (isPreview) {
+            previewOrders
+        } else {
 
-            val buyerOrders =
-                repository
-                    .getBuyerOrders(
-                        buyerId
-                    )
-
-
-            val displayOrders =
-                mutableListOf<
-                        BuyerOrderDisplay
-                        >()
-
-
-            // ==========================================
-            // GET LISTING + FOOD + SELLER
-            // ==========================================
-
-            for (order in buyerOrders) {
-
-
-                val listing =
-                    repository
-                        .getListingById(
-                            order.listingId
-                        )
-                        ?: continue
-
-
-                val food =
-                    repository
-                        .getFoodItemById(
-                            listing.foodItemId
-                        )
-
-
-                val seller =
-                    repository
-                        .getSellerById(
-                            listing.sellerId
-                        )
-
-
-                val shopName =
-
-                    seller
-                        ?.organisationName
-                        ?.takeIf {
-                            it.isNotBlank()
-                        }
-                        ?: seller?.name
-                        ?: "Shop"
-
-
-                val shopAddress =
-                    seller?.address
-                        ?: "Address not provided"
-
-
-                displayOrders.add(
+            ordersState
+                ?.value
+                ?.map { details ->
+                    val order = details.order
+                    val listing = details.listing
+                    val food = details.foodItem
+                    val seller = details.seller
+                    val shopName = seller?.organisationName?.takeIf {
+                                it.isNotBlank()
+                            } ?: seller?.name ?: "Shop"
 
                     BuyerOrderDisplay(
-
-                        orderId =
-                            order.orderId,
-
-                        listingId =
-                            order.listingId,
-
-                        foodName =
-                            food?.foodName
-                                ?: "Food Item",
-
-                        shopName =
-                            shopName,
-
-                        shopAddress =
-                            shopAddress,
-
-                        quantity =
-                            order.quantity,
-
-                        totalPriceCent =
-                            order.totalPriceCent,
-
-                        pickupCode =
-                            order.pickupCode,
-
-                        status =
-                            order.status,
-
-                        orderedAt =
-                            order.orderedAt,
-
-                        pickupEndAt =
-                            listing.pickupEndAt
+                        orderId = order.orderId,
+                        listingId = order.listingId,
+                        foodName = food?.foodName ?: "Food Item",
+                        shopName = shopName,
+                        shopAddress = seller?.address ?: "Address not provided",
+                        quantity = order.quantity,
+                        totalPriceCent = order.totalPriceCent,
+                        pickupCode = order.pickupCode,
+                        status = order.status,
+                        orderedAt = order.orderedAt,
+                        pickupEndAt = listing?.pickupEndAt ?: 0L
                     )
-                )
-            }
+                } ?: emptyList()
+        }
 
 
-            orders =
-                displayOrders
+    // load orders
+    LaunchedEffect(
+        actualViewModel
+    ) {
 
-
-        } catch (e: Exception) {
-
-
-            errorMessage =
-                e.message
-                    ?: "Unable to load your orders."
-
-
-        } finally {
-
-
-            isLoading = false
+        if (!isPreview) {
+            actualViewModel
+                ?.loadOrders()
         }
     }
 
 
+    //active order
     val activeOrders =
         orders.filter { order ->
-
             isActiveOrder(
                 order.status
             )
         }
 
 
+    //history order
     val historyOrders =
         orders.filter { order ->
-
             !isActiveOrder(
                 order.status
             )
@@ -530,24 +322,13 @@ fun BuyerActivityScreen(
 
 
     Scaffold(
-
         bottomBar = {
-
             BuyerActivityBottomBar(
-
                 selectedIndex = 2,
-
-                onHomeClick =
-                    onHomeClick,
-
-                onOrderClick =
-                    onOrderClick,
-
-                onActivityClick =
-                    onActivityClick,
-
-                onProfileClick =
-                    onProfileClick
+                onHomeClick = onHomeClick,
+                onOrderClick = onOrderClick,
+                onActivityClick = onActivityClick,
+                onProfileClick = onProfileClick
             )
         }
 
@@ -559,133 +340,80 @@ fun BuyerActivityScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(
-                    horizontal = 22.dp
-                )
+                .padding(horizontal = 22.dp)
+
         ) {
-
-
             Spacer(
-                modifier =
-                    Modifier.height(28.dp)
+                modifier = Modifier.height(28.dp)
             )
 
 
             Text(
                 text = "My Orders",
                 fontSize = 22.sp,
-                fontWeight =
-                    FontWeight.Bold
+                fontWeight = FontWeight.Bold
             )
 
 
             Spacer(
-                modifier =
-                    Modifier.height(22.dp)
+                modifier = Modifier.height(22.dp)
             )
 
 
+            //active/histoty tab
             BuyerActivityTabs(
 
-                selectedTab =
-                    selectedTab,
-
+                selectedTab = selectedTab,
                 onTabSelected = {
-
                     selectedTab = it
-                }
-            )
-
+                })
 
             Spacer(
-                modifier =
-                    Modifier.height(20.dp)
+                modifier = Modifier.height(20.dp)
             )
 
 
+            // CONTENT
             when {
-
-
                 isLoading -> {
-
-
                     Box(
-
-                        modifier =
-                            Modifier.fillMaxSize(),
-
-                        contentAlignment =
-                            Alignment.Center
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-
-
                         CircularProgressIndicator()
                     }
                 }
 
 
                 errorMessage != null -> {
-
-
                     Box(
-
-                        modifier =
-                            Modifier.fillMaxSize(),
-
-                        contentAlignment =
-                            Alignment.Center
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
                     ) {
-
-
                         Text(
-                            text =
-                                errorMessage
-                                    ?: "Something went wrong.",
-                            color =
-                                Color.Red,
-                            fontSize =
-                                14.sp
+                            text = errorMessage,
+                            color = Color.Red,
+                            fontSize = 14.sp
                         )
                     }
                 }
 
 
                 selectedTab == 0 -> {
-
-
                     BuyerOrderList(
-
-                        orders =
-                            activeOrders,
-
-                        emptyMessage =
-                            "No active orders",
-
-                        showQrCode =
-                            true,
-
-                        onQrCodeClick =
-                            onQrCodeClick
+                        orders = activeOrders,
+                        emptyMessage = "No active orders",
+                        showQrCode = true,
+                        onQrCodeClick = onQrCodeClick
                     )
                 }
 
-
                 else -> {
-
-
                     BuyerOrderList(
-
-                        orders =
-                            historyOrders,
-
-                        emptyMessage =
-                            "No order history",
-
-                        showQrCode =
-                            false,
-
-                        onQrCodeClick =
-                            onQrCodeClick
+                        orders = historyOrders,
+                        emptyMessage = "No order history",
+                        showQrCode = false,
+                        onQrCodeClick = onQrCodeClick
                     )
                 }
             }
@@ -694,151 +422,107 @@ fun BuyerActivityScreen(
 }
 
 
+//active/ history tab
 @Composable
 fun BuyerActivityTabs(
-
     selectedTab: Int,
-
     onTabSelected: (Int) -> Unit
 
 ) {
 
-
     Row(
-
-        modifier =
-            Modifier.fillMaxWidth(),
-
-        horizontalArrangement =
-            Arrangement.SpaceEvenly
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly
     ) {
 
 
+        //active
         Column(
 
-            modifier =
-                Modifier.clickable {
+            modifier = Modifier.clickable {
+                onTabSelected(
+                    0
+                )
+            },
+            horizontalAlignment = Alignment.CenterHorizontally
 
-                    onTabSelected(0)
-                },
-
-            horizontalAlignment =
-                Alignment.CenterHorizontally
         ) {
 
 
             Text(
-
                 text = "Active",
-
                 fontSize = 16.sp,
-
                 fontWeight =
-
-                    if (
-                        selectedTab == 0
-                    ) {
-
+                    if (selectedTab == 0) {
                         FontWeight.SemiBold
-
                     } else {
-
                         FontWeight.Normal
                     },
 
                 color =
-
-                    if (
-                        selectedTab == 0
-                    ) {
-
+                    if (selectedTab == 0) {
                         Color.DarkGray
-
                     } else {
-
                         Color.Gray
                     }
             )
 
 
             Spacer(
-                modifier =
-                    Modifier.height(5.dp)
+                modifier = Modifier.height(5.dp)
             )
 
 
-            if (
-                selectedTab == 0
-            ) {
-
-
+            if (selectedTab == 0) {
                 HorizontalDivider(
-
-                    modifier =
-                        Modifier.width(
-                            60.dp
-                        ),
-
-                    thickness =
-                        2.dp,
-
-                    color =
-                        Color(0xFF4CAF50)
+                    modifier = Modifier.width(60.dp),
+                    thickness = 2.dp,
+                    color = Color(0xFF4CAF50)
                 )
             }
         }
 
 
+     //history
         Column(
 
-            modifier =
-                Modifier.clickable {
+            modifier = Modifier.clickable {
 
-                    onTabSelected(1)
+                    onTabSelected(
+                        1
+                    )
                 },
 
-            horizontalAlignment =
-                Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally
+
         ) {
 
 
             Text(
-
                 text = "History",
-
                 fontSize = 16.sp,
-
                 fontWeight =
 
-                    if (
-                        selectedTab == 1
-                    ) {
-
+                    if (selectedTab == 1) {
                         FontWeight.SemiBold
-
                     } else {
-
                         FontWeight.Normal
                     },
-
                 color =
-
-                    if (
-                        selectedTab == 1
-                    ) {
-
+                    if (selectedTab == 1) {
                         Color.DarkGray
-
                     } else {
-
                         Color.Gray
                     }
             )
 
 
             Spacer(
+
                 modifier =
-                    Modifier.height(5.dp)
+                    Modifier.height(
+                        5.dp
+                    )
             )
 
 
@@ -858,7 +542,9 @@ fun BuyerActivityTabs(
                         2.dp,
 
                     color =
-                        Color(0xFF4CAF50)
+                        Color(
+                            0xFF4CAF50
+                        )
                 )
             }
         }
@@ -866,14 +552,16 @@ fun BuyerActivityTabs(
 }
 
 
+// ORDER LIST
 @Composable
 private fun BuyerOrderList(
+
     orders: List<BuyerOrderDisplay>,
     emptyMessage: String,
     showQrCode: Boolean,
     onQrCodeClick: (Long) -> Unit
-){
 
+) {
 
     if (
         orders.isEmpty()
@@ -884,27 +572,17 @@ private fun BuyerOrderList(
 
             modifier = Modifier
                 .fillMaxSize()
-                .padding(
-                    top = 60.dp
-                ),
+                .padding(top = 60.dp),
 
-            contentAlignment =
-                Alignment.TopCenter
+            contentAlignment = Alignment.TopCenter
+
         ) {
 
 
             Text(
-
-                text =
-                    emptyMessage,
-
-                style =
-                    MaterialTheme
-                        .typography
-                        .bodyMedium,
-
-                color =
-                    Color.Gray
+                text = emptyMessage,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray
             )
         }
 
@@ -914,43 +592,26 @@ private fun BuyerOrderList(
 
         LazyColumn(
 
-            modifier =
-                Modifier.fillMaxSize(),
-
-            contentPadding =
-                PaddingValues(
-                    bottom = 20.dp
-                ),
-
-            verticalArrangement =
-                Arrangement.spacedBy(
-                    12.dp
-                )
-
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                bottom = 20.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
 
             items(
-
                 items = orders,
-
                 key = {
                     it.orderId
                 }
-
             ) { order ->
 
 
                 BuyerOrderCard(
-
-                    order =
-                        order,
-
-                    showQrCode =
-                        showQrCode,
-
-                    onQrCodeClick =
-                        onQrCodeClick
+                    order = order,
+                    showQrCode = showQrCode,
+                    onQrCodeClick = onQrCodeClick
                 )
             }
         }
@@ -958,29 +619,24 @@ private fun BuyerOrderList(
 }
 
 
+//order card
 @Composable
 private fun BuyerOrderCard(
+
     order: BuyerOrderDisplay,
     showQrCode: Boolean,
     onQrCodeClick: (Long) -> Unit
-) {
 
+) {
 
     Card(
 
-        modifier =
-            Modifier.fillMaxWidth(),
-
-        shape =
-            RoundedCornerShape(
-                14.dp
-            ),
-
-        colors =
-            CardDefaults.cardColors(
-                containerColor =
-                    Color.White
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+                containerColor = Color.White
             )
+
     ) {
 
 
@@ -989,78 +645,77 @@ private fun BuyerOrderCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
+
         ) {
 
-
+            //shop
             Row(
 
-                modifier =
-                    Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
 
-                verticalAlignment =
-                    Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
+
             ) {
 
 
                 BuyerActivityShopLogo(
-                    shopName =
-                        order.shopName
+
+                    shopName = order.shopName
                 )
 
 
                 Spacer(
-                    modifier =
-                        Modifier.width(14.dp)
+                    modifier = Modifier.width(14.dp)
                 )
 
 
                 Column(
 
-                    modifier =
-                        Modifier.weight(1f)
+                    modifier = Modifier.weight(
+                        1f
+                    )
+
                 ) {
 
 
                     Text(
 
-                        text =
-                            order.shopName,
+                        text = order.shopName,
 
-                        fontSize =
-                            16.sp,
+                        fontSize = 16.sp,
 
-                        fontWeight =
-                            FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold
                     )
 
 
                     Spacer(
-                        modifier =
-                            Modifier.height(3.dp)
+
+                        modifier = Modifier.height(3.dp)
                     )
 
 
                     Text(
 
-                        text =
-                            order.shopAddress,
+                        text = order.shopAddress,
 
-                        fontSize =
-                            11.sp,
+                        fontSize = 11.sp,
 
-                        color =
-                            Color.Gray
+                        color = Color.Gray
                     )
                 }
 
 
+               //qr code
                 if (showQrCode) {
 
 
                     BuyerQRCode(
+
                         pickupCode = order.pickupCode,
                         onClick = {
-                            onQrCodeClick(order.orderId)
+                            onQrCodeClick(
+                                order.orderId
+                            )
                         }
                     )
                 }
@@ -1068,207 +723,122 @@ private fun BuyerOrderCard(
 
 
             Spacer(
+
                 modifier =
                     Modifier.height(14.dp)
             )
 
 
             HorizontalDivider(
+
                 color =
                     Color(0xFFE0E0E0)
             )
 
 
             Spacer(
-                modifier =
-                    Modifier.height(12.dp)
+
+                modifier = Modifier.height(12.dp)
             )
 
 
+            // FOOD
             Text(
 
-                text =
-                    order.foodName,
-
-                fontSize =
-                    15.sp,
-
-                fontWeight =
-                    FontWeight.Medium
+                text = order.foodName,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium
             )
 
 
             Spacer(
+                modifier = Modifier.height(6.dp)
+            )
+
+
+            OrderInfoRow(
+
+                label = "Quantity",
+
+                value = order.quantity.toString()
+            )
+
+
+            Spacer(
+
+                modifier = Modifier.height(6.dp)
+            )
+
+
+            OrderInfoRow(
+
+                label = "Total",
+
+                value = "RM %.2f".format(
+
+                    order.totalPriceCent / 100.0
+                ),
+
+                valueColor = Color(
+                    0xFF388E3C
+                ),
+
+                bold = true
+            )
+
+
+            Spacer(
+
                 modifier =
                     Modifier.height(6.dp)
             )
 
 
-            Row(
+            OrderInfoRow(
 
-                modifier =
-                    Modifier.fillMaxWidth(),
+                label = "Status",
 
-                horizontalArrangement =
-                    Arrangement.SpaceBetween
-            ) {
+                value =
+                    formatOrderStatus(
+                        order.status
+                    ),
 
+                valueColor =
+                    getOrderStatusColor(
+                        order.status
+                    ),
 
-                Text(
-                    text =
-                        "Quantity",
-                    fontSize =
-                        12.sp,
-                    color =
-                        Color.Gray
-                )
-
-
-                Text(
-                    text =
-                        order.quantity.toString(),
-                    fontSize =
-                        12.sp
-                )
-            }
+                bold = true
+            )
 
 
             Spacer(
+
                 modifier =
                     Modifier.height(6.dp)
             )
 
 
-            Row(
+            OrderInfoRow(
 
-                modifier =
-                    Modifier.fillMaxWidth(),
+                label = "Ordered",
 
-                horizontalArrangement =
-                    Arrangement.SpaceBetween
-            ) {
-
-
-                Text(
-                    text =
-                        "Total",
-                    fontSize =
-                        12.sp,
-                    color =
-                        Color.Gray
-                )
-
-
-                Text(
-
-                    text =
-                        "RM %.2f".format(
-                            order.totalPriceCent /
-                                    100.0
-                        ),
-
-                    fontSize =
-                        13.sp,
-
-                    fontWeight =
-                        FontWeight.SemiBold,
-
-                    color =
-                        Color(0xFF388E3C)
-                )
-            }
-
-
-            Spacer(
-                modifier =
-                    Modifier.height(6.dp)
+                value = formatOrderDate(
+                        order.orderedAt
+                    )
             )
 
 
-            Row(
-
-                modifier =
-                    Modifier.fillMaxWidth(),
-
-                horizontalArrangement =
-                    Arrangement.SpaceBetween
-            ) {
-
-
-                Text(
-                    text =
-                        "Status",
-                    fontSize =
-                        12.sp,
-                    color =
-                        Color.Gray
-                )
-
-
-                Text(
-
-                    text =
-                        formatOrderStatus(
-                            order.status
-                        ),
-
-                    fontSize =
-                        12.sp,
-
-                    fontWeight =
-                        FontWeight.SemiBold,
-
-                    color =
-                        getOrderStatusColor(
-                            order.status
-                        )
-                )
-            }
-
-
-            Spacer(
-                modifier =
-                    Modifier.height(6.dp)
-            )
-
-
-            Row(
-
-                modifier =
-                    Modifier.fillMaxWidth(),
-
-                horizontalArrangement =
-                    Arrangement.SpaceBetween
-            ) {
-
-
-                Text(
-                    text =
-                        "Ordered",
-                    fontSize =
-                        12.sp,
-                    color =
-                        Color.Gray
-                )
-
-
-                Text(
-                    text =
-                        formatOrderDate(
-                            order.orderedAt
-                        ),
-                    fontSize =
-                        12.sp
-                )
-            }
-
-
+            // PICKUP CODE
             if (showQrCode) {
 
 
                 Spacer(
+
                     modifier =
-                        Modifier.height(12.dp)
+                        Modifier.height(
+                            12.dp
+                        )
                 )
 
 
@@ -1283,7 +853,10 @@ private fun BuyerOrderCard(
                         ),
 
                     color =
-                        Color(0xFFE8F5E9)
+                        Color(
+                            0xFFE8F5E9
+                        )
+
                 ) {
 
 
@@ -1293,20 +866,25 @@ private fun BuyerOrderCard(
                             Modifier.padding(
                                 12.dp
                             )
+
                     ) {
 
 
                         Text(
+
                             text =
                                 "Pickup Code",
+
                             fontSize =
                                 11.sp,
+
                             color =
                                 Color.DarkGray
                         )
 
 
                         Spacer(
+
                             modifier =
                                 Modifier.height(
                                     3.dp
@@ -1326,11 +904,14 @@ private fun BuyerOrderCard(
                                 FontWeight.Bold,
 
                             color =
-                                Color(0xFF388E3C)
+                                Color(
+                                    0xFF388E3C
+                                )
                         )
 
 
                         Spacer(
+
                             modifier =
                                 Modifier.height(
                                     4.dp
@@ -1359,28 +940,104 @@ private fun BuyerOrderCard(
 }
 
 
+// INFO ROW
 @Composable
-fun BuyerActivityShopLogo(
-    shopName: String
+private fun OrderInfoRow(
+
+    label: String,
+
+    value: String,
+
+    valueColor: Color =
+        Color.Unspecified,
+
+    bold: Boolean =
+        false
+
 ) {
 
+    Row(
+
+        modifier =
+            Modifier.fillMaxWidth(),
+
+        horizontalArrangement =
+            Arrangement.SpaceBetween
+
+    ) {
+
+
+        Text(
+
+            text =
+                label,
+
+            fontSize =
+                12.sp,
+
+            color =
+                Color.Gray
+        )
+
+
+        Text(
+
+            text =
+                value,
+
+            fontSize =
+                12.sp,
+
+            fontWeight =
+
+                if (bold) {
+
+                    FontWeight.SemiBold
+
+                } else {
+
+                    FontWeight.Normal
+                },
+
+            color =
+                valueColor
+        )
+    }
+}
+
+
+// SHOP LOGO
+
+@Composable
+fun BuyerActivityShopLogo(
+
+    shopName: String
+
+) {
 
     Surface(
 
         modifier =
-            Modifier.size(62.dp),
+            Modifier.size(
+                62.dp
+            ),
 
         shape =
             CircleShape,
 
         color =
-            Color(0xFFFFF4D6)
+            Color(
+                0xFFFFF4D6
+            )
+
     ) {
 
 
         Box(
+
             contentAlignment =
                 Alignment.Center
+
         ) {
 
 
@@ -1398,12 +1055,16 @@ fun BuyerActivityShopLogo(
                     FontWeight.Bold,
 
                 color =
-                    Color(0xFFD99B00)
+                    Color(
+                        0xFFD99B00
+                    )
             )
         }
     }
 }
 
+
+// QR BUTTON
 
 @Composable
 fun BuyerQRCode(
@@ -1414,7 +1075,6 @@ fun BuyerQRCode(
 
 ) {
 
-
     Column(
 
         modifier = Modifier
@@ -1422,10 +1082,13 @@ fun BuyerQRCode(
 
                 onClick()
             }
-            .padding(5.dp),
+            .padding(
+                5.dp
+            ),
 
         horizontalAlignment =
             Alignment.CenterHorizontally
+
     ) {
 
 
@@ -1438,7 +1101,9 @@ fun BuyerQRCode(
                 "QR Code",
 
             modifier =
-                Modifier.size(30.dp),
+                Modifier.size(
+                    30.dp
+                ),
 
             tint =
                 Color.DarkGray
@@ -1446,16 +1111,21 @@ fun BuyerQRCode(
 
 
         Spacer(
+
             modifier =
-                Modifier.height(2.dp)
+                Modifier.height(
+                    2.dp
+                )
         )
 
 
         Text(
 
-            text = "QR code",
+            text =
+                "QR code",
 
-            fontSize = 8.sp,
+            fontSize =
+                8.sp,
 
             color =
                 Color.Gray
@@ -1474,16 +1144,23 @@ fun BuyerQRCode(
                 FontWeight.SemiBold,
 
             color =
-                Color(0xFF388E3C)
+                Color(
+                    0xFF388E3C
+                )
         )
     }
 }
 
 
-private fun isActiveOrder(
-    status: String
-): Boolean {
+// =================================================
+// ACTIVE STATUS
+// =================================================
 
+private fun isActiveOrder(
+
+    status: String
+
+): Boolean {
 
     return when (
         status.uppercase()
@@ -1492,23 +1169,21 @@ private fun isActiveOrder(
         "PENDING",
         "CONFIRMED",
         "READY",
-        "READY_FOR_PICKUP" -> {
-
+        "READY_FOR_PICKUP" ->
             true
-        }
 
-        else -> {
-
+        else ->
             false
-        }
     }
 }
 
 
+// STATUS TEXT
 private fun formatOrderStatus(
-    status: String
-): String {
 
+    status: String
+
+): String {
 
     return when (
         status.uppercase()
@@ -1520,9 +1195,7 @@ private fun formatOrderStatus(
         "CONFIRMED" ->
             "Confirmed"
 
-        "READY" ->
-            "Ready for Pickup"
-
+        "READY",
         "READY_FOR_PICKUP" ->
             "Ready for Pickup"
 
@@ -1536,31 +1209,40 @@ private fun formatOrderStatus(
             status
                 .lowercase()
                 .replaceFirstChar {
+
                     it.uppercase()
                 }
     }
 }
 
 
+// STATUS COLOR
 private fun getOrderStatusColor(
-    status: String
-): Color {
 
+    status: String
+
+): Color {
 
     return when (
         status.uppercase()
     ) {
 
         "PENDING" ->
-            Color(0xFFFF9800)
+            Color(
+                0xFFFF9800
+            )
 
         "CONFIRMED",
         "READY",
         "READY_FOR_PICKUP" ->
-            Color(0xFF4CAF50)
+            Color(
+                0xFF4CAF50
+            )
 
         "COMPLETED" ->
-            Color(0xFF388E3C)
+            Color(
+                0xFF388E3C
+            )
 
         "CANCELLED" ->
             Color.Red
@@ -1571,57 +1253,53 @@ private fun getOrderStatusColor(
 }
 
 
+// SHOP INITIALS
 private fun createShopInitials(
-    shopName: String
-): String {
 
+    shopName: String
+
+): String {
 
     val words =
         shopName
             .trim()
             .split(" ")
             .filter {
+
                 it.isNotBlank()
             }
 
 
     return when {
 
-        words.isEmpty() -> {
-
+        words.isEmpty() ->
             "SP"
-        }
 
-        words.size == 1 -> {
-
+        words.size == 1 ->
             words[0]
                 .take(2)
                 .uppercase()
-        }
 
-        else -> {
-
+        else ->
             "${words[0].first()}${words[1].first()}"
                 .uppercase()
-        }
     }
 }
 
 
+//order date
 private fun formatOrderDate(
+
     orderedAt: String
+
 ): String {
 
-
     return try {
-
-
         val inputFormat =
             SimpleDateFormat(
                 "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
                 Locale.US
             )
-
 
         val outputFormat =
             SimpleDateFormat(
@@ -1629,68 +1307,54 @@ private fun formatOrderDate(
                 Locale.getDefault()
             )
 
-
         val date =
             inputFormat.parse(
                 orderedAt
             )
 
-
         if (date != null) {
-
             outputFormat.format(
                 date
             )
-
         } else {
-
             orderedAt
         }
-
-
     } catch (e: Exception) {
-
-
         orderedAt
     }
 }
 
 
+//pickup time
 private fun formatPickupTime(
-    pickupEndAt: Long
-): String {
 
+    pickupEndAt: Long
+
+): String {
 
     if (
         pickupEndAt <= 0
     ) {
-
         return "Pickup time unavailable"
     }
 
 
     return try {
 
-
         val milliseconds =
-
             if (
-                pickupEndAt <
-                100_000_000_000L
+                pickupEndAt < 100_000_000_000L
             ) {
-
-                pickupEndAt *
-                        1000
-
+                pickupEndAt * 1000
             } else {
-
                 pickupEndAt
             }
 
-
         val formatter =
             SimpleDateFormat(
+
                 "dd MMM, hh:mm a",
+
                 Locale.getDefault()
             )
 
@@ -1704,11 +1368,9 @@ private fun formatPickupTime(
 
     } catch (e: Exception) {
 
-
         "Pickup time available"
     }
 }
-
 
 @Preview(
     showBackground = true,
@@ -1717,10 +1379,10 @@ private fun formatPickupTime(
 @Composable
 fun BuyerActivityScreenPreview() {
 
-
     SharePlateTheme(
         dynamicColor = false
     ) {
+
         BuyerActivityScreen()
     }
 }
