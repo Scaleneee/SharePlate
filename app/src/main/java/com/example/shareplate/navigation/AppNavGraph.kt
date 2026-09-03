@@ -27,7 +27,6 @@ import com.example.shareplate.ui.NGO.NGOCartScreen
 import com.example.shareplate.ui.NGO.NGOCheckoutScreen
 import com.example.shareplate.ui.NGO.NGOPaymentScreen
 import com.example.shareplate.ui.NGO.NGOSuccessScreen
-import com.example.shareplate.ui.NGO.NGOEditProfileScreen
 import com.example.shareplate.ui.NGO.NGOProfileScreen
 import com.example.shareplate.ui.NGO.NGOViewModel
 import com.example.shareplate.ui.auth.login.LoginScreen
@@ -193,10 +192,8 @@ fun AppNavGraph(
         }
 
         // NGO profile screen
-        
         composable(AppRoutes.NGO_PROFILE) {
             NGOProfileScreen(
-                onEditProfile = { navController.navigate(AppRoutes.NGO_EDIT_PROFILE) },
                 onLogout = {
                     navController.navigate(AppRoutes.LOGIN) {
                         popUpTo(0) { inclusive = true }
@@ -205,14 +202,6 @@ fun AppNavGraph(
             )
         }
 
-        composable(AppRoutes.NGO_EDIT_PROFILE) {
-            NGOEditProfileScreen(
-                onBackClick = { navController.popBackStack() },
-                onSaveClick = { _, _, _, _ ->
-                    navController.popBackStack()
-                }
-            )
-        }
 
         // seller home screen
         composable(AppRoutes.SELLER_HOME) {
