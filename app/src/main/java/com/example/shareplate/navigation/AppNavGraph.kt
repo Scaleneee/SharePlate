@@ -1,5 +1,6 @@
 package com.example.shareplate.navigation
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,11 +45,11 @@ import io.github.jan.supabase.auth.auth
 import com.example.shareplate.ui.buyer.home.BuyerActivityScreen
 import com.example.shareplate.ui.buyer.home.BuyerHomeScreen
 import com.example.shareplate.ui.buyer.home.BuyerOrderSuccessScreen
-import com.example.shareplate.ui.buyer.home.BuyerQrCodeScreen
 import com.example.shareplate.ui.buyer.home.ShopDetailScreen
 import com.example.shareplate.ui.buyer.order.BuyerCartScreen
 import com.example.shareplate.ui.buyer.order.BuyerCheckoutScreen
 import com.example.shareplate.ui.buyer.order.BuyerPaymentScreen
+import com.example.shareplate.ui.buyer.order.BuyerQrCodeScreen
 import com.example.shareplate.ui.buyer.profile.BuyerProfileScreen
 import io.github.jan.supabase.auth.status.SessionStatus
 
@@ -238,23 +239,44 @@ fun AppNavGraph(
 
         // seller home screen
         composable(AppRoutes.SELLER_HOME) {
-            // get the organization name of the seller
+
             val sellerName by sellerViewModel.sellerName.collectAsStateWithLifecycle()
 
-            // get the food items of the seller
             val foodItems by sellerViewModel.foodItems.collectAsStateWithLifecycle()
 
+            val sellerId = SupabaseProvider.client.auth.currentUserOrNull()?.id
+
+            LaunchedEffect(sellerId) {
+                if (sellerId != null) {
+                    // load seller name
+                    sellerViewModel.fetchSellerName()
+                    sellerViewModel.loadFoodItems(sellerId)
+                }
+            }
+
             SellerHomeScreen(
-                sellerName,
-                foodItems,
+                sellerName = sellerName, foodItems = foodItems,
+
                 onHomeClick = {
-                    // already on home
-                }, onMenuClick = {
-                    navController.navigate(AppRoutes.SELLER_MENU)
-                }, onActivityClick = {
-                    navController.navigate(AppRoutes.SELLER_ACTIVITY)
-                }, onProfileClick = {
-                    navController.navigate(AppRoutes.SELLER_PROFILE)
+                    // already home
+                },
+
+                onMenuClick = {
+                    navController.navigate(
+                        AppRoutes.SELLER_MENU
+                    )
+                },
+
+                onActivityClick = {
+                    navController.navigate(
+                        AppRoutes.SELLER_ACTIVITY
+                    )
+                },
+
+                onProfileClick = {
+                    navController.navigate(
+                        AppRoutes.SELLER_PROFILE
+                    )
                 })
         }
         // seller menu screen
@@ -263,12 +285,6 @@ fun AppNavGraph(
             val foodItems by sellerViewModel.foodItems.collectAsStateWithLifecycle()
             // get the seller id
             val sellerId = SupabaseProvider.client.auth.currentUserOrNull()?.id
-
-            LaunchedEffect(sellerId) {
-                if (sellerId != null) {
-                    sellerViewModel.loadFoodItems(sellerId)
-                }
-            }
 
             SellerMenuScreen(
                 foodItems = foodItems,
@@ -320,13 +336,12 @@ fun AppNavGraph(
                     navController.popBackStack()
                 },
 
-                onSaveClick = {
-                        foodName,
-                        category,
-                        originalPrice,
-                        bestBeforeDays,
-                        imageUri,
-                        isActive ->
+                onSaveClick = { foodName,
+                                category,
+                                originalPrice,
+                                bestBeforeDays,
+                                imageUri,
+                                isActive ->
 
                     if (sellerId != null) {
 
@@ -370,28 +385,57 @@ fun AppNavGraph(
         }
         // seller edit food screen
         composable(
-            route = AppRoutes.SELLER_EDIT_FOOD,
-            arguments = listOf(
-                navArgument("foodItemId") {
-                    type = NavType.LongType
-                }
-            )
-        ) { backStackEntry ->
-            // get the food item id from the route
-            val foodItemId = backStackEntry.arguments?.getLong("foodItemId") ?: -1
+            route = AppRoutes.SELLER_EDIT_FOOD, arguments = listOf(
+            navArgument("foodItemId") {
+                type = NavType.LongType
+            })) { backStackEntry ->
 
-            // get the food obj using the id
-            val foodItem = FoodItems.getFoodItemById(foodItemId)
-            FoodItems.getFoodItemById(foodItemId)?.let { foodItem ->
-                // call the screen
+            val context = LocalContext.current
+
+            // get food item id from route
+            val foodItemId = backStackEntry.arguments?.getLong("foodItemId") ?: return@composable
+
+            // get food items from ViewModel
+            val foodItems by sellerViewModel.foodItems.collectAsStateWithLifecycle()
+
+            // find the selected food
+            val foodItem = foodItems.find {
+                it.foodItemId == foodItemId
+            }
+
+            if (foodItem != null) {
+
                 EditFoodScreen(
                     foodItem = foodItem,
-                    onBackClick = { navController.popBackStack() },
-                    onSaveClick = { foodName, category, originalPrice, bestBeforeDays, imageURI, isActive ->
-                        // ViewModel saves food
+
+                    onBackClick = {
                         navController.popBackStack()
-                    }
-                )
+                    },
+
+                    onSaveClick = { foodName, category, originalPrice, bestBeforeDays, imageUri, isActive ->
+
+                        // convert RM to cent
+                        val originalPriceCent = (originalPrice.toDouble() * 100).toInt()
+
+                        // copy old food item with new values
+                        val updatedFoodItem = foodItem.copy(
+                            foodName = foodName,
+                            category = category,
+                            originalPriceCent = originalPriceCent,
+                            bestBeforeDays = bestBeforeDays.toInt(),
+                            isActive = isActive
+                        )
+
+                        // update Supabase
+                        sellerViewModel.updateFood(
+                            context = context,
+                            foodItem = updatedFoodItem,
+                            selectedImageUri = imageUri,
+
+                            onSuccess = {
+                                navController.popBackStack()
+                            })
+                    })
             }
         }
 

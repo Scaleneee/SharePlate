@@ -1,5 +1,6 @@
 package com.example.shareplate.data.supabase
 
+import android.util.Log
 import com.example.shareplate.data.remote.SupabaseProvider
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email

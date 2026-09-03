@@ -36,11 +36,7 @@ class SellerViewModel(
     private val _sellerName = MutableStateFlow("Seller")
     val sellerName: StateFlow<String> = _sellerName
 
-    init {
-        fetchSellerName()
-    }
-
-    private fun fetchSellerName() {
+    fun fetchSellerName() {
         viewModelScope.launch {
             try {
                 val user = repository.getCurrentSeller()
