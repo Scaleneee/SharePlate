@@ -26,13 +26,21 @@ import com.example.shareplate.ui.auth.login.LoginScreen
 import com.example.shareplate.ui.auth.password.NewPasswordScreen
 import com.example.shareplate.ui.auth.profile.ProfileScreen
 import com.example.shareplate.ui.auth.register.RegisterScreen
-import com.example.shareplate.ui.buyer.home.BuyerHomeScreen
 import com.example.shareplate.ui.seller.SellerViewModel
 import com.example.shareplate.ui.seller.home.SellerHomeScreen
 import com.example.shareplate.ui.seller.menu.AddFoodScreen
 import com.example.shareplate.ui.seller.menu.EditFoodScreen
 import com.example.shareplate.ui.seller.menu.SellerMenuScreen
 import io.github.jan.supabase.auth.auth
+import com.example.shareplate.ui.buyer.home.BuyerActivityScreen
+import com.example.shareplate.ui.buyer.home.BuyerHomeScreen
+import com.example.shareplate.ui.buyer.home.BuyerOrderSuccessScreen
+import com.example.shareplate.ui.buyer.home.BuyerQrCodeScreen
+import com.example.shareplate.ui.buyer.home.ShopDetailScreen
+import com.example.shareplate.ui.buyer.order.BuyerCartScreen
+import com.example.shareplate.ui.buyer.order.BuyerCheckoutScreen
+import com.example.shareplate.ui.buyer.order.BuyerPaymentScreen
+import com.example.shareplate.ui.buyer.profile.BuyerProfileScreen
 
 @Composable
 fun AppNavGraph(
@@ -116,10 +124,6 @@ fun AppNavGraph(
                     }
                 }
             )
-        }
-
-        composable(AppRoutes.BUYER_HOME) {
-            BuyerHomeScreen()
         }
 
         composable(AppRoutes.NGO_HOME) {
@@ -231,8 +235,476 @@ fun AppNavGraph(
                 )
             }
         }
+
+        // BUYER HOME
+        composable(AppRoutes.BUYER_HOME) {
+
+            BuyerHomeScreen(
+
+                onShopClick = { shop ->
+
+                    navController.navigate(
+                        AppRoutes.buyerShopDetailRoute(
+                            shop.sellerId
+                        )
+                    )
+                },
+
+                onHomeClick = {
+                    // Already on home
+                },
+
+                onOrderClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_CART
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
+                onActivityClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_ACTIVITY
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
+                onProfileClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_PROFILE
+                    ) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        //BUYER SHOP DETAIL
+        composable(
+
+            route =
+                AppRoutes.BUYER_SHOP_DETAIL,
+
+            arguments =
+                listOf(
+
+                    navArgument("sellerId") {
+
+                        type =
+                            NavType.StringType
+                    }
+                )
+
+        ) { backStackEntry ->
+
+
+            val sellerId =
+                backStackEntry
+                    .arguments
+                    ?.getString(
+                        "sellerId"
+                    )
+                    ?: return@composable
+
+
+            ShopDetailScreen(
+
+                sellerId =
+                    sellerId,
+
+                onBackClick = {
+
+                    navController
+                        .popBackStack()
+                },
+
+                onHomeClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_HOME
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
+                onOrderClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_CART
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
+                onActivityClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_ACTIVITY
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
+                onProfileClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_PROFILE
+                    ) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        // BUYER CART
+        composable(
+            AppRoutes.BUYER_CART
+        ) {
+
+            BuyerCartScreen(
+
+                onBackClick = {
+                    navController.popBackStack()
+                },
+
+                onCheckoutClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_CHECKOUT
+                    )
+                },
+
+                onHomeClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_HOME
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
+                onOrderClick = {
+                    // Already on cart
+                },
+
+                onActivityClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_ACTIVITY
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
+                onProfileClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_PROFILE
+                    ) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+
+        // BUYER CHECKOUT
+        composable(
+            AppRoutes.BUYER_CHECKOUT
+        ) {
+
+            BuyerCheckoutScreen(
+
+                onBackClick = {
+
+                    navController.popBackStack()
+                },
+
+                onContinuePaymentClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_PAYMENT
+                    )
+                }
+            )
+        }
+
+
+        // BUYER PAYMENT
+        composable(
+            AppRoutes.BUYER_PAYMENT
+        ) {
+
+            BuyerPaymentScreen(
+
+                onBackClick = {
+
+                    navController
+                        .popBackStack()
+                },
+
+                onPaymentSuccess = {
+                        pickupCode,
+                        totalPriceCent ->
+
+
+                    navController.navigate(
+
+                        AppRoutes
+                            .buyerOrderSuccessRoute(
+
+                                pickupCode =
+                                    pickupCode,
+
+                                totalPriceCent =
+                                    totalPriceCent
+                            )
+
+                    ) {
+
+                        popUpTo(
+                            AppRoutes.BUYER_CART
+                        ) {
+                            inclusive = true
+                        }
+                    }
+                }
+            )
+        }
+
+    // BUYER ORDER SUCCESS
+        composable(
+
+            route =
+                AppRoutes.BUYER_ORDER_SUCCESS,
+
+            arguments =
+                listOf(
+
+                    navArgument(
+                        "pickupCode"
+                    ) {
+
+                        type =
+                            NavType.StringType
+                    },
+
+                    navArgument(
+                        "totalPriceCent"
+                    ) {
+
+                        type =
+                            NavType.IntType
+                    }
+                )
+
+        ) { backStackEntry ->
+
+
+            val pickupCode =
+                backStackEntry
+                    .arguments
+                    ?.getString(
+                        "pickupCode"
+                    )
+                    ?: ""
+
+
+            val totalPriceCent =
+                backStackEntry
+                    .arguments
+                    ?.getInt(
+                        "totalPriceCent"
+                    )
+                    ?: 0
+
+
+            BuyerOrderSuccessScreen(
+
+                pickupCode =
+                    pickupCode,
+
+                totalPriceCent =
+                    totalPriceCent,
+
+                onViewOrderClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_ACTIVITY
+                    )
+                },
+
+                onHomeClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_HOME
+                    ) {
+
+                        popUpTo(
+                            AppRoutes.BUYER_HOME
+                        ) {
+                            inclusive = false
+                        }
+
+                        launchSingleTop =
+                            true
+                    }
+                }
+            )
+        }
+
+    // BUYER ACTIVITY
+        composable(
+            AppRoutes.BUYER_ACTIVITY
+        ) {
+
+            BuyerActivityScreen(
+
+                onHomeClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_HOME
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
+                onOrderClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_CART
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
+                onActivityClick = {
+                    // Already on activity
+                },
+
+                onProfileClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_PROFILE
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
+                onQrCodeClick = { orderId ->
+
+                    navController.navigate(
+                        AppRoutes.buyerQrCodeRoute(
+                            orderId
+                        )
+                    )
+                }
+            )
+        }
+
+
+        // BUYER QR CODE
+        composable(
+
+            route =
+                AppRoutes.BUYER_QR_CODE,
+
+            arguments =
+                listOf(
+
+                    navArgument(
+                        "orderId"
+                    ) {
+
+                        type =
+                            NavType.LongType
+                    }
+                )
+
+        ) { backStackEntry ->
+
+
+            val orderId =
+                backStackEntry
+                    .arguments
+                    ?.getLong(
+                        "orderId"
+                    )
+                    ?: return@composable
+
+
+            BuyerQrCodeScreen(
+
+                orderId =
+                    orderId,
+
+                onBackClick = {
+
+                    navController
+                        .popBackStack()
+                }
+            )
+        }
+
+    // BUYER PROFILE
+
+        composable(
+            AppRoutes.BUYER_PROFILE
+        ) {
+
+            BuyerProfileScreen(
+
+                onHomeClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_HOME
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
+                onOrderClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_CART
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
+                onActivityClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_ACTIVITY
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
+                onProfileClick = {
+                    // Already on profile
+                },
+
+                onLoggedOut = {
+
+                    navController.navigate(
+                        AppRoutes.LOGIN
+                    ) {
+
+                        popUpTo(0) {
+                            inclusive = true
+                        }
+                    }
+                }
+            )
+        }
     }
 }
+
 
 @Composable
 private fun PlaceholderScreen(text: String) {

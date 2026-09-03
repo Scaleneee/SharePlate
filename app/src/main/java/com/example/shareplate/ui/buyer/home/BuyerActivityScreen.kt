@@ -224,14 +224,10 @@ fun BuyerActivityBottomBar(
 fun BuyerActivityScreen(
 
     onHomeClick: () -> Unit = {},
-
     onOrderClick: () -> Unit = {},
-
     onActivityClick: () -> Unit = {},
-
     onProfileClick: () -> Unit = {},
-
-    onQrCodeClick: () -> Unit = {}
+    onQrCodeClick: (Long) -> Unit = {}
 
 ) {
 
@@ -872,16 +868,11 @@ fun BuyerActivityTabs(
 
 @Composable
 private fun BuyerOrderList(
-
     orders: List<BuyerOrderDisplay>,
-
     emptyMessage: String,
-
     showQrCode: Boolean,
-
-    onQrCodeClick: () -> Unit
-
-) {
+    onQrCodeClick: (Long) -> Unit
+){
 
 
     if (
@@ -969,13 +960,9 @@ private fun BuyerOrderList(
 
 @Composable
 private fun BuyerOrderCard(
-
     order: BuyerOrderDisplay,
-
     showQrCode: Boolean,
-
-    onQrCodeClick: () -> Unit
-
+    onQrCodeClick: (Long) -> Unit
 ) {
 
 
@@ -1071,12 +1058,10 @@ private fun BuyerOrderCard(
 
 
                     BuyerQRCode(
-
-                        pickupCode =
-                            order.pickupCode,
-
-                        onClick =
-                            onQrCodeClick
+                        pickupCode = order.pickupCode,
+                        onClick = {
+                            onQrCodeClick(order.orderId)
+                        }
                     )
                 }
             }

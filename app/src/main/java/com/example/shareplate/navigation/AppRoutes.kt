@@ -15,18 +15,43 @@ object AppRoutes {
     const val SELLER_EDIT_FOOD = "seller/edit-food/{foodItemId}"
 
 
+    const val BUYER_HOME = "buyer_home"
+
     const val BUYER_SHOP_DETAIL = "buyer_shop_detail/{sellerId}"
+
     const val BUYER_CART = "buyer_cart"
-    const val BUYER_HOME = "buyer/home"
+
+    const val BUYER_CHECKOUT = "buyer_checkout"
+
+    const val BUYER_PAYMENT = "buyer_payment"
+
+    const val BUYER_ORDER_SUCCESS = "buyer_order_success/{pickupCode}/{totalPriceCent}"
+
     const val BUYER_ACTIVITY = "buyer_activity"
+
+    const val BUYER_QR_CODE = "buyer_qr_code/{orderId}"
+
     const val BUYER_PROFILE = "buyer_profile"
 
     fun buyerShopDetailRoute(
         sellerId: String
     ): String {
-
         return "buyer_shop_detail/$sellerId"
     }
+
+    fun buyerOrderSuccessRoute(
+        pickupCode: String,
+        totalPriceCent: Int
+    ): String {
+        return "buyer_order_success/$pickupCode/$totalPriceCent"
+    }
+
+    fun buyerQrCodeRoute(
+        orderId: Long
+    ): String {
+        return "buyer_qr_code/$orderId"
+    }
+
 
     const val NGO_HOME = "ngo/home"
 }
