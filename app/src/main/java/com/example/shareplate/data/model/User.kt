@@ -15,7 +15,7 @@ data class User(
 
     val phone: String? = null,
 
-    val role: String,
+    val role: UserRole,
 
     @SerialName("organisation_name")
     val organisationName: String? = null,

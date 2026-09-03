@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shareplate.data.model.User
 import com.example.shareplate.data.repository.BuyerRepository
-import com.example.shareplate.ui.buyer.home.navigation.BuyerBottomBar
+import com.example.shareplate.ui.buyer.navigation.BuyerBottomBar
 import com.example.shareplate.ui.theme.SharePlateTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -679,133 +679,94 @@ private fun FoodDealRow(
                 vertical = 14.dp
             ),
 
-        verticalAlignment =
-            Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically
     ) {
 
 
         Surface(
 
-            modifier =
-                Modifier.size(
-                    width = 76.dp,
-                    height = 70.dp
-                ),
-
-            shape =
-                RoundedCornerShape(
-                    6.dp
-                ),
-
-            color =
-                Color(0xFFFFF4D6)
+            modifier = Modifier.size(width = 76.dp, height = 70.dp),
+            shape = RoundedCornerShape(6.dp),
+            color = Color(0xFFFFF4D6)
         ) {
 
 
             Box(
-                contentAlignment =
-                    Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
 
 
                 Text(
-                    text =
-                        food.name
+                    text = food.name
                             .take(2)
                             .uppercase(),
-                    fontWeight =
-                        FontWeight.Bold,
-                    color =
-                        Color(0xFFD99B00)
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFD99B00)
                 )
             }
         }
 
 
         Spacer(
-            modifier =
-                Modifier.width(12.dp)
+            modifier = Modifier.width(12.dp)
         )
 
 
-        Column(
-            modifier =
-                Modifier.weight(1f)
+        Column(modifier = Modifier.weight(1f)
         ) {
 
 
             Text(
-                text =
-                    food.name,
-                fontSize =
-                    14.sp,
-                fontWeight =
-                    FontWeight.Medium
+                text = food.name,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
             )
 
 
             Spacer(
-                modifier =
-                    Modifier.height(3.dp)
+                modifier = Modifier.height(3.dp)
             )
 
 
             Text(
-                text =
-                    food.description,
-                fontSize =
-                    10.sp,
-                color =
-                    Color.Gray
+                text = food.description,
+                fontSize = 10.sp,
+                color = Color.Gray
             )
 
 
             Spacer(
-                modifier =
-                    Modifier.height(3.dp)
+                modifier = Modifier.height(3.dp)
             )
 
 
             Text(
-                text =
-                    food.pickupTime,
-                fontSize =
-                    10.sp,
-                color =
-                    Color.Gray
+                text = food.pickupTime,
+                fontSize = 10.sp,
+                color = Color.Gray
             )
 
 
             Spacer(
-                modifier =
-                    Modifier.height(8.dp)
+                modifier = Modifier.height(8.dp)
             )
 
 
             Row(
 
-                modifier =
-                    Modifier.fillMaxWidth(),
-
-                verticalAlignment =
-                    Alignment.CenterVertically,
-
-                horizontalArrangement =
-                    Arrangement.SpaceBetween
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
 
 
                 Column {
 
                     Text(
-                        text =
-                            food.price,
-                        fontSize =
-                            14.sp,
-                        fontWeight =
-                            FontWeight.SemiBold,
-                        color =
-                            Color(0xFF388E3C)
+                        text = food.price,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF388E3C)
                     )
 
 
@@ -814,63 +775,29 @@ private fun FoodDealRow(
                     ) {
 
                         Text(
-                            text =
-                                "${food.discountPercent}% OFF",
-                            fontSize =
-                                10.sp,
-                            color =
-                                Color.Gray
+                            text = "${food.discountPercent}% OFF",
+                            fontSize = 10.sp,
+                            color = Color.Gray
                         )
                     }
                 }
 
 
                 Button(
-
-                    onClick =
-                        onAddClick,
-
-                    enabled =
-                        food.availableQuantity > 0,
-
-                    modifier =
-                        Modifier.height(
-                            38.dp
-                        ),
-
-                    shape =
-                        RoundedCornerShape(
-                            8.dp
-                        ),
-
-                    colors =
-                        ButtonDefaults
-                            .buttonColors(
-                                containerColor =
-                                    Color(
-                                        0xFF4CAF50
-                                    )
-                            ),
-
-                    contentPadding =
-                        PaddingValues(
-                            horizontal =
-                                14.dp,
-                            vertical =
-                                4.dp
-                        )
+                    onClick = onAddClick,
+                    enabled = food.availableQuantity > 0,
+                    modifier = Modifier.height(38.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)
                 ) {
 
 
                     Text(
-                        text =
-                            "Add",
-                        fontSize =
-                            12.sp,
-                        fontWeight =
-                            FontWeight.SemiBold,
-                        color =
-                            Color.White
+                        text = "Add",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
                     )
                 }
             }
@@ -882,20 +809,15 @@ private fun FoodDealRow(
 private fun buildFoodDescription(
 
     foodDescription: String?,
-
     bestBeforeDays: Int,
-
     availableQuantity: Int
 ): String {
 
 
-    val foodInformation =
-        "Best Before: $bestBeforeDays days • Surplus Food: $availableQuantity"
+    val foodInformation = "Best Before: $bestBeforeDays days • Surplus Food: $availableQuantity"
 
 
-    return if (
-        foodDescription.isNullOrBlank()
-    ) {
+    return if (foodDescription.isNullOrBlank()) {
 
         foodInformation
 
@@ -910,12 +832,10 @@ private fun formatPrice(
     priceCent: Int
 ): String {
 
-    val price =
-        priceCent / 100.0
+    val price = priceCent / 100.0
 
 
-    return String.format(
-        Locale.getDefault(),
+    return String.format(Locale.getDefault(),
         "RM %.2f",
         price
     )
@@ -941,8 +861,7 @@ private fun formatPickupTime(
         val milliseconds =
 
             if (
-                pickupEndAt <
-                100_000_000_000L
+                pickupEndAt < 100_000_000_000L
             ) {
 
                 pickupEndAt * 1000
@@ -979,8 +898,7 @@ private fun createShopShortName(
 ): String {
 
 
-    val words =
-        shopName
+    val words = shopName
             .trim()
             .split(" ")
             .filter {

@@ -1,4 +1,4 @@
-package com.example.shareplate.ui.buyer.home.navigation
+package com.example.shareplate.ui.buyer.navigation
 
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme

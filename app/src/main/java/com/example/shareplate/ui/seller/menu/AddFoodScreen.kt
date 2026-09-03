@@ -1,5 +1,6 @@
 package com.example.shareplate.ui.seller.menu
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.shareplate.ui.theme.SharePlateTheme
@@ -20,7 +21,7 @@ fun AddFoodScreen(
         category: String,
         originalPrice: String,
         bestBeforeDays: String,
-        imageURI: String?,
+        imageUri: Uri?,
         isActive: Boolean
     ) -> Unit
 ) {
