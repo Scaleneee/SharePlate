@@ -176,7 +176,12 @@ fun DonationListScreen(
     var filter by remember { mutableStateOf("All") }
 
     val shownDonations = localDonations.filter { donation ->
-        val matchesSearch = donation.name.contains(searchText, ignoreCase = true)
+        val matchesSearch = if (searchText.isBlank()) {
+            true
+        } else {
+            donation.foodItems.any { it.contains(searchText, ignoreCase = true) } ||
+                donation.inventory.any { it.foodName.contains(searchText, ignoreCase = true) }
+        }
 
         val matchesFilter = when (filter) {
             "Near Me" -> donation.nearby

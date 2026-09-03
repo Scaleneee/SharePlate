@@ -34,8 +34,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.shareplate.data.remote.SupabaseProvider
 import com.example.shareplate.data.local.SessionManager
 import com.example.shareplate.data.supabase.AuthRepository
+import com.example.shareplate.data.supabase.Profile
+import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.launch
 
 @Composable
@@ -156,19 +159,30 @@ fun NGOProfileScreen(
                 Button(
                     onClick = {
                         scope.launch {
-                            authRepository.getCurrentProfile()?.let { p ->
-                                val updated = p.copy(
-                                    name = name.trim(),
-                                    phone = phone.trim(),
-                                    organisationName = organisation.ifBlank { null },
-                                    address = address.ifBlank { null }
-                                )
-                                authRepository.updateProfile(updated)
-                                    .onSuccess { message = "Profile updated." }
-                                    .onFailure { message = "Could not update profile." }
+                            val userId = SupabaseProvider.client.auth.currentUserOrNull()?.id
+                            if (userId == null) {
+                                message = "Please log in to save."
+                                return@launch
                             }
+                            val base = authRepository.getCurrentProfile()
+                            val updated = Profile(
+                                userId = userId,
+                                name = name.trim(),
+                                email = base?.email ?: email,
+                                phone = phone.trim(),
+                                role = base?.role ?: "NGO",
+                                organisationName = organisation.ifBlank { null },
+                                address = address.ifBlank { null }
+                            )
+                            authRepository.updateProfile(updated)
+                                .onSuccess {
+                                    message = "Profile updated."
+                                    edit = false
+                                }
+                                .onFailure {
+                                    message = "Could not update profile."
+                                }
                         }
-                        edit = false
                     },
                     modifier = Modifier
                         .fillMaxWidth()
