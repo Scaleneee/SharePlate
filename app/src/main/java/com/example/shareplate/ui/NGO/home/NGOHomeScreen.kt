@@ -45,10 +45,12 @@ data class FoodDonation(
 )
 
 @Composable
-fun NGOHomeScreen(onProfileClick: () -> Unit) {
+fun NGOHomeScreen(
+    onAcceptDonation: (FoodDonation, List<String>) -> Unit = { _, _ -> },
+    onProfileClick: () -> Unit = {}
+) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var selectedDonation by remember { mutableStateOf<FoodDonation?>(null) }
-    var showSuccess by remember { mutableStateOf(false) }
 
     val ngoViewModel: NGOViewModel = viewModel()
     val shops by ngoViewModel.shops.collectAsState()
@@ -57,11 +59,6 @@ fun NGOHomeScreen(onProfileClick: () -> Unit) {
     val error by ngoViewModel.errorMessage.collectAsState()
 
     LaunchedEffect(Unit) { ngoViewModel.loadShops() }
-
-    if (showSuccess) {
-        NGOSuccessScreen(onBackClick = { showSuccess = false })
-        return
-    }
 
     Scaffold(
         bottomBar = {
@@ -99,11 +96,13 @@ fun NGOHomeScreen(onProfileClick: () -> Unit) {
                             selectedDonation = null
                             selectedTab = 0
                         },
-                        onTakeAllClick = { showSuccess = true }
+                        onAcceptClick = { items ->
+                            onAcceptDonation(selectedDonation!!, items)
+                        }
                     )
                 }
                 2 -> NGOActivityScreen(pickups = pickups)
-                else -> PlaceholderScreen("Profile")
+                else -> onProfileClick()
             }
         }
     }
@@ -254,3 +253,8 @@ fun DonationListScreen(
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun NGOHomeScreenPreview(){
+    NGOHomeScreen()
+}

@@ -47,7 +47,7 @@ data class MenuFoodItem(
 fun ShopDetailScreen(
     donation: FoodDonation,
     onBackClick: () -> Unit,
-    onTakeAllClick: () -> Unit
+    onAcceptClick: (List<String>) -> Unit
 ) {
     val items = donation.foodItems.map { raw ->
         val parts = raw.split(" - ")
@@ -60,16 +60,17 @@ fun ShopDetailScreen(
     val allSelected = items.isNotEmpty() && selectedItems.size == items.size
     val totalSurplus = donation.availableFood
 
-    fun toggle(item: MenuFoodItem) {
-        selectedItems = if (selectedItems.contains(item.name)) {
-            selectedItems - item.name
+fun toggle(item: MenuFoodItem) {
+        val full = "${item.name} - ${item.surplus}"
+        selectedItems = if (selectedItems.contains(full)) {
+            selectedItems - full
         } else {
-            selectedItems + item.name
+            selectedItems + full
         }
     }
 
     fun toggleAll() {
-        selectedItems = if (allSelected) emptyList() else items.map { it.name }
+        selectedItems = if (allSelected) emptyList() else items.map { "${it.name} - ${it.surplus}" }
     }
 
     Column(
@@ -117,13 +118,9 @@ fun ShopDetailScreen(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(donation.name, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-
                 Spacer(modifier = Modifier.height(2.dp))
-
                 Text("Today's Surplus Food: $totalSurplus", fontSize = 12.sp, color = Color.Gray)
-
                 Spacer(modifier = Modifier.height(2.dp))
-
                 Text(
                     "Surplus available for consumption, don't miss the food!",
                     fontSize = 11.sp,
@@ -153,7 +150,6 @@ fun ShopDetailScreen(
 
         if (items.isEmpty()) {
             Spacer(modifier = Modifier.height(40.dp))
-
             Text("No surplus food available", color = Color.Gray)
         } else {
             items.forEach { item ->
@@ -165,7 +161,7 @@ fun ShopDetailScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
-                        checked = selectedItems.contains(item.name),
+                        checked = selectedItems.contains("${item.name} - ${item.surplus}"),
                         onCheckedChange = { toggle(item) }
                     )
 
@@ -189,14 +185,9 @@ fun ShopDetailScreen(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(item.name, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-
                         Spacer(modifier = Modifier.height(3.dp))
-
-                        Text("Best Before: 2 days • Surplus Food: ${item.surplus}",
-                            fontSize = 10.sp, color = Color.Gray)
-
+                        Text("Best Before: 2 days • Surplus Food: ${item.surplus}", fontSize = 10.sp, color = Color.Gray)
                         Spacer(modifier = Modifier.height(6.dp))
-
                         Text("FREE", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
@@ -227,7 +218,7 @@ fun ShopDetailScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         Button(
-            onClick = onTakeAllClick,
+            onClick = { onAcceptClick(selectedItems) },
             enabled = selectedItems.isNotEmpty(),
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp)
@@ -245,6 +236,6 @@ fun NGOOrderPreview() {
     ShopDetailScreen(
         donation = FoodDonation("Ondo Bakery", "George Town - 5.0 km", 17, listOf("Blueberry Bread - 7", "Sausage Bread - 5", "Sweet Donuts - 5"), false, false),
         onBackClick = {},
-        onTakeAllClick = {}
+        onAcceptClick = {}
     )
 }

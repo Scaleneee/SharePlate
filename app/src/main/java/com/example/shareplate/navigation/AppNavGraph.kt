@@ -22,6 +22,13 @@ import com.example.shareplate.data.FoodItems
 import com.example.shareplate.data.local.SessionManager
 import com.example.shareplate.data.remote.SupabaseProvider
 import com.example.shareplate.ui.NGO.NGOHomeScreen
+import com.example.shareplate.ui.NGO.order.NGOCartStore
+import com.example.shareplate.ui.NGO.NGOCartScreen
+import com.example.shareplate.ui.NGO.NGOCheckoutScreen
+import com.example.shareplate.ui.NGO.NGOPaymentScreen
+import com.example.shareplate.ui.NGO.NGOSuccessScreen
+import com.example.shareplate.ui.NGO.NGOProfileScreen
+import com.example.shareplate.ui.NGO.NGOViewModel
 import com.example.shareplate.ui.auth.login.LoginScreen
 import com.example.shareplate.ui.auth.password.NewPasswordScreen
 import com.example.shareplate.ui.auth.profile.ProfileScreen
@@ -126,10 +133,71 @@ fun AppNavGraph(
             )
         }
 
+        // NGO home screen
         composable(AppRoutes.NGO_HOME) {
             NGOHomeScreen(
+                onAcceptDonation = { donation, items ->
+                    NGOCartStore.set(donation, items)
+                    navController.navigate(AppRoutes.NGO_CART)
+                },
                 onProfileClick = {
-                    navController.navigate(AppRoutes.PROFILE)
+                    navController.navigate(AppRoutes.NGO_PROFILE)
+                }
+            )
+        }
+
+        // NGO cart screen
+                composable(AppRoutes.NGO_CART) {
+            NGOCartScreen(
+                onBackClick = { navController.popBackStack() },
+                onCheckoutClick = { navController.navigate(AppRoutes.NGO_CHECKOUT) }
+            )
+        }
+
+        // NGO checkout screen
+        composable(AppRoutes.NGO_CHECKOUT) {
+            NGOCheckoutScreen(
+                donation = NGOCartStore.donation ?: return@composable,
+                items = NGOCartStore.cartItems,
+                onBackClick = { navController.popBackStack() },
+                onProceedClick = { navController.navigate(AppRoutes.NGO_PAYMENT) }
+            )
+        }
+
+        // NGO payment screen
+        composable(AppRoutes.NGO_PAYMENT) {
+            val ngoViewModel: NGOViewModel = viewModel()
+            NGOPaymentScreen(
+                donation = NGOCartStore.donation ?: return@composable,
+                items = NGOCartStore.cartItems,
+                onBackClick = { navController.popBackStack() },
+                onCompleteClick = {
+                    NGOCartStore.donation?.let { d ->
+                        ngoViewModel.addPickup(d, NGOCartStore.rawItems)
+                    }
+                    navController.navigate(AppRoutes.NGO_SUCCESS)
+                }
+            )
+        }
+
+        // NGO successful screen
+        composable(AppRoutes.NGO_SUCCESS) {
+            NGOSuccessScreen(
+                onBackClick = {
+                    navController.navigate(AppRoutes.NGO_HOME) {
+                        popUpTo(AppRoutes.NGO_HOME)
+                    }
+                }
+            )
+        }
+
+        // NGO profile screen
+        composable(AppRoutes.NGO_PROFILE) {
+            NGOProfileScreen(
+                onLogout = {
+                    navController.navigate(AppRoutes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             )
         }

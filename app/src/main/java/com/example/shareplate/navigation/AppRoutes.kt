@@ -33,25 +33,23 @@ object AppRoutes {
 
     const val BUYER_PROFILE = "buyer_profile"
 
-    fun buyerShopDetailRoute(
-        sellerId: String
-    ): String {
+    fun buyerShopDetailRoute(sellerId: String): String {
         return "buyer_shop_detail/$sellerId"
     }
 
-    fun buyerOrderSuccessRoute(
-        pickupCode: String,
-        totalPriceCent: Int
-    ): String {
+    fun buyerOrderSuccessRoute(pickupCode: String, totalPriceCent: Int): String {
         return "buyer_order_success/$pickupCode/$totalPriceCent"
     }
 
-    fun buyerQrCodeRoute(
-        orderId: Long
-    ): String {
+    fun buyerQrCodeRoute(orderId: Long): String {
         return "buyer_qr_code/$orderId"
     }
 
 
-    const val NGO_HOME = "ngo/home"
+    const val NGO_HOME = "ngo_home"
+    const val NGO_CART = "ngo_cart"
+    const val NGO_CHECKOUT = "ngo_checkout"
+    const val NGO_PAYMENT = "ngo_payment"
+    const val NGO_SUCCESS = "ngo_success"
+    const val NGO_PROFILE = "ngo_profile"
 }

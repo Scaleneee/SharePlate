@@ -3,8 +3,6 @@ package com.example.shareplate.ui.NGO
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shareplate.data.repository.NGORepository
-import com.example.shareplate.ui.NGO.FoodDonation
-import com.example.shareplate.ui.NGO.NGOActivityItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,7 +37,7 @@ class NGOViewModel(
                 val foodItems = repository.getActiveFoodItems()
                 val itemsById = foodItems.associateBy { it.foodItemId }
 
-                _shops.value = sellers.map { seller ->
+                val shopList = sellers.map { seller ->
                     val sellerListings = listings.filter { it.sellerId == seller.userId }
 
                     val itemStrings = sellerListings.map { listing ->
@@ -56,6 +54,8 @@ class NGOViewModel(
                         liked = false
                     )
                 }
+
+                _shops.value = if (shopList.isEmpty()) sampleShops() else shopList
 
                 _pickups.value = listings.mapNotNull { listing ->
                     val seller = sellers.find { it.userId == listing.sellerId }
@@ -74,11 +74,53 @@ class NGOViewModel(
                 }
             } catch (e: Exception) {
                 _errorMessage.value = e.message
+                if (_shops.value.isEmpty()) {
+                    _shops.value = sampleShops()
+                }
             } finally {
                 _isLoading.value = false
             }
         }
     }
+
+fun addPickup(donation: FoodDonation, items: List<String>) {
+        val pickup = NGOActivityItem(
+            name = donation.name,
+            location = donation.location,
+            shortName = donation.name.take(2).uppercase(),
+            pickupTime = "Pickup: today",
+            items = items.joinToString(", "),
+            done = false
+        )
+        _pickups.value = listOf(pickup) + _pickups.value
+    }
+
+    private fun sampleShops(): List<FoodDonation> = listOf(
+        FoodDonation(
+            name = "Ondo Bakery",
+            location = "George Town - 5.0 km",
+            availableFood = 22,
+            foodItems = listOf("Bread - 8", "Cookie pack - 4", "Sweet Donuts - 5"),
+            nearby = false,
+            liked = false
+        ),
+        FoodDonation(
+            name = "The Coffee Bean & Tea Leaf",
+            location = "Kuala Lumpur",
+            availableFood = 18,
+            foodItems = listOf("Butter Croissant - 4", "Chocolate Muffin - 3", "Chicken Sandwich - 5"),
+            nearby = true,
+            liked = false
+        ),
+        FoodDonation(
+            name = "Bread History",
+            location = "Subang Jaya",
+            availableFood = 15,
+            foodItems = listOf("Sausage Bun - 6", "Chocolate Roll - 4", "Sugar Donut - 5"),
+            nearby = false,
+            liked = false
+        )
+    )
 
     private fun formatTime(epochMillis: Long): String =
         SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(epochMillis))
