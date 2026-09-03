@@ -19,6 +19,7 @@ class SellerViewModel(
 
     // food items
     private val _foodItems = MutableStateFlow<List<FoodItem>>(emptyList())
+
     // view only food items
     val foodItems: StateFlow<List<FoodItem>> = _foodItems.asStateFlow()
 
@@ -43,13 +44,11 @@ class SellerViewModel(
 
             try {
 
-                _foodItems.value =
-                    repository.getFoodItems(sellerId)
+                _foodItems.value = repository.getFoodItems(sellerId)
 
             } catch (e: Exception) {
 
-                _errorMessage.value =
-                    e.message
+                _errorMessage.value = e.message
 
             } finally {
 
@@ -84,27 +83,22 @@ class SellerViewModel(
 
                 if (selectedImageUri != null) {
 
-                    val fileName =
-                        "${sellerId}_${System.currentTimeMillis()}.jpg"
+                    val fileName = "${sellerId}_${System.currentTimeMillis()}.jpg"
 
-                    imageUrl =
-                        repository.uploadFoodImage(
-                            context = context,
-                            imageUri = selectedImageUri,
-                            fileName = fileName
-                        )
+                    imageUrl = repository.uploadFoodImage(
+                        context = context, imageUri = selectedImageUri, fileName = fileName
+                    )
                 }
 
-                val foodItem =
-                    CreateFoodItem(
-                        sellerId = sellerId,
-                        foodName = foodName,
-                        category = category,
-                        originalPriceCent = originalPriceCent,
-                        bestBeforeDays = bestBeforeDays,
-                        imageUrl = imageUrl,
-                        isActive = isActive
-                    )
+                val foodItem = CreateFoodItem(
+                    sellerId = sellerId,
+                    foodName = foodName,
+                    category = category,
+                    originalPriceCent = originalPriceCent,
+                    bestBeforeDays = bestBeforeDays,
+                    imageUrl = imageUrl,
+                    isActive = isActive
+                )
 
                 repository.addFoodItem(foodItem)
 
@@ -115,8 +109,7 @@ class SellerViewModel(
 
             } catch (e: Exception) {
 
-                _errorMessage.value =
-                    e.message
+                _errorMessage.value = e.message
 
             } finally {
 
@@ -127,10 +120,7 @@ class SellerViewModel(
 
     // UPDATE FOOD
     fun updateFood(
-        context: Context,
-        foodItem: FoodItem,
-        selectedImageUri: Uri?,
-        onSuccess: () -> Unit = {}
+        context: Context, foodItem: FoodItem, selectedImageUri: Uri?, onSuccess: () -> Unit = {}
     ) {
 
         viewModelScope.launch {
@@ -140,27 +130,21 @@ class SellerViewModel(
 
             try {
 
-                var imageUrl =
-                    foodItem.imageUrl
+                var imageUrl = foodItem.imageUrl
 
                 // only upload if seller chose a new image
                 if (selectedImageUri != null) {
 
-                    val fileName =
-                        "${foodItem.sellerId}_${System.currentTimeMillis()}.jpg"
+                    val fileName = "${foodItem.sellerId}_${System.currentTimeMillis()}.jpg"
 
-                    imageUrl =
-                        repository.uploadFoodImage(
-                            context = context,
-                            imageUri = selectedImageUri,
-                            fileName = fileName
-                        )
+                    imageUrl = repository.uploadFoodImage(
+                        context = context, imageUri = selectedImageUri, fileName = fileName
+                    )
                 }
 
-                val updatedFood =
-                    foodItem.copy(
-                        imageUrl = imageUrl
-                    )
+                val updatedFood = foodItem.copy(
+                    imageUrl = imageUrl
+                )
 
                 repository.updateFoodItem(
                     updatedFood
@@ -174,8 +158,7 @@ class SellerViewModel(
 
             } catch (e: Exception) {
 
-                _errorMessage.value =
-                    e.message
+                _errorMessage.value = e.message
 
             } finally {
 
@@ -186,30 +169,22 @@ class SellerViewModel(
 
     // PUBLISH SURPLUS
     fun publishSurplus(
-        listing: SurplusListing,
-        onSuccess: () -> Unit = {}
+        listing: SurplusListing, onSuccess: () -> Unit = {}
     ) {
-
         viewModelScope.launch {
-
             _isLoading.value = true
             _errorMessage.value = null
 
             try {
-
                 repository.publishSurplus(
                     listing
                 )
-
                 onSuccess()
 
             } catch (e: Exception) {
-
-                _errorMessage.value =
-                    e.message
+                _errorMessage.value = e.message
 
             } finally {
-
                 _isLoading.value = false
             }
         }

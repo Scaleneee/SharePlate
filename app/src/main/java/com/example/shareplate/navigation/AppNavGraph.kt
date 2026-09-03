@@ -61,7 +61,7 @@ fun AppNavGraph(
             }
 
             SellerMenuScreen(
-                foodItems = foodItems,
+                foodItems = FoodItems.foodItems,
                 onHomeClick = {
                     navController.navigate(AppRoutes.SELLER_HOME)
                 }, onMenuClick = {
@@ -88,9 +88,7 @@ fun AppNavGraph(
                 onSaveClick = { foodName, category, originalPrice, bestBeforeDays, imageUri, isActive ->
                     // ViewModel saves food
                     if (sellerId != null) {
-                        val originalPriceCent =
-                            (originalPrice.toDouble() * 100)
-                                .toInt()
+                        val originalPriceCent = (originalPrice.toDouble() * 100).toInt()
 
                         sellerViewModel.addFood(
                             context = context,
