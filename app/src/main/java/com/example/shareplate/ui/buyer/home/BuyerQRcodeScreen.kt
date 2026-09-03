@@ -144,19 +144,14 @@ fun BuyerQrCodeScreen(
 
                 foodName = "Blueberry Bread",
 
-                description = "Fresh blueberry bread",
-
                 category = "Bakery",
 
                 originalPriceCent = 500,
 
                 bestBeforeDays = 3,
 
-                allergenInformation = null,
-
                 imageUrl = null,
 
-                isActive = true
             ),
 
             seller = User(

@@ -17,8 +17,6 @@ data class FoodItem(
     @SerialName("food_name")
     val foodName: String,
 
-    val description: String? = null,
-
     val category: String,
 
     @SerialName("original_price_cent")
@@ -27,14 +25,8 @@ data class FoodItem(
     @SerialName("best_before_days")
     val bestBeforeDays: Int,
 
-    @SerialName("allergen_information")
-    val allergenInformation: String? = null,
-
     @SerialName("image_url")
     val imageUrl: String? = null,
-
-    @SerialName("is_active")
-    val isActive: Boolean = true,
 
     @SerialName("created_at")
     val createdAt: String? = null,

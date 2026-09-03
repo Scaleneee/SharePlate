@@ -1,6 +1,5 @@
 package com.example.shareplate.navigation
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,7 +20,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.shareplate.data.FoodItems
 import com.example.shareplate.data.local.SessionManager
 import com.example.shareplate.data.remote.SupabaseProvider
 import com.example.shareplate.ui.NGO.NGOHomeScreen
@@ -469,7 +467,6 @@ fun AppNavGraph(
                             category = category,
                             originalPriceCent = originalPriceCent,
                             bestBeforeDays = bestBeforeDays.toInt(),
-                            isActive = isActive
                         )
 
                         // update Supabase

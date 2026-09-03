@@ -111,7 +111,6 @@ class SellerViewModel(
                     originalPriceCent = originalPriceCent,
                     bestBeforeDays = bestBeforeDays,
                     imageUrl = imageUrl,
-                    isActive = isActive
                 )
 
                 repository.addFoodItem(foodItem)

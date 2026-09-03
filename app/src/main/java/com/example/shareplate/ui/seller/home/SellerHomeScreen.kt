@@ -41,7 +41,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.shareplate.R
-import com.example.shareplate.data.FoodItems
 import com.example.shareplate.data.model.FoodItem
 import com.example.shareplate.ui.seller.navigation.SellerBottomBar
 import com.example.shareplate.ui.theme.SharePlateTheme
@@ -459,6 +458,5 @@ fun SurplusFoodRow(
 @Composable
 fun PreviewSurplusFoodRow() {
     SharePlateTheme() {
-        SurplusFoodRow(FoodItems.foodItems.get(0), onQuantityChange = {})
     }
 }
