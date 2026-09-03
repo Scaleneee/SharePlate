@@ -23,7 +23,4 @@ data class CreateFoodItem(
 
     @SerialName("image_url")
     val imageUrl: String? = null,
-
-    @SerialName("is_active")
-    val isActive: Boolean = true
 )

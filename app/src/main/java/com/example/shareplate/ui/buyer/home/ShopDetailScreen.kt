@@ -277,8 +277,6 @@ fun ShopDetailScreen(
 
                             description = buildFoodDescription(
 
-                                foodDescription = food.description,
-
                                 bestBeforeDays = food.bestBeforeDays,
 
                                 availableQuantity = listing.availableQuantity
@@ -1059,8 +1057,6 @@ private fun FoodDealRow(
 // FOOD DESCRIPTION
 private fun buildFoodDescription(
 
-    foodDescription: String?,
-
     bestBeforeDays: Int,
 
     availableQuantity: Int
@@ -1071,14 +1067,7 @@ private fun buildFoodDescription(
     val foodInformation = "Best Before: $bestBeforeDays days • Surplus Food: $availableQuantity"
 
 
-    return if (foodDescription.isNullOrBlank()) {
-
-        foodInformation
-
-    } else {
-
-        "$foodDescription • $foodInformation"
-    }
+    return foodInformation
 }
 
 

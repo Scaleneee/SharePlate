@@ -29,7 +29,6 @@ fun EditFoodScreen(
         ),
         initialBestBeforeDays = foodItem.bestBeforeDays.toString(),
         initialImageUrl = foodItem.imageUrl,
-        initialIsActive = foodItem.isActive,
         buttonText = "Update Food",
         onBackClick = onBackClick,
         onSubmit = onSaveClick

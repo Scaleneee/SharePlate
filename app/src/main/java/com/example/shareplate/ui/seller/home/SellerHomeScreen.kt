@@ -41,7 +41,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.shareplate.R
-import com.example.shareplate.data.FoodItems
 import com.example.shareplate.data.model.FoodItem
 import com.example.shareplate.ui.seller.navigation.SellerBottomBar
 import com.example.shareplate.ui.theme.SharePlateTheme
@@ -53,7 +52,6 @@ import com.example.shareplate.ui.theme.SharePlateTheme
 @Composable
 fun PreviewSellerHomeScreen() {
     SharePlateTheme {
-        SellerHomeScreen()
     }
 }
 
@@ -63,7 +61,8 @@ fun PreviewSellerHomeScreen() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SellerHomeScreen(
-    sellerName: String = "Bread History",
+    sellerName: String,
+    foodItems: List<FoodItem>,
     onHomeClick: () -> Unit = {},
     onMenuClick: () -> Unit = {},
     onActivityClick: () -> Unit = {},
@@ -76,7 +75,6 @@ fun SellerHomeScreen(
     val quantities = remember {
         mutableStateMapOf<Long, String>()
     }
-
     /**
      * Screen Scaffold
      */
@@ -120,7 +118,7 @@ fun SellerHomeScreen(
             // surplus food list
             item {
                 SurplusFoodList(
-                    FoodItems.foodItems,
+                    foodItems,
                     quantities = quantities,
                     onQuantityChange = { foodItemId, quantity ->
                         quantities[foodItemId] = quantity
@@ -296,38 +294,46 @@ fun SurplusFoodList(
             modifier = Modifier.height(24.dp)
         )
 
-        foodItems.forEach { foodItem ->
+        if (foodItems.isNotEmpty()) {
+            foodItems.forEach { foodItem ->
 
-            SurplusFoodRow(
-                foodItem = foodItem,
+                SurplusFoodRow(
+                    foodItem = foodItem,
 
-                quantity =
-                    quantities[foodItem.foodItemId] ?: "",
+                    quantity =
+                        quantities[foodItem.foodItemId] ?: "",
 
-                onQuantityChange = { newQuantity ->
-                    onQuantityChange(
-                        foodItem.foodItemId,
-                        newQuantity
-                    )
-                }
-            )
+                    onQuantityChange = { newQuantity ->
+                        onQuantityChange(
+                            foodItem.foodItemId,
+                            newQuantity
+                        )
+                    }
+                )
 
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
-        }
-        // if all the quantity is 0, false
-        val hasSurplus = quantities.values.any {
-            (it.toIntOrNull() ?: 0) > 0
-        }
-        Button(
-            onClick = onPublishClick,
-            enabled = hasSurplus, // the button enable only when there has surplus
-            modifier = Modifier.fillMaxWidth(),
-        ) {
+                Spacer(
+                    modifier = Modifier.height(12.dp)
+                )
+            }
+            // if all the quantity is 0, false
+            val hasSurplus = quantities.values.any {
+                (it.toIntOrNull() ?: 0) > 0
+            }
+            Button(
+                onClick = onPublishClick,
+                enabled = hasSurplus, // the button enable only when there has surplus
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = "Publish Today's Surplus",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        } else {
+            // no item yet
             Text(
-                text = "Publish Today's Surplus",
-                style = MaterialTheme.typography.bodyLarge
+                text = "No items in menu yet. set up your frequently wasted menu!",
+                style = MaterialTheme.typography.bodySmall
             )
         }
     }
@@ -389,7 +395,7 @@ fun SurplusFoodRow(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                Row (
+                Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -452,6 +458,5 @@ fun SurplusFoodRow(
 @Composable
 fun PreviewSurplusFoodRow() {
     SharePlateTheme() {
-        SurplusFoodRow(FoodItems.foodItems.get(0), onQuantityChange = {})
     }
 }

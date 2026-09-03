@@ -6,6 +6,8 @@ import com.example.shareplate.data.model.CreateFoodItem
 import com.example.shareplate.data.remote.SupabaseProvider
 import com.example.shareplate.data.model.FoodItem
 import com.example.shareplate.data.model.SurplusListing
+import com.example.shareplate.data.model.User
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.storage.storage
 
@@ -50,6 +52,17 @@ class SellerRepository {
             .insert(foodItem)
     }
 
+    suspend fun deleteFoodItem(
+        foodItemId: Long
+    ) {
+        supabase
+            .from("food_items")
+            .delete {
+                filter {
+                    eq("food_item_id", foodItemId)
+                }
+            }
+    }
 
     suspend fun updateFoodItem(
         foodItem: FoodItem
@@ -132,5 +145,14 @@ class SellerRepository {
 
         // get public URL
         return bucket.publicUrl(fileName)
+    }
+
+    suspend fun getCurrentSeller(): User? {
+        val uid = supabase.auth.currentUserOrNull()?.id ?: return null
+        return supabase.from("users")
+            .select {
+                filter { eq("user_id", uid) }
+            }
+            .decodeSingleOrNull<User>()
     }
 }

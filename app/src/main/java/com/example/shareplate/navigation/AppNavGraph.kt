@@ -1,7 +1,9 @@
 package com.example.shareplate.navigation
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,11 +20,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.shareplate.data.FoodItems
-import com.example.shareplate.data.local.NgoLocalStore
 import com.example.shareplate.data.local.SessionManager
 import com.example.shareplate.data.remote.SupabaseProvider
-import com.example.shareplate.ui.NGO.NGOActivityScreen
 import com.example.shareplate.ui.NGO.NGOHomeScreen
 import com.example.shareplate.ui.NGO.order.NGOCartStore
 import com.example.shareplate.ui.NGO.NGOCartScreen
@@ -48,24 +47,71 @@ import com.example.shareplate.ui.buyer.home.ShopDetailScreen
 import com.example.shareplate.ui.buyer.order.BuyerCartScreen
 import com.example.shareplate.ui.buyer.order.BuyerCheckoutScreen
 import com.example.shareplate.ui.buyer.order.BuyerPaymentScreen
-import com.example.shareplate.ui.buyer.profile.BuyerProfileScreen
-import com.example.shareplate.ui.buyer.BuyerViewModel
 import com.example.shareplate.ui.buyer.order.BuyerQrCodeScreen
+import com.example.shareplate.ui.buyer.profile.BuyerProfileScreen
+import io.github.jan.supabase.auth.status.SessionStatus
 
 @Composable
 fun AppNavGraph(
     navController: NavHostController = rememberNavController(),
 ) {
-    val sellerViewModel: SellerViewModel = viewModel()
-    val buyerViewModel: BuyerViewModel = viewModel()
-
     val context = LocalContext.current
-    val sessionManager = remember { SessionManager(context) }
-    val startDestination = remember {
-        if (sessionManager.isLoggedIn()) {
-            homeRouteFor(sessionManager.getRole())
-        } else {
-            AppRoutes.LOGIN
+
+    val sessionManager = remember {
+        SessionManager(context)
+    }
+
+    // Supabase authentication state
+    val sessionStatus by
+    SupabaseProvider.client.auth
+        .sessionStatus
+        .collectAsStateWithLifecycle()
+
+    // Wait for Supabase to restore saved session
+    if (sessionStatus == SessionStatus.Initializing) {
+
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+
+        return
+    }
+
+    // Create SellerViewModel AFTER Supabase finished restoring session
+    val sellerViewModel: SellerViewModel = viewModel()
+
+    // Decide startup screen using Supabase Auth
+    val startDestination =
+        when (sessionStatus) {
+
+            is SessionStatus.Authenticated -> {
+                homeRouteFor(
+                    sessionManager.getRole()
+                )
+            }
+
+            else -> {
+                AppRoutes.LOGIN
+            }
+        }
+
+    val errorMessage by
+    sellerViewModel.errorMessage
+        .collectAsStateWithLifecycle()
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { message ->
+
+            Toast.makeText(
+                context,
+                message,
+                Toast.LENGTH_LONG
+            ).show()
+
+            sellerViewModel.clearError()
         }
     }
 
@@ -141,15 +187,8 @@ fun AppNavGraph(
         composable(AppRoutes.NGO_HOME) {
             NGOHomeScreen(
                 onAcceptDonation = { donation, items ->
-                    NGOCartStore.donation = donation
-                    NGOCartStore.cartItems.clear()
-                    NGOCartStore.cartItems.addAll(items)
+                    NGOCartStore.set(donation, items)
                     navController.navigate(AppRoutes.NGO_CART)
-                },
-                onActivityClick = {
-                    navController.navigate(AppRoutes.NGO_ACTIVITY) {
-                        launchSingleTop = true
-                    }
                 },
                 onProfileClick = {
                     navController.navigate(AppRoutes.NGO_PROFILE)
@@ -157,34 +196,8 @@ fun AppNavGraph(
             )
         }
 
-        // NGO activity screen
-        composable(AppRoutes.NGO_ACTIVITY) {
-            val ngoViewModel: NGOViewModel = viewModel()
-            NGOActivityScreen(
-                ngoViewModel = ngoViewModel,
-                onHomeClick = {
-                    navController.navigate(AppRoutes.NGO_HOME) {
-                        launchSingleTop = true
-                    }
-                },
-                onMenuClick = {
-                    navController.navigate(AppRoutes.NGO_HOME) {
-                        launchSingleTop = true
-                    }
-                },
-                onActivityClick = {
-                    // already on activity
-                },
-                onProfileClick = {
-                    navController.navigate(AppRoutes.NGO_PROFILE) {
-                        launchSingleTop = true
-                    }
-                }
-            )
-        }
-
         // NGO cart screen
-                composable(AppRoutes.NGO_CART) {
+        composable(AppRoutes.NGO_CART) {
             NGOCartScreen(
                 onBackClick = { navController.popBackStack() },
                 onCheckoutClick = { navController.navigate(AppRoutes.NGO_CHECKOUT) }
@@ -209,37 +222,17 @@ fun AppNavGraph(
                 items = NGOCartStore.cartItems,
                 onBackClick = { navController.popBackStack() },
                 onCompleteClick = {
-                    val donation = NGOCartStore.donation
-                    val orderItems = NGOCartStore.cartItems.toList()
-
-                    ngoViewModel.submitOrder { _, pickupCode, _ ->
-                        val code = pickupCode.ifBlank { "ND${(1000..9999).random()}" }
-                        if (donation != null) {
-                            val itemsText = orderItems.joinToString(", ") { "${it.foodName} - ${it.quantity}" }
-                            NgoLocalStore(context).addOrder(
-                                "${donation.name}|${donation.location}|${donation.name.take(2).uppercase()}|Pickup today|${itemsText}|$code|${System.currentTimeMillis()}|false"
-                            )
-                        }
-                        navController.navigate(AppRoutes.ngoSuccessRoute(code)) {
-                            popUpTo(AppRoutes.NGO_CART) { inclusive = true }
-                        }
+                    NGOCartStore.donation?.let { d ->
+                        ngoViewModel.addPickup(d, NGOCartStore.rawItems)
                     }
+                    navController.navigate(AppRoutes.NGO_SUCCESS)
                 }
             )
         }
 
         // NGO successful screen
-        composable(
-            route = AppRoutes.NGO_SUCCESS,
-            arguments = listOf(
-                navArgument("pickupCode") {
-                    type = NavType.StringType
-                }
-            )
-        ) { backStackEntry ->
-            val pickupCode = backStackEntry.arguments?.getString("pickupCode") ?: ""
+        composable(AppRoutes.NGO_SUCCESS) {
             NGOSuccessScreen(
-                pickupCode = pickupCode,
                 onBackClick = {
                     navController.navigate(AppRoutes.NGO_HOME) {
                         popUpTo(AppRoutes.NGO_HOME)
@@ -251,24 +244,6 @@ fun AppNavGraph(
         // NGO profile screen
         composable(AppRoutes.NGO_PROFILE) {
             NGOProfileScreen(
-                onHomeClick = {
-                    navController.navigate(AppRoutes.NGO_HOME) {
-                        launchSingleTop = true
-                    }
-                },
-                onMenuClick = {
-                    navController.navigate(AppRoutes.NGO_HOME) {
-                        launchSingleTop = true
-                    }
-                },
-                onActivityClick = {
-                    navController.navigate(AppRoutes.NGO_ACTIVITY) {
-                        launchSingleTop = true
-                    }
-                },
-                onProfileClick = {
-                    // already on profile
-                },
                 onLogout = {
                     navController.navigate(AppRoutes.LOGIN) {
                         popUpTo(0) { inclusive = true }
@@ -277,18 +252,47 @@ fun AppNavGraph(
             )
         }
 
-
         // seller home screen
         composable(AppRoutes.SELLER_HOME) {
-            SellerHomeScreen(onHomeClick = {
-                // already on home
-            }, onMenuClick = {
-                navController.navigate(AppRoutes.SELLER_MENU)
-            }, onActivityClick = {
-                navController.navigate(AppRoutes.SELLER_ACTIVITY)
-            }, onProfileClick = {
-                navController.navigate(AppRoutes.SELLER_PROFILE)
-            })
+
+            val sellerName by sellerViewModel.sellerName.collectAsStateWithLifecycle()
+
+            val foodItems by sellerViewModel.foodItems.collectAsStateWithLifecycle()
+
+            val sellerId = SupabaseProvider.client.auth.currentUserOrNull()?.id
+
+            LaunchedEffect(sellerId) {
+                if (sellerId != null) {
+                    // load seller name
+                    sellerViewModel.fetchSellerName()
+                    sellerViewModel.loadFoodItems(sellerId)
+                }
+            }
+
+            SellerHomeScreen(
+                sellerName = sellerName, foodItems = foodItems,
+
+                onHomeClick = {
+                    // already home
+                },
+
+                onMenuClick = {
+                    navController.navigate(
+                        AppRoutes.SELLER_MENU
+                    )
+                },
+
+                onActivityClick = {
+                    navController.navigate(
+                        AppRoutes.SELLER_ACTIVITY
+                    )
+                },
+
+                onProfileClick = {
+                    navController.navigate(
+                        AppRoutes.SELLER_PROFILE
+                    )
+                })
         }
         // seller menu screen
         composable(AppRoutes.SELLER_MENU) {
@@ -296,15 +300,23 @@ fun AppNavGraph(
             val foodItems by sellerViewModel.foodItems.collectAsStateWithLifecycle()
             // get the seller id
             val sellerId = SupabaseProvider.client.auth.currentUserOrNull()?.id
+            val errorMessage by sellerViewModel.errorMessage.collectAsStateWithLifecycle()
 
-            LaunchedEffect(sellerId) {
-                if (sellerId != null) {
-                    sellerViewModel.loadFoodItems(sellerId)
+            LaunchedEffect(errorMessage) {
+                errorMessage?.let { message ->
+
+                    Toast.makeText(
+                        context,
+                        message,
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    sellerViewModel.clearError()
                 }
             }
 
             SellerMenuScreen(
-                foodItems = FoodItems.foodItems,
+                foodItems = foodItems,
                 onHomeClick = {
                     navController.navigate(AppRoutes.SELLER_HOME)
                 }, onMenuClick = {
@@ -317,66 +329,156 @@ fun AppNavGraph(
                     navController.navigate(AppRoutes.SELLER_ADD_FOOD)
                 }, onEditFoodClick = { foodItemId ->
                     navController.navigate("seller/edit-food/$foodItemId")
-                })
+                }, onDeleteClick = { foodItemId ->
+
+                    val foodOwnerId =
+                        foodItems.find {
+                            it.foodItemId == foodItemId
+                        }?.sellerId
+
+                    if (sellerId != null) {
+                        sellerViewModel.deleteFood(
+                            foodItemId = foodItemId,
+                            sellerId = sellerId
+                        )
+                    }
+                }
+            )
         }
+
         // seller add food screen
         composable(AppRoutes.SELLER_ADD_FOOD) {
+
             val context = LocalContext.current
-            val sellerId = SupabaseProvider.client.auth.currentUserOrNull()?.id
+
+            val sellerId =
+                SupabaseProvider.client.auth
+                    .currentUserOrNull()
+                    ?.id
+
+            // Observe error from SellerViewModel
+            val errorMessage by
+            sellerViewModel.errorMessage
+                .collectAsStateWithLifecycle()
+
+            // Show error when ViewModel reports one
+            LaunchedEffect(errorMessage) {
+                errorMessage?.let { message ->
+
+                    Toast.makeText(
+                        context,
+                        message,
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    sellerViewModel.clearError()
+                }
+            }
 
             AddFoodScreen(
                 onBackClick = {
                     navController.popBackStack()
                 },
-                onSaveClick = { foodName, category, originalPrice, bestBeforeDays, imageUri, isActive ->
-                    // ViewModel saves food
+
+                onSaveClick = { foodName,
+                                category,
+                                originalPrice,
+                                bestBeforeDays,
+                                imageUri,
+                                isActive ->
+
                     if (sellerId != null) {
-                        val originalPriceCent = (originalPrice.toDouble() * 100).toInt()
+
+                        val originalPriceCent =
+                            (originalPrice.toDouble() * 100)
+                                .toInt()
 
                         sellerViewModel.addFood(
                             context = context,
                             sellerId = sellerId,
                             foodName = foodName,
                             category = category,
-                            originalPriceCent =
-                                originalPriceCent,
+                            originalPriceCent = originalPriceCent,
                             bestBeforeDays =
                                 bestBeforeDays.toInt(),
-                            selectedImageUri =
-                                imageUri,
+                            selectedImageUri = imageUri,
                             isActive = isActive,
 
                             onSuccess = {
+
+                                Toast.makeText(
+                                    context,
+                                    "Food added successfully",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
                                 navController.popBackStack()
                             }
                         )
+
+                    } else {
+
+                        Toast.makeText(
+                            context,
+                            "Error: Supabase user session is null",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
-                })
+                }
+            )
         }
         // seller edit food screen
         composable(
-            route = AppRoutes.SELLER_EDIT_FOOD,
-            arguments = listOf(
-                navArgument("foodItemId") {
-                    type = NavType.LongType
-                }
-            )
-        ) { backStackEntry ->
-            // get the food item id from the route
-            val foodItemId = backStackEntry.arguments?.getLong("foodItemId") ?: -1
+            route = AppRoutes.SELLER_EDIT_FOOD, arguments = listOf(
+            navArgument("foodItemId") {
+                type = NavType.LongType
+            })) { backStackEntry ->
 
-            // get the food obj using the id
-            val foodItem = FoodItems.getFoodItemById(foodItemId)
-            FoodItems.getFoodItemById(foodItemId)?.let { foodItem ->
-                // call the screen
+            val context = LocalContext.current
+
+            // get food item id from route
+            val foodItemId = backStackEntry.arguments?.getLong("foodItemId") ?: return@composable
+
+            // get food items from ViewModel
+            val foodItems by sellerViewModel.foodItems.collectAsStateWithLifecycle()
+
+            // find the selected food
+            val foodItem = foodItems.find {
+                it.foodItemId == foodItemId
+            }
+
+            if (foodItem != null) {
+
                 EditFoodScreen(
                     foodItem = foodItem,
-                    onBackClick = { navController.popBackStack() },
-                    onSaveClick = { foodName, category, originalPrice, bestBeforeDays, imageURI, isActive ->
-                        // ViewModel saves food
+
+                    onBackClick = {
                         navController.popBackStack()
-                    }
-                )
+                    },
+
+                    onSaveClick = { foodName, category, originalPrice, bestBeforeDays, imageUri, isActive ->
+
+                        // convert RM to cent
+                        val originalPriceCent = (originalPrice.toDouble() * 100).toInt()
+
+                        // copy old food item with new values
+                        val updatedFoodItem = foodItem.copy(
+                            foodName = foodName,
+                            category = category,
+                            originalPriceCent = originalPriceCent,
+                            bestBeforeDays = bestBeforeDays.toInt(),
+                        )
+
+                        // update Supabase
+                        sellerViewModel.updateFood(
+                            context = context,
+                            foodItem = updatedFoodItem,
+                            selectedImageUri = imageUri,
+
+                            onSuccess = {
+                                navController.popBackStack()
+                            })
+                    })
             }
         }
 
@@ -384,8 +486,6 @@ fun AppNavGraph(
         composable(AppRoutes.BUYER_HOME) {
 
             BuyerHomeScreen(
-
-                buyerViewModel = buyerViewModel,
 
                 onShopClick = { shop ->
 
@@ -459,9 +559,9 @@ fun AppNavGraph(
 
             ShopDetailScreen(
 
-                sellerId = sellerId,
+                sellerId =
+                    sellerId,
 
-                buyerViewModel = buyerViewModel,
                 onBackClick = {
 
                     navController
@@ -512,8 +612,6 @@ fun AppNavGraph(
         ) {
 
             BuyerCartScreen(
-
-                buyerViewModel = buyerViewModel,
 
                 onBackClick = {
                     navController.popBackStack()
@@ -567,8 +665,6 @@ fun AppNavGraph(
 
             BuyerCheckoutScreen(
 
-                buyerViewModel = buyerViewModel,
-
                 onBackClick = {
 
                     navController.popBackStack()
@@ -591,17 +687,14 @@ fun AppNavGraph(
 
             BuyerPaymentScreen(
 
-                buyerViewModel = buyerViewModel,
-
                 onBackClick = {
 
                     navController
                         .popBackStack()
                 },
 
-                onPaymentSuccess = {
-                        pickupCode,
-                        totalPriceCent ->
+                onPaymentSuccess = { pickupCode,
+                                     totalPriceCent ->
 
 
                     navController.navigate(
@@ -628,7 +721,7 @@ fun AppNavGraph(
             )
         }
 
-    // BUYER ORDER SUCCESS
+        // BUYER ORDER SUCCESS
         composable(
 
             route =
@@ -709,14 +802,12 @@ fun AppNavGraph(
             )
         }
 
-    // BUYER ACTIVITY
+        // BUYER ACTIVITY
         composable(
             AppRoutes.BUYER_ACTIVITY
         ) {
 
             BuyerActivityScreen(
-
-                buyerViewModel = buyerViewModel,
 
                 onHomeClick = {
 
@@ -793,9 +884,8 @@ fun AppNavGraph(
 
             BuyerQrCodeScreen(
 
-                orderId = orderId,
-
-                buyerViewModel = buyerViewModel,
+                orderId =
+                    orderId,
 
                 onBackClick = {
 
@@ -805,15 +895,13 @@ fun AppNavGraph(
             )
         }
 
-    // BUYER PROFILE
+        // BUYER PROFILE
 
         composable(
             AppRoutes.BUYER_PROFILE
         ) {
 
             BuyerProfileScreen(
-
-                buyerViewModel = buyerViewModel,
 
                 onHomeClick = {
 
