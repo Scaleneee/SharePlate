@@ -56,25 +56,19 @@ fun ProfileScreen(
     var saveMessage by remember { mutableStateOf<String?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    var fullName by remember { mutableStateOf("") }
-    var phoneNumber by remember { mutableStateOf("") }
-    var businessName by remember { mutableStateOf("") }
-    var businessAddress by remember { mutableStateOf("") }
-    var deliveryAddress by remember { mutableStateOf("") }
-    var organizationName by remember { mutableStateOf("") }
-    var organizationRegNo by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var organisationName by remember { mutableStateOf("") }
+    var address by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         val loaded = authRepository.getCurrentProfile()
         profile = loaded
         loaded?.let {
-            fullName = it.fullName
-            phoneNumber = it.phoneNumber
-            businessName = it.businessName ?: ""
-            businessAddress = it.businessAddress ?: ""
-            deliveryAddress = it.deliveryAddress ?: ""
-            organizationName = it.organizationName ?: ""
-            organizationRegNo = it.organizationRegNo ?: ""
+            name = it.name
+            phone = it.phone
+            organisationName = it.organisationName ?: ""
+            address = it.address ?: ""
         }
         isLoading = false
     }
@@ -145,30 +139,28 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            ProfileField("Full Name", fullName, { fullName = it }, isEditing)
+            ProfileField("Name", name, { name = it }, isEditing)
             Spacer(modifier = Modifier.height(12.dp))
 
             ProfileField("Email", currentProfile.email, {}, editable = false)
             Spacer(modifier = Modifier.height(12.dp))
 
-            ProfileField("Phone Number", phoneNumber, { phoneNumber = it }, isEditing)
+            ProfileField("Phone", phone, { phone = it }, isEditing)
             Spacer(modifier = Modifier.height(12.dp))
 
             when (currentProfile.role) {
                 "SELLER" -> {
-                    ProfileField("Business Name", businessName, { businessName = it }, isEditing)
+                    ProfileField("Business / Shop Name", organisationName, { organisationName = it }, isEditing)
                     Spacer(modifier = Modifier.height(12.dp))
-                    ProfileField("Business Address", businessAddress, { businessAddress = it }, isEditing)
+                    ProfileField("Business Address", address, { address = it }, isEditing)
                     Spacer(modifier = Modifier.height(12.dp))
                 }
                 "BUYER" -> {
-                    ProfileField("Delivery Address", deliveryAddress, { deliveryAddress = it }, isEditing)
+                    ProfileField("Delivery Address", address, { address = it }, isEditing)
                     Spacer(modifier = Modifier.height(12.dp))
                 }
                 "NGO" -> {
-                    ProfileField("Organization Name", organizationName, { organizationName = it }, isEditing)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    ProfileField("Registration Number", organizationRegNo, { organizationRegNo = it }, isEditing)
+                    ProfileField("Organization Name", organisationName, { organisationName = it }, isEditing)
                     Spacer(modifier = Modifier.height(12.dp))
                 }
             }
@@ -197,13 +189,10 @@ fun ProfileScreen(
                 Button(
                     onClick = {
                         val updated = currentProfile.copy(
-                            fullName = fullName.trim(),
-                            phoneNumber = phoneNumber.trim(),
-                            businessName = businessName.ifBlank { null },
-                            businessAddress = businessAddress.ifBlank { null },
-                            deliveryAddress = deliveryAddress.ifBlank { null },
-                            organizationName = organizationName.ifBlank { null },
-                            organizationRegNo = organizationRegNo.ifBlank { null }
+                            name = name.trim(),
+                            phone = phone.trim(),
+                            organisationName = organisationName.ifBlank { null },
+                            address = address.ifBlank { null }
                         )
                         scope.launch {
                             authRepository.updateProfile(updated)

@@ -1,5 +1,6 @@
 package com.example.shareplate.ui.seller.menu
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import com.example.shareplate.data.model.FoodItem
 
@@ -12,7 +13,7 @@ fun EditFoodScreen(
         category: String,
         originalPrice: String,
         bestBeforeDays: String,
-        imageUri: String?,
+        imageUri: Uri?,
         isActive: Boolean
     ) -> Unit
 ) {
@@ -27,7 +28,7 @@ fun EditFoodScreen(
             foodItem.originalPriceCent / 100.0
         ),
         initialBestBeforeDays = foodItem.bestBeforeDays.toString(),
-        initialImageUri = foodItem.imageUrl,
+        initialImageUrl = foodItem.imageUrl,
         initialIsActive = foodItem.isActive,
         buttonText = "Update Food",
         onBackClick = onBackClick,
