@@ -1,6 +1,5 @@
 package com.example.shareplate.ui.NGO
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,21 +12,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,14 +33,9 @@ fun NGOProfileScreen(
     phone: String = "",
     organisation: String = "",
     address: String = "",
+    onEditProfile: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
-    var name by remember { mutableStateOf(username) }
-    var phoneText by remember { mutableStateOf(phone) }
-    var orgText by remember { mutableStateOf(organisation) }
-    var addressText by remember { mutableStateOf(address) }
-    var edit by remember { mutableStateOf(false) }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -67,60 +56,32 @@ fun NGOProfileScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Text(name.ifBlank { "NGO User" }, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+        Text(username.ifBlank { "NGO User" }, fontSize = 21.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(4.dp))
         Text("NGO", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        TextButton(
-            onClick = { edit = !edit },
-            modifier = Modifier.align(Alignment.End)
+        ProfileRow("Name", username)
+        ProfileRow("Email", email)
+        ProfileRow("Phone Number", phone.ifBlank { "—" })
+        ProfileRow("Organisation", organisation.ifBlank { "—" })
+        ProfileRow("Address", address.ifBlank { "—" })
+        ProfileRow("Role", "NGO")
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Button(
+            onClick = onEditProfile,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
         ) {
-            Text(if (edit) "Cancel" else "Edit Profile")
+            Text("Edit Profile", color = Color.White)
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
-
-        NGOProfileField(label = "Name", value = name, onValueChange = { name = it }, enabled = edit)
         Spacer(modifier = Modifier.height(14.dp))
-
-        NGOProfileField(label = "Email", value = email, onValueChange = {}, enabled = false)
-        Spacer(modifier = Modifier.height(14.dp))
-
-        NGOProfileField(label = "Phone Number", value = phoneText, onValueChange = { phoneText = it }, enabled = edit)
-        Spacer(modifier = Modifier.height(14.dp))
-
-        NGOProfileField(label = "Organisation", value = orgText, onValueChange = { orgText = it }, enabled = edit)
-        Spacer(modifier = Modifier.height(14.dp))
-
-        OutlinedTextField(
-            value = addressText,
-            onValueChange = { addressText = it },
-            label = { Text("Address") },
-            enabled = edit,
-            modifier = Modifier.fillMaxWidth(),
-            minLines = 2,
-            maxLines = 4
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        NGOProfileField(label = "Role", value = "NGO", onValueChange = {}, enabled = false)
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        if (edit) {
-            Button(
-                onClick = { edit = false },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-            ) {
-                Text("Save Changes")
-            }
-            Spacer(modifier = Modifier.height(14.dp))
-        }
 
         OutlinedButton(
             onClick = onLogout,
@@ -136,20 +97,12 @@ fun NGOProfileScreen(
 }
 
 @Composable
-private fun NGOProfileField(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    enabled: Boolean
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        enabled = enabled,
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth()
-    )
+private fun ProfileRow(label: String, value: String) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp)) {
+        Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(value, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+    }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
