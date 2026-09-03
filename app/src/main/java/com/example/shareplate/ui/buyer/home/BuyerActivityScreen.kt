@@ -60,25 +60,15 @@ import java.util.Locale
 data class BuyerOrderDisplay(
 
     val orderId: Long,
-
     val listingId: Long,
-
     val foodName: String,
-
     val shopName: String,
-
     val shopAddress: String,
-
     val quantity: Int,
-
     val totalPriceCent: Int,
-
     val pickupCode: String,
-
     val status: String,
-
     val orderedAt: String,
-
     val pickupEndAt: Long
 )
 
@@ -1746,8 +1736,6 @@ fun BuyerActivityScreenPreview() {
     SharePlateTheme(
         dynamicColor = false
     ) {
-
-
         BuyerActivityScreen()
     }
 }
