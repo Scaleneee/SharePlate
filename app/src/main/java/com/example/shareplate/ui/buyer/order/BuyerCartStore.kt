@@ -5,43 +5,55 @@ import com.example.shareplate.ui.buyer.home.FoodDeal
 
 
 data class BuyerCartItem(
-
     val listingId: Long,
-
     val foodItemId: Long,
-
     val sellerId: String,
-
     val shopName: String,
-
     val foodName: String,
-
     val price: Double,
-
     val pickupTime: String,
-
     val availableQuantity: Int,
-
     val quantity: Int = 1
 )
 
-
 object BuyerCartStore {
 
-    val cartItems =
-        mutableStateListOf<BuyerCartItem>()
+    val cartItems = mutableStateListOf<BuyerCartItem>()
 
-
+    // ADD ITEM
     fun addItem(
+
         shopName: String,
         foodDeal: FoodDeal
+
     ): Boolean {
 
-        if (foodDeal.availableQuantity <= 0) {
+        // CHECK AVAILABLE STOCK
+        if (
+            foodDeal.availableQuantity <= 0
+        ) {
             return false
         }
 
+        // ONLY ALLOW ONE SHOP IN ONE CART
+        if (
+            cartItems.isNotEmpty()
+        ) {
 
+            val currentSellerId = cartItems
+                    .first()
+                    .sellerId
+
+
+            if (
+                currentSellerId != foodDeal.sellerId
+            ) {
+
+                return false
+            }
+        }
+
+        // CONVERT PRICE STRING TO DOUBLE
         val priceValue =
             foodDeal.price
                 .replace(
@@ -53,35 +65,37 @@ object BuyerCartStore {
                 .toDoubleOrNull()
                 ?: 0.0
 
+        // CHECK WHETHER ITEM ALREADY EXISTS
+       val existingIndex =
+            cartItems
+                .indexOfFirst {
 
-        val existingIndex =
-            cartItems.indexOfFirst { item ->
-
-                item.listingId ==
-                        foodDeal.listingId
-            }
+                    it.listingId == foodDeal.listingId
+                }
 
 
-        if (existingIndex >= 0) {
+        if (
+            existingIndex >= 0
+        ) {
 
             val existingItem =
-                cartItems[existingIndex]
-
-
+                cartItems[
+                    existingIndex
+                ]
+            // Cannot exceed Supabase available quantity
             if (
                 existingItem.quantity >=
                 existingItem.availableQuantity
             ) {
-
                 return false
             }
 
 
-            cartItems[existingIndex] =
+            cartItems[
+                existingIndex
+            ] =
                 existingItem.copy(
-
-                    quantity =
-                        existingItem.quantity + 1
+                    quantity = existingItem.quantity + 1
                 )
 
 
@@ -91,41 +105,22 @@ object BuyerCartStore {
             cartItems.add(
 
                 BuyerCartItem(
-
-                    listingId =
-                        foodDeal.listingId,
-
-                    foodItemId =
-                        foodDeal.foodItemId,
-
-                    sellerId =
-                        foodDeal.sellerId,
-
-                    shopName =
-                        shopName,
-
-                    foodName =
-                        foodDeal.name,
-
-                    price =
-                        priceValue,
-
-                    pickupTime =
-                        foodDeal.pickupTime,
-
-                    availableQuantity =
-                        foodDeal.availableQuantity,
-
+                    listingId = foodDeal.listingId,
+                    foodItemId = foodDeal.foodItemId,
+                    sellerId = foodDeal.sellerId,
+                    shopName = shopName,
+                    foodName = foodDeal.name,
+                    price = priceValue,
+                    pickupTime = foodDeal.pickupTime,
+                    availableQuantity = foodDeal.availableQuantity,
                     quantity = 1
                 )
             )
         }
-
-
         return true
     }
 
-
+    // INCREASE QUANTITY
     fun increaseQuantity(
         index: Int
     ): Boolean {
@@ -136,32 +131,23 @@ object BuyerCartStore {
             return false
         }
 
-
-        val item =
-            cartItems[index]
-
-
+        val item = cartItems[index]
         if (
-            item.quantity >=
-            item.availableQuantity
+            item.quantity >= item.availableQuantity
         ) {
-
             return false
         }
 
 
         cartItems[index] =
             item.copy(
-
-                quantity =
-                    item.quantity + 1
+                quantity = item.quantity + 1
             )
-
 
         return true
     }
 
-
+    // DECREASE QUANTITY
     fun decreaseQuantity(
         index: Int
     ) {
@@ -172,106 +158,127 @@ object BuyerCartStore {
             return
         }
 
+        val item = cartItems[index]
 
-        val item =
-            cartItems[index]
-
-
-        if (item.quantity > 1) {
-
+        if (
+            item.quantity > 1
+        ) {
             cartItems[index] =
                 item.copy(
-
-                    quantity =
-                        item.quantity - 1
+                    quantity = item.quantity - 1
                 )
-
         } else {
-
-            cartItems.removeAt(index)
+            cartItems.removeAt(
+                index
+            )
         }
     }
 
-
+    // REMOVE ITEM
     fun removeItem(
         index: Int
     ) {
 
+
         if (
             index in cartItems.indices
         ) {
-
-            cartItems.removeAt(index)
+            cartItems.removeAt(
+                index
+            )
         }
     }
-
-
+    // REMOVE USING LISTING ID
     fun removeItemByListingId(
+
         listingId: Long
+
     ) {
 
-        cartItems.removeAll { item ->
 
-            item.listingId ==
-                    listingId
+        cartItems.removeAll {
+
+            it.listingId == listingId
         }
     }
 
-
+    // CLEAR CART
     fun clearCart() {
-
         cartItems.clear()
     }
 
+    // TOTAL PRICE
+    fun getTotalPrice():
+            Double {
 
-    fun getTotalPrice(): Double {
+        return cartItems.sumOf {
 
-        return cartItems.sumOf { item ->
-
-            item.price *
-                    item.quantity
+            it.price * it.quantity
         }
     }
 
-
-    fun getTotalQuantity(): Int {
-
-        return cartItems.sumOf { item ->
-
-            item.quantity
+    // TOTAL QUANTITY
+    fun getTotalQuantity():
+            Int {
+        return cartItems.sumOf {
+            it.quantity
         }
     }
 
+    // CHECK EMPTY
+    fun isCartEmpty():
+            Boolean {
 
-    fun isCartEmpty(): Boolean {
 
         return cartItems.isEmpty()
     }
 
-
+    // CHECK LISTING EXISTS
     fun containsListing(
         listingId: Long
     ): Boolean {
-
-        return cartItems.any { item ->
-
-            item.listingId ==
-                    listingId
+        return cartItems.any {
+            it.listingId == listingId
         }
     }
 
-
+    // GET ITEM QUANTITY
     fun getQuantityForListing(
         listingId: Long
     ): Int {
 
         return cartItems
-            .find { item ->
+            .find {
+                it.listingId == listingId
+            }?.quantity ?: 0
+    }
 
-                item.listingId ==
-                        listingId
-            }
-            ?.quantity
-            ?: 0
+    // GET CURRENT SELLER
+   fun getCurrentSellerId():
+            String? {
+
+
+        return cartItems
+            .firstOrNull()
+            ?.sellerId
+    }
+
+    // CHECK WHETHER ANOTHER SHOP CAN BE ADDED
+    fun canAddFromSeller(
+
+        sellerId: String
+
+    ): Boolean {
+
+        if (
+            cartItems.isEmpty()
+        ) {
+            return true
+        }
+
+        return cartItems
+            .first()
+            .sellerId ==
+                sellerId
     }
 }
