@@ -89,26 +89,11 @@ fun BuyerProfileScreen(
                 )
 
 
-            profile =
-                previewProfile
-
-
-            buyerName =
-                previewProfile.name
-
-
-            phoneNumber =
-                previewProfile.phone
-
-
-            deliveryAddress =
-                previewProfile.address
-                    ?: ""
-
-
-            isLoading =
-                false
-
+            profile = previewProfile
+            buyerName = previewProfile.name
+            phoneNumber = previewProfile.phone
+            deliveryAddress = previewProfile.address ?: ""
+            isLoading = false
 
             return@LaunchedEffect
         }
@@ -117,19 +102,12 @@ fun BuyerProfileScreen(
         try {
 
             isLoading = true
-
             errorMessage = null
-
-
-            val loadedProfile =
-                authRepository
-                    .getCurrentProfile()
-
+            val loadedProfile = authRepository.getCurrentProfile()
 
             if (loadedProfile == null) {
 
-                errorMessage =
-                    "Profile not found. Please log in again."
+                errorMessage = "Profile not found. Please log in again."
 
                 return@LaunchedEffect
             }
@@ -197,10 +175,7 @@ fun BuyerProfileScreen(
                     Text(
 
                         text = errorMessage ?: "Profile not found.",
-
-                        color = MaterialTheme
-                                .colorScheme
-                                .error,
+                        color = MaterialTheme.colorScheme.error,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -222,7 +197,6 @@ fun BuyerProfileScreen(
 
                     // TITLE
                    Text(
-
                         text = "My Profile",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
@@ -266,9 +240,7 @@ fun BuyerProfileScreen(
                     Text(
                         text = "Buyer",
                         fontSize = 13.sp,
-                        color = MaterialTheme
-                                .colorScheme
-                                .onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
 
@@ -405,13 +377,8 @@ fun BuyerProfileScreen(
                         Text(
 
                             text = errorMessage ?: "",
-
                             modifier = Modifier.fillMaxWidth(),
-
-                            color = MaterialTheme
-                                    .colorScheme
-                                    .error,
-
+                            color = MaterialTheme.colorScheme.error,
                             fontSize = 13.sp
                         )
                     }
@@ -430,10 +397,7 @@ fun BuyerProfileScreen(
                         Text(
                             text = successMessage ?: "",
                             modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme
-                                    .colorScheme
-                                    .primary,
-
+                            color = MaterialTheme.colorScheme.primary,
                             fontSize = 13.sp
                         )
                     }
@@ -464,47 +428,27 @@ fun BuyerProfileScreen(
                                 }
 
                                 // VALIDATE PHONE
-                               if (
-                                    phoneNumber
-                                        .trim()
-                                        .isEmpty()
-                                ) {
+                                if (phoneNumber.trim().isEmpty()) {
 
-                                    errorMessage =
-                                        "Please enter your phone number."
+                                   errorMessage = "Please enter your phone number."
 
-                                    return@Button
-                                }
+                                   return@Button
+                               }
 
 
                                 // UPDATE SUPABASE
                                 coroutineScope.launch {
 
 
-                                    isSaving =
-                                        true
+                                    isSaving = true
 
 
                                     try {
-
-
                                         val updatedProfile =
                                             currentProfile.copy(
-
-                                                name =
-                                                    buyerName
-                                                        .trim(),
-
-                                                phone =
-                                                    phoneNumber
-                                                        .trim(),
-
-                                                address =
-                                                    deliveryAddress
-                                                        .trim()
-                                                        .ifBlank {
-                                                            null
-                                                        }
+                                                name = buyerName.trim(),
+                                                phone = phoneNumber.trim(),
+                                                address = deliveryAddress.trim().ifBlank { null }
                                             )
 
 
@@ -513,60 +457,29 @@ fun BuyerProfileScreen(
                                                 updatedProfile
                                             )
                                             .onSuccess {
-
-
-                                                profile =
-                                                    updatedProfile
-
-
-                                                buyerName =
-                                                    updatedProfile.name
-
-
-                                                phoneNumber =
-                                                    updatedProfile.phone
-
-
-                                                deliveryAddress =
-                                                    updatedProfile.address
-                                                        ?: ""
-
-
-                                                isEditing =
-                                                    false
-
-
-                                                successMessage =
-                                                    "Profile updated successfully."
+                                                profile = updatedProfile
+                                                buyerName = updatedProfile.name
+                                                phoneNumber = updatedProfile.phone
+                                                deliveryAddress = updatedProfile.address ?: ""
+                                                isEditing = false
+                                                successMessage = "Profile updated successfully."
                                             }
                                             .onFailure { error ->
-
-
-                                                errorMessage =
-                                                    error.message
-                                                        ?: "Unable to update profile."
+                                                errorMessage = error.message ?: "Unable to update profile."
                                             }
 
 
                                     } catch (e: Exception) {
-
-
-                                        errorMessage =
-                                            e.message
-                                                ?: "Unable to update profile."
-
+                                        errorMessage = e.message ?: "Unable to update profile."
 
                                     } finally {
 
-
-                                        isSaving =
-                                            false
+                                        isSaving = false
                                     }
                                 }
                             },
 
-                            enabled =
-                                !isSaving,
+                            enabled = !isSaving,
 
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -574,119 +487,76 @@ fun BuyerProfileScreen(
 
                         ) {
 
-
                             if (isSaving) {
-
-
                                 CircularProgressIndicator(
-
-                                    modifier =
-                                        Modifier.size(22.dp)
+                                    modifier = Modifier.size(22.dp)
                                 )
 
 
                             } else {
-
-
                                 Text(
-                                    text =
-                                        "Save Changes"
+                                    text = "Save Changes"
                                 )
                             }
                         }
 
 
                         Spacer(
-                            modifier =
-                                Modifier.height(14.dp)
+                            modifier = Modifier.height(14.dp)
                         )
                     }
 
-
-                    // =================================================
                     // LOG OUT
-                    // =================================================
-
                     OutlinedButton(
 
                         onClick = {
 
 
                             if (isLoggingOut) {
-
                                 return@OutlinedButton
                             }
 
 
                             coroutineScope.launch {
-
-
-                                isLoggingOut =
-                                    true
-
-
-                                errorMessage =
-                                    null
-
+                                isLoggingOut = true
+                                errorMessage = null
 
                                 try {
-
 
                                     // Sign out from Supabase
                                     authRepository
                                         .signOut()
 
-
                                     // Clear local remembered role
                                     sessionManager
                                         .clearSession()
-
 
                                     // Clear buyer temporary cart
                                     BuyerCartStore
                                         .clearCart()
 
-
                                     // Navigate to login later
                                     onLoggedOut()
 
-
                                 } catch (e: Exception) {
-
-
-                                    errorMessage =
-                                        e.message
-                                            ?: "Unable to log out."
-
-
+                                    errorMessage = e.message ?: "Unable to log out."
                                 } finally {
-
-
-                                    isLoggingOut =
-                                        false
+                                    isLoggingOut = false
                                 }
                             }
                         },
 
-                        enabled =
-                            !isLoggingOut,
-
+                        enabled = !isLoggingOut,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)
 
                     ) {
 
-
                         if (isLoggingOut) {
-
-
                             CircularProgressIndicator(
-
                                 modifier = Modifier.size(22.dp)
                             )
-
-
                         } else {
 
 

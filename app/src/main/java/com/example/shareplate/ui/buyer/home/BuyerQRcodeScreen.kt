@@ -760,17 +760,12 @@ private fun formatQrPickupTime(
                 Locale.getDefault()
             )
 
-
         formatter.format(
             Date(
                 milliseconds
             )
         )
-
-
     } catch (e: Exception) {
-
-
         "Not available"
     }
 }

@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shareplate.R
 import com.example.shareplate.data.repository.BuyerRepository
+import com.example.shareplate.data.supabase.AuthRepository
 import com.example.shareplate.ui.buyer.navigation.BuyerBottomBar
 import com.example.shareplate.ui.theme.SharePlateTheme
 
@@ -65,48 +66,47 @@ fun BuyerHomeScreen(
     onOrderClick: () -> Unit = {},
     onActivityClick: () -> Unit = {},
     onProfileClick: () -> Unit = {}
+
 ) {
 
-    val repository = remember {
-        BuyerRepository()
-    }
-
+    val buyerRepository = remember { BuyerRepository() }
+    val authRepository = remember { AuthRepository() }
     val isPreview = LocalInspectionMode.current
+    var searchText by rememberSaveable { mutableStateOf("") }
+    var buyerName by remember { mutableStateOf("Buyer") }
+    var shops by remember { mutableStateOf<List<Shop>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    var searchText by rememberSaveable {
-        mutableStateOf("")
-    }
-
-    var shops by remember {
-        mutableStateOf<List<Shop>>(emptyList())
-    }
-
-    var isLoading by remember {
-        mutableStateOf(true)
-    }
-
-    var errorMessage by remember {
-        mutableStateOf<String?>(null)
-    }
-
-
+    // LOAD BUYER + SHOPS FROM SUPABASE
     LaunchedEffect(Unit) {
 
+
+        // PREVIEW DATA ONLY
         if (isPreview) {
 
+
+            buyerName = "Brian Chew"
+
+
             shops = listOf(
+
                 Shop(
                     sellerId = "preview-seller-1",
                     name = "Ondo Bakery",
                     address = "Petaling Jaya",
                     shortName = "OB"
                 ),
+
+
                 Shop(
                     sellerId = "preview-seller-2",
                     name = "The Coffee Bean & Tea Leaf",
                     address = "Kuala Lumpur",
                     shortName = "CB"
                 ),
+
+
                 Shop(
                     sellerId = "preview-seller-3",
                     name = "Bread History",
@@ -115,84 +115,75 @@ fun BuyerHomeScreen(
                 )
             )
 
+
             isLoading = false
+
 
             return@LaunchedEffect
         }
 
 
         try {
-
             isLoading = true
-
             errorMessage = null
 
+            // GET CURRENT LOGGED-IN BUYER
+            val currentProfile = authRepository.getCurrentProfile()
 
-            val sellers =
-                repository.getSellers()
 
+            buyerName = currentProfile?.name?.takeIf {
+                    it.isNotBlank()
+                } ?: "Buyer"
+
+            // GET SELLERS / SHOPS
+            val sellers = buyerRepository.getSellers()
 
             shops = sellers.map { seller ->
-
-                val shopName =
-                    seller.organisationName
-                        ?.takeIf {
-                            it.isNotBlank()
-                        }
-                        ?: seller.name
+                val shopName = seller.organisationName?.takeIf {
+                        it.isNotBlank()
+                    } ?: seller.name
 
 
                 Shop(
                     sellerId = seller.userId,
                     name = shopName,
-                    address = seller.address
-                        ?: "Address not provided",
+                    address = seller.address ?: "Address not provided",
                     shortName = createShortName(
                         shopName
                     )
                 )
             }
-
-
         } catch (e: Exception) {
-
-            errorMessage =
-                e.message
-                    ?: "Unable to load shops."
-
+            errorMessage = e.message ?: "Unable to load shops."
         } finally {
-
             isLoading = false
         }
     }
 
+    // SEARCH
+    val filteredShops =
 
-    val filteredShops = if (
-        searchText.isBlank()
-    ) {
+        if (searchText.isBlank()) {
+            shops
+        } else {
+            shops.filter { shop ->
+                shop.name.contains(
+                    searchText,
+                    ignoreCase = true
+                ) ||
 
-        shops
 
-    } else {
-
-        shops.filter { shop ->
-
-            shop.name.contains(
-                searchText,
-                ignoreCase = true
-            ) ||
-                    shop.address.contains(
-                        searchText,
-                        ignoreCase = true
-                    )
+                        shop.address.contains(
+                            searchText,
+                            ignoreCase = true
+                        )
+            }
         }
-    }
 
 
     Scaffold(
 
         bottomBar = {
-
             BuyerBottomBar(
                 selectedIndex = 0,
                 onHomeClick = onHomeClick,
@@ -211,41 +202,41 @@ fun BuyerHomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp),
+            contentPadding = PaddingValues(bottom = 20.dp)
 
-            contentPadding = PaddingValues(
-                bottom = 20.dp
-            )
         ) {
 
 
             item {
-
                 Spacer(
                     modifier = Modifier.height(30.dp)
                 )
 
-
-                BuyerHeaderSection()
+                // HEADER
+               BuyerHeaderSection(
+                    buyerName = buyerName
+                )
 
 
                 Spacer(
                     modifier = Modifier.height(20.dp)
                 )
 
-
+                // SEARCH
                 BuyerSearchField(
+
                     searchText = searchText,
                     onSearchTextChange = {
+
                         searchText = it
-                    }
-                )
+                    })
 
 
                 Spacer(
                     modifier = Modifier.height(20.dp)
                 )
 
-
+                // QUICK BUTTONS
                 BuyerQuickButtons()
 
 
@@ -255,15 +246,14 @@ fun BuyerHomeScreen(
 
 
                 Text(
-                    text = if (
-                        searchText.isBlank()
-                    ) {
-                        "RECOMMENDED SHOPS"
-                    } else {
-                        "SEARCH RESULTS"
-                    },
-                    style =
-                        MaterialTheme.typography.bodyLarge
+                    text =
+                        if (searchText.isBlank()) {
+                            "RECOMMENDED SHOPS"
+                        } else {
+                            "SEARCH RESULTS"
+                        },
+
+                    style = MaterialTheme.typography.bodyLarge
                 )
 
 
@@ -272,87 +262,102 @@ fun BuyerHomeScreen(
                 )
             }
 
+            // LOADING
+          if (isLoading) {
 
-            if (isLoading) {
 
                 item {
 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 50.dp),
-                        contentAlignment =
-                            Alignment.Center
-                    ) {
+                            .padding(
+                                top = 50.dp
+                            ),
 
+                        contentAlignment = Alignment.Center
+
+                    ) {
                         CircularProgressIndicator()
                     }
                 }
 
-            } else if (
-                errorMessage != null
-            ) {
 
-                item {
+            } else if (errorMessage != null) {
 
+                // ERROR
+                 item {
                     Box(
+
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 40.dp),
-                        contentAlignment =
-                            Alignment.Center
+                            .padding(
+                                top = 40.dp
+                            ),
+                        contentAlignment = Alignment.Center
+
                     ) {
 
+
                         Text(
-                            text =
-                                errorMessage
-                                    ?: "Something went wrong.",
+                            text = errorMessage ?: "Something went wrong.",
                             color = Color.Red,
-                            style =
-                                MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
 
-            } else if (
-                filteredShops.isEmpty()
-            ) {
 
-                item {
+            } else if (filteredShops.isEmpty()) {
+
+                // EMPTY RESULT
+               item {
+
 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 40.dp),
-                        contentAlignment =
-                            Alignment.Center
+                            .padding(
+                                top = 40.dp
+                            ),
+
+                        contentAlignment = Alignment.Center
+
                     ) {
+
 
                         Text(
                             text = "No shops found",
-                            style =
-                                MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = Color.Gray
                         )
                     }
                 }
 
+
             } else {
 
-                items(
+                // SHOP LIST
+               items(
+
                     items = filteredShops,
+
                     key = { shop ->
+
                         shop.sellerId
                     }
+
                 ) { shop ->
 
 
                     BuyerShopItem(
+
                         shop = shop,
                         onClick = {
-                            onShopClick(shop)
-                        }
-                    )
+                            onShopClick(
+                                shop
+                            )
+                        })
 
 
                     HorizontalDivider(
@@ -364,39 +369,38 @@ fun BuyerHomeScreen(
     }
 }
 
-
+// HEADER
 @Composable
-fun BuyerHeaderSection() {
+fun BuyerHeaderSection(
+
+    buyerName: String
+
+) {
+
 
     Row(
-        modifier =
-            Modifier.fillMaxWidth(),
-        verticalAlignment =
-            Alignment.CenterVertically,
-        horizontalArrangement =
-            Arrangement.SpaceBetween
+
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+
     ) {
 
 
         Column {
-
             Text(
-                text = "Hey, Brian Chew",
+                text = "Hey, $buyerName",
                 fontSize = 21.sp,
-                fontWeight =
-                    FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold
             )
-
 
             Spacer(
-                modifier =
-                    Modifier.height(4.dp)
+                modifier = Modifier.height(4.dp)
             )
 
 
             Text(
-                text =
-                    "Discover food, save money, reduce waste.",
+                text = "Discover food, save money, reduce waste.",
                 fontSize = 12.sp,
                 color = Color.Gray
             )
@@ -404,43 +408,40 @@ fun BuyerHeaderSection() {
 
 
         IconButton(
-            onClick = {}
-        ) {
 
+            onClick = {}
+
+        ) {
             Icon(
                 painter = painterResource(
                     R.drawable.notification
                 ),
-                contentDescription =
-                    "Notification"
+                contentDescription = "Notification"
             )
         }
     }
 }
 
-
+// SEARCH FIELD
 @Composable
 fun BuyerSearchField(
+
     searchText: String,
+
     onSearchTextChange: (String) -> Unit
+
 ) {
 
+
     OutlinedTextField(
-
         value = searchText,
-
-        onValueChange =
-            onSearchTextChange,
-
-        modifier =
-            Modifier.fillMaxWidth(),
-
+        onValueChange = onSearchTextChange,
+        modifier = Modifier.fillMaxWidth(),
         placeholder = {
 
             Text(
                 text = "Search...",
-                style =
-                    MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium
             )
         },
 
@@ -450,50 +451,45 @@ fun BuyerSearchField(
                 painter = painterResource(
                     R.drawable.search
                 ),
-                contentDescription =
-                    "Search"
+                contentDescription = "Search"
             )
         },
 
         singleLine = true,
-
-        shape =
-            RoundedCornerShape(10.dp)
+        shape = RoundedCornerShape(10.dp)
     )
 }
 
-
+// QUICK BUTTONS
 @Composable
 fun BuyerQuickButtons() {
-
     Row(
-        modifier =
-            Modifier.fillMaxWidth(),
-        horizontalArrangement =
-            Arrangement.spacedBy(12.dp)
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+
     ) {
 
 
         OutlinedButton(
             onClick = {},
-            modifier =
-                Modifier.weight(1f),
-            shape =
-                RoundedCornerShape(10.dp)
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(
+                10.dp
+            )
+
         ) {
+
 
             Icon(
                 painter = painterResource(
                     R.drawable.location_on
                 ),
-                contentDescription =
-                    "Nearby"
+
+                contentDescription = "Nearby"
             )
 
-
             Spacer(
-                modifier =
-                    Modifier.width(6.dp)
+                modifier = Modifier.width(6.dp)
             )
 
 
@@ -505,24 +501,23 @@ fun BuyerQuickButtons() {
 
         OutlinedButton(
             onClick = {},
-            modifier =
-                Modifier.weight(1f),
-            shape =
-                RoundedCornerShape(10.dp)
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(10.dp)
+
         ) {
 
+
             Icon(
+
                 painter = painterResource(
                     R.drawable.favourite
                 ),
-                contentDescription =
-                    "Favourite"
+                contentDescription = "Favourite"
             )
 
 
             Spacer(
-                modifier =
-                    Modifier.width(6.dp)
+                modifier = Modifier.width(6.dp)
             )
 
 
@@ -533,22 +528,30 @@ fun BuyerQuickButtons() {
     }
 }
 
-
+// SHOP ITEM
 @Composable
 fun BuyerShopItem(
+
     shop: Shop,
+
     onClick: () -> Unit
+
 ) {
 
+
     Row(
+
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
                 onClick()
             }
-            .padding(vertical = 16.dp),
-        verticalAlignment =
-            Alignment.CenterVertically
+            .padding(
+                vertical = 16.dp
+            ),
+
+        verticalAlignment = Alignment.CenterVertically
+
     ) {
 
 
@@ -556,46 +559,37 @@ fun BuyerShopItem(
             modifier = Modifier
                 .size(65.dp)
                 .clip(CircleShape),
-            color =
-                Color(0xFFFFF4D6)
-        ) {
+            color = Color(0xFFFFF4D6)
 
+        ) {
             Box(
-                contentAlignment =
-                    Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
+
 
                 Text(
                     text = shop.shortName,
                     fontSize = 18.sp,
-                    fontWeight =
-                        FontWeight.Bold,
-                    color =
-                        Color(0xFFD99B00)
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFD99B00)
                 )
             }
         }
 
 
         Spacer(
-            modifier =
-                Modifier.width(15.dp)
+            modifier = Modifier.width(15.dp)
         )
 
 
         Column {
-
             Text(
                 text = shop.name,
                 fontSize = 15.sp,
-                fontWeight =
-                    FontWeight.Medium
+                fontWeight = FontWeight.Medium
             )
-
-
             Spacer(
-                modifier =
-                    Modifier.height(4.dp)
+                modifier = Modifier.height(4.dp)
             )
 
 
@@ -608,44 +602,34 @@ fun BuyerShopItem(
     }
 }
 
-
+// CREATE SHORT SHOP NAME
 private fun createShortName(
+
     shopName: String
+
 ): String {
-
-    val words =
-        shopName
-            .trim()
-            .split(" ")
-            .filter {
-                it.isNotBlank()
-            }
-
-
+    val words = shopName.trim().split(" ").filter {
+            it.isNotBlank()
+        }
     return when {
-
         words.isEmpty() -> {
             "SP"
         }
 
         words.size == 1 -> {
-            words.first()
+            words
+                .first()
                 .take(2)
                 .uppercase()
         }
-
         else -> {
-
-            "${words[0].first()}${words[1].first()}"
-                .uppercase()
+            "${words[0].first()}${words[1].first()}".uppercase()
         }
     }
 }
 
-
 @Preview(
-    showBackground = true,
-    showSystemUi = true
+    showBackground = true, showSystemUi = true
 )
 @Composable
 fun BuyerHomeScreenPreview() {
@@ -653,7 +637,6 @@ fun BuyerHomeScreenPreview() {
     SharePlateTheme(
         dynamicColor = false
     ) {
-
         BuyerHomeScreen()
     }
 }
