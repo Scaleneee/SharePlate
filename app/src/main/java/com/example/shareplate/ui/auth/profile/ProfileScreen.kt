@@ -62,13 +62,18 @@ fun ProfileScreen(
     var address by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        val loaded = authRepository.getCurrentProfile()
-        profile = loaded
-        loaded?.let {
-            name = it.name
-            phone = it.phone
-            organisationName = it.organisationName ?: ""
-            address = it.address ?: ""
+        try {
+            val loaded = authRepository.getCurrentProfile()
+            profile = loaded
+            loaded?.let {
+                name = it.name
+                phone = it.phone
+                organisationName = it.organisationName ?: ""
+                address = it.address ?: ""
+            }
+        } catch (t: Throwable) {
+            errorMessage = t.message ?: "Could not load profile. Please log in again."
+            profile = null
         }
         isLoading = false
     }
@@ -83,7 +88,7 @@ fun ProfileScreen(
     val currentProfile = profile
     if (currentProfile == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Profile not found. Please log in again.")
+            Text(errorMessage ?: "Profile not found. Please log in again.")
         }
         return
     }

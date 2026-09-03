@@ -17,6 +17,7 @@ object AppRoutes {
 
     const val BUYER_SHOP_DETAIL = "buyer_shop_detail/{sellerId}"
     const val BUYER_CART = "buyer_cart"
+    const val BUYER_HOME = "buyer/home"
     const val BUYER_ACTIVITY = "buyer_activity"
     const val BUYER_PROFILE = "buyer_profile"
 
