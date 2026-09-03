@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shareplate.data.model.User
 import com.example.shareplate.data.repository.BuyerRepository
-import com.example.shareplate.ui.buyer.home.navigation.BuyerBottomBar
+import com.example.shareplate.ui.buyer.navigation.BuyerBottomBar
 import com.example.shareplate.ui.theme.SharePlateTheme
 import java.text.SimpleDateFormat
 import java.util.Date

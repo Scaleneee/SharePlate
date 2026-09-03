@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shareplate.R
 import com.example.shareplate.data.repository.BuyerRepository
-import com.example.shareplate.ui.buyer.home.navigation.BuyerBottomBar
+import com.example.shareplate.ui.buyer.navigation.BuyerBottomBar
 import com.example.shareplate.ui.theme.SharePlateTheme
 
 
