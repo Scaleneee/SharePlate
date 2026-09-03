@@ -1,9 +1,14 @@
 package com.example.shareplate.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -14,7 +19,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.shareplate.data.FoodItems
+import com.example.shareplate.data.local.SessionManager
 import com.example.shareplate.data.remote.SupabaseProvider
+import com.example.shareplate.ui.NGO.NGOHomeScreen
+import com.example.shareplate.ui.auth.login.LoginScreen
+import com.example.shareplate.ui.auth.password.NewPasswordScreen
+import com.example.shareplate.ui.auth.profile.ProfileScreen
+import com.example.shareplate.ui.auth.register.RegisterScreen
+import com.example.shareplate.ui.buyer.home.BuyerHomeScreen
 import com.example.shareplate.ui.seller.SellerViewModel
 import com.example.shareplate.ui.seller.home.SellerHomeScreen
 import com.example.shareplate.ui.seller.menu.AddFoodScreen
@@ -28,11 +40,94 @@ fun AppNavGraph(
 ) {
     val sellerViewModel: SellerViewModel = viewModel()
 
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+    val startDestination = remember {
+        if (sessionManager.isLoggedIn()) {
+            homeRouteFor(sessionManager.getRole())
+        } else {
+            AppRoutes.LOGIN
+        }
+    }
+
     NavHost(
-        navController = navController, startDestination = AppRoutes.SELLER_HOME
+        navController = navController, startDestination = startDestination
     ) {
-        composable("login") {
-            // waiting for the implementation of LoginScreen
+        composable(AppRoutes.LOGIN) {
+            LoginScreen(
+                onLoginSuccess = { role ->
+                    sessionManager.saveSession(role)
+                    navController.navigate(homeRouteFor(role)) {
+                        popUpTo(AppRoutes.LOGIN) { inclusive = true }
+                    }
+                },
+                onNavigateToRegister = {
+                    navController.navigate(AppRoutes.REGISTER)
+                }
+            )
+        }
+
+        composable(AppRoutes.REGISTER) {
+            RegisterScreen(
+                onRegisterSuccess = { role ->
+                    sessionManager.saveSession(role)
+                    navController.navigate(homeRouteFor(role)) {
+                        popUpTo(AppRoutes.LOGIN) { inclusive = true }
+                    }
+                },
+                onNavigateToLogin = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(AppRoutes.PROFILE) {
+            ProfileScreen(
+                onLoggedOut = {
+                    sessionManager.clearSession()
+                    navController.navigate(AppRoutes.LOGIN) {
+                        popUpTo(0)
+                    }
+                }
+            )
+        }
+
+        composable(AppRoutes.SELLER_PROFILE) {
+            ProfileScreen(
+                onLoggedOut = {
+                    sessionManager.clearSession()
+                    navController.navigate(AppRoutes.LOGIN) {
+                        popUpTo(0)
+                    }
+                }
+            )
+        }
+
+        composable(AppRoutes.SELLER_ACTIVITY) {
+            PlaceholderScreen("Seller activity is under development")
+        }
+
+        composable(AppRoutes.NEW_PASSWORD) {
+            NewPasswordScreen(
+                onDone = {
+                    sessionManager.clearSession()
+                    navController.navigate(AppRoutes.LOGIN) {
+                        popUpTo(0)
+                    }
+                }
+            )
+        }
+
+        composable(AppRoutes.BUYER_HOME) {
+            BuyerHomeScreen()
+        }
+
+        composable(AppRoutes.NGO_HOME) {
+            NGOHomeScreen(
+                onProfileClick = {
+                    navController.navigate(AppRoutes.PROFILE)
+                }
+            )
         }
 
         // seller home screen
@@ -137,4 +232,21 @@ fun AppNavGraph(
             }
         }
     }
+}
+
+@Composable
+private fun PlaceholderScreen(text: String) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text)
+    }
+}
+
+private fun homeRouteFor(role: String?): String = when (role) {
+    "SELLER" -> AppRoutes.SELLER_HOME
+    "BUYER" -> AppRoutes.BUYER_HOME
+    "NGO" -> AppRoutes.NGO_HOME
+    else -> AppRoutes.LOGIN
 }

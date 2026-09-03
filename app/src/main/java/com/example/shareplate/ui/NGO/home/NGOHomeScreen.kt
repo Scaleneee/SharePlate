@@ -45,7 +45,7 @@ data class FoodDonation(
 )
 
 @Composable
-fun NGOHomeScreen() {
+fun NGOHomeScreen(onProfileClick: () -> Unit) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var selectedDonation by remember { mutableStateOf<FoodDonation?>(null) }
     var showSuccess by remember { mutableStateOf(false) }
@@ -254,8 +254,3 @@ fun DonationListScreen(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun NGOHomeScreenPreview(){
-    NGOHomeScreen()
-}
