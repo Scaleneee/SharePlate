@@ -539,15 +539,11 @@ fun BuyerCheckoutScreenPreview() {
                     BuyerCartItem(
                         listingId = 1,
                         foodItemId = 1,
-                        sellerId =
-                            "preview-seller-1",
-                        shopName =
-                            "Ondo Bakery",
-                        foodName =
-                            "Blueberry Bread",
+                        sellerId = "preview-seller-1",
+                        shopName = "Ondo Bakery",
+                        foodName = "Blueberry Bread",
                         price = 1.00,
-                        pickupTime =
-                            "Pickup before 8:00 PM",
+                        pickupTime = "Pickup before 8:00 PM",
                         availableQuantity = 7,
                         quantity = 2
                     ),
@@ -555,15 +551,11 @@ fun BuyerCheckoutScreenPreview() {
                     BuyerCartItem(
                         listingId = 2,
                         foodItemId = 2,
-                        sellerId =
-                            "preview-seller-1",
-                        shopName =
-                            "Ondo Bakery",
-                        foodName =
-                            "Sausage Bread",
+                        sellerId = "preview-seller-1",
+                        shopName = "Ondo Bakery",
+                        foodName = "Sausage Bread",
                         price = 1.50,
-                        pickupTime =
-                            "Pickup before 8:00 PM",
+                        pickupTime = "Pickup before 8:00 PM",
                         availableQuantity = 5,
                         quantity = 1
                     )
