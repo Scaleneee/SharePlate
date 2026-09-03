@@ -18,36 +18,54 @@ class AuthRepository {
         organizationName: String?,
         organizationRegNo: String?
     ): Result<Profile> {
+
         return try {
-            val user = SupabaseClient.client.auth.signUpWith(Email) {
-                this.email = email
+
+            val normalizedEmail = email.trim().lowercase()
+
+            // Create Supabase Auth account
+            SupabaseClient.client.auth.signUpWith(Email) {
+                this.email = normalizedEmail
                 this.password = password
-            } ?: throw IllegalStateException(
-                "Account created. Check your email to confirm before logging in."
-            )
+            }
+
+            // Confirm Email is OFF,
+            // so Supabase should automatically log the user in
+            val user =
+                SupabaseClient.client.auth.currentUserOrNull() ?: throw IllegalStateException(
+                    "Unable to get newly created user."
+                )
 
             val profile = Profile(
                 userId = user.id,
                 name = fullName.trim(),
-                email = email.trim().lowercase(),
+                email = normalizedEmail,
                 phone = phoneNumber.trim(),
+
                 role = role,
+
                 organisationName = when (role) {
                     "SELLER" -> businessName
                     "NGO" -> organizationName
                     else -> null
                 },
+
                 address = when (role) {
                     "SELLER" -> businessAddress
                     "BUYER" -> deliveryAddress
                     else -> null
                 },
+
                 createdAt = java.time.OffsetDateTime.now().toString()
             )
 
+            // Insert SharePlate profile
             SupabaseClient.client.from("users").insert(profile)
+
             Result.success(profile)
+
         } catch (e: Throwable) {
+
             Result.failure(e)
         }
     }
