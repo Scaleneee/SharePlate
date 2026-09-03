@@ -28,18 +28,24 @@ class AuthRepository {
 
             val profile = Profile(
                 userId = user.id,
-                fullName = fullName,
+                name = fullName.trim(),
                 email = email.trim().lowercase(),
-                phoneNumber = phoneNumber,
+                phone = phoneNumber.trim(),
                 role = role,
-                businessName = businessName,
-                businessAddress = businessAddress,
-                deliveryAddress = deliveryAddress,
-                organizationName = organizationName,
-                organizationRegNo = organizationRegNo
+                organisationName = when (role) {
+                    "SELLER" -> businessName
+                    "NGO" -> organizationName
+                    else -> null
+                },
+                address = when (role) {
+                    "SELLER" -> businessAddress
+                    "BUYER" -> deliveryAddress
+                    else -> null
+                },
+                createdAt = java.time.OffsetDateTime.now().toString()
             )
 
-            SupabaseClient.client.from("profiles").insert(profile)
+            SupabaseClient.client.from("users").insert(profile)
             Result.success(profile)
         } catch (e: Throwable) {
             Result.failure(e)
@@ -81,7 +87,7 @@ class AuthRepository {
 
     suspend fun updateProfile(profile: Profile): Result<Profile> {
         return try {
-            SupabaseClient.client.from("profiles").upsert(profile)
+            SupabaseClient.client.from("users").upsert(profile)
             Result.success(profile)
         } catch (e: Throwable) {
             Result.failure(e)
@@ -104,7 +110,7 @@ class AuthRepository {
     }
 
     private suspend fun fetchProfile(userId: String): Profile? =
-        SupabaseClient.client.from("profiles")
+        SupabaseClient.client.from("users")
             .select {
                 filter {
                     eq("user_id", userId)
