@@ -42,7 +42,12 @@ object AppRoutes {
     const val NGO_CART = "ngo_cart"
     const val NGO_CHECKOUT = "ngo_checkout"
     const val NGO_PAYMENT = "ngo_payment"
-    const val NGO_SUCCESS = "ngo_success"
+    const val NGO_SUCCESS = "ngo_success/{pickupCode}"
+    const val NGO_ACTIVITY = "ngo_activity"
     const val NGO_PROFILE = "ngo_profile"
     const val NGO_EDIT_PROFILE = "ngo_edit_profile"
+
+    fun ngoSuccessRoute(pickupCode: String): String {
+        return "ngo_success/$pickupCode"
+    }
 }

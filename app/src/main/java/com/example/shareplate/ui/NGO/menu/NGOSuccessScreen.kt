@@ -32,9 +32,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun NGOSuccessScreen(onBackClick: () -> Unit = {}) {
-    val pickupCode = remember { "ND${(1000..9999).random()}" }
-
+fun NGOSuccessScreen(
+    pickupCode: String = "ND${(1000..9999).random()}",
+    onBackClick: () -> Unit = {}
+) {
     Scaffold { innerPadding ->
         Surface(
             modifier = Modifier
