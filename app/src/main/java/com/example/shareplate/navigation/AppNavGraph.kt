@@ -100,6 +100,23 @@ fun AppNavGraph(
             }
         }
 
+    val errorMessage by
+    sellerViewModel.errorMessage
+        .collectAsStateWithLifecycle()
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { message ->
+
+            Toast.makeText(
+                context,
+                message,
+                Toast.LENGTH_LONG
+            ).show()
+
+            sellerViewModel.clearError()
+        }
+    }
+
     NavHost(
         navController = navController, startDestination = startDestination
     ) {
@@ -285,6 +302,20 @@ fun AppNavGraph(
             val foodItems by sellerViewModel.foodItems.collectAsStateWithLifecycle()
             // get the seller id
             val sellerId = SupabaseProvider.client.auth.currentUserOrNull()?.id
+            val errorMessage by sellerViewModel.errorMessage.collectAsStateWithLifecycle()
+
+            LaunchedEffect(errorMessage) {
+                errorMessage?.let { message ->
+
+                    Toast.makeText(
+                        context,
+                        message,
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    sellerViewModel.clearError()
+                }
+            }
 
             SellerMenuScreen(
                 foodItems = foodItems,
@@ -300,8 +331,23 @@ fun AppNavGraph(
                     navController.navigate(AppRoutes.SELLER_ADD_FOOD)
                 }, onEditFoodClick = { foodItemId ->
                     navController.navigate("seller/edit-food/$foodItemId")
-                })
+                }, onDeleteClick = { foodItemId ->
+
+                    val foodOwnerId =
+                        foodItems.find {
+                            it.foodItemId == foodItemId
+                        }?.sellerId
+
+                    if (sellerId != null) {
+                        sellerViewModel.deleteFood(
+                            foodItemId = foodItemId,
+                            sellerId = sellerId
+                        )
+                    }
+                }
+            )
         }
+
         // seller add food screen
         composable(AppRoutes.SELLER_ADD_FOOD) {
 

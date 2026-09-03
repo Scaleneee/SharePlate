@@ -47,6 +47,7 @@ fun SellerMenuScreen(
     foodItems: List<FoodItem>,
     onAddFoodClick: () -> Unit,
     onEditFoodClick: (Long) -> Unit,
+    onDeleteClick: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -98,7 +99,8 @@ fun SellerMenuScreen(
                 ) { item ->
                     FoodMenuRow(
                         foodItem = item,
-                        onEditClick = { onEditFoodClick(item.foodItemId) },
+                        onEditClick = onEditFoodClick,
+                        onDeleteClick = onDeleteClick
                     )
                 }
             } else {

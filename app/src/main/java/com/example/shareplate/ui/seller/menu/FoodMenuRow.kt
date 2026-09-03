@@ -10,11 +10,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,7 +37,6 @@ import com.example.shareplate.ui.theme.SharePlateTheme
 @Composable
 fun FoodMenuRowPreview() {
     SharePlateTheme {
-        FoodMenuRow(foodItem = FoodItems.foodItems[0], onEditClick = {})
     }
 }
 
@@ -40,8 +44,13 @@ fun FoodMenuRowPreview() {
 fun FoodMenuRow(
     foodItem: FoodItem,
     onEditClick: (Long) -> Unit,
+    onDeleteClick: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showDeleteDialog by remember {
+        mutableStateOf(false)
+    }
+
     OutlinedCard(
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -98,11 +107,61 @@ fun FoodMenuRow(
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-            // edit button
-            TextButton(
-                onClick = {onEditClick(foodItem.foodItemId)},
-            ) {
-                Text(text = "Edit")
+            Column {
+                // edit button
+                TextButton(
+                    onClick = { onEditClick(foodItem.foodItemId) },
+                ) {
+                    Text(text = "Edit")
+                }
+                // delete button
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = true
+                    },
+                ) {
+                    Text(text = "Delete")
+                }
+            }
+
+            // delete confirmation
+            if (showDeleteDialog) {
+                AlertDialog(
+                    onDismissRequest = {
+                        showDeleteDialog = false
+                    },
+
+                    title = {
+                        Text("Delete Food")
+                    },
+
+                    text = {
+                        Text(
+                            "Are you sure you want to delete ${foodItem.foodName}?"
+                        )
+                    },
+
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                onDeleteClick(foodItem.foodItemId)
+                                showDeleteDialog = false
+                            }
+                        ) {
+                            Text("Delete")
+                        }
+                    },
+
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                showDeleteDialog = false
+                            }
+                        ) {
+                            Text("Cancel")
+                        }
+                    }
+                )
             }
         }
     }

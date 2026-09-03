@@ -208,6 +208,33 @@ class SellerViewModel(
         }
     }
 
+    fun deleteFood(
+        foodItemId: Long,
+        sellerId: String
+    ) {
+        viewModelScope.launch {
+
+            try {
+
+                val deletedFood =
+                    repository.deleteFoodItem(foodItemId)
+
+                loadFoodItems(sellerId)
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "DeleteFood",
+                    "DELETE FAILED: ${e.message}",
+                    e
+                )
+
+                _errorMessage.value =
+                    e.message ?: "Failed to delete food"
+            }
+        }
+    }
+
     // CLEAR ERROR
     fun clearError() {
         _errorMessage.value = null

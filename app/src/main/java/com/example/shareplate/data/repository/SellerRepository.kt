@@ -52,6 +52,17 @@ class SellerRepository {
             .insert(foodItem)
     }
 
+    suspend fun deleteFoodItem(
+        foodItemId: Long
+    ) {
+        supabase
+            .from("food_items")
+            .delete {
+                filter {
+                    eq("food_item_id", foodItemId)
+                }
+            }
+    }
 
     suspend fun updateFoodItem(
         foodItem: FoodItem
