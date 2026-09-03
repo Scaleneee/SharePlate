@@ -1,11 +1,14 @@
 package com.example.shareplate.data.supabase
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.from
 
 class AuthRepository {
 
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun signUp(
         email: String,
         password: String,
