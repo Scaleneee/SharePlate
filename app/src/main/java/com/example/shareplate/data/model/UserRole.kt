@@ -1,4 +1,4 @@
-package com.example.shareplate.data.entity
+package com.example.shareplate.data.model
 
 enum class UserRole {
     SELLER,

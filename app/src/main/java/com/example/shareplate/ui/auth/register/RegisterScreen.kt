@@ -35,7 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.shareplate.data.entity.UserRole
+import com.example.shareplate.data.model.UserRole
 import com.example.shareplate.data.local.SessionManager
 import com.example.shareplate.data.supabase.AuthRepository
 import com.example.shareplate.ui.auth.component.AuthLogo

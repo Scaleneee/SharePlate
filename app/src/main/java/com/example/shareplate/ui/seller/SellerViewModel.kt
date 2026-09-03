@@ -17,29 +17,20 @@ class SellerViewModel(
     private val repository: SellerRepository = SellerRepository()
 ) : ViewModel() {
 
-    // FOOD ITEMS
-    private val _foodItems =
-        MutableStateFlow<List<FoodItem>>(emptyList())
-
-    val foodItems: StateFlow<List<FoodItem>> =
-        _foodItems.asStateFlow()
+    // food items
+    private val _foodItems = MutableStateFlow<List<FoodItem>>(emptyList())
+    // view only food items
+    val foodItems: StateFlow<List<FoodItem>> = _foodItems.asStateFlow()
 
 
     // LOADING STATE
-    private val _isLoading =
-        MutableStateFlow(false)
-
-    val isLoading: StateFlow<Boolean> =
-        _isLoading.asStateFlow()
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
 
     // ERROR MESSAGE
-    private val _errorMessage =
-        MutableStateFlow<String?>(null)
-
-    val errorMessage: StateFlow<String?> =
-        _errorMessage.asStateFlow()
-
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     // LOAD FOOD ITEMS
     fun loadFoodItems(
@@ -134,7 +125,6 @@ class SellerViewModel(
         }
     }
 
-
     // UPDATE FOOD
     fun updateFood(
         context: Context,
@@ -193,7 +183,6 @@ class SellerViewModel(
             }
         }
     }
-
 
     // PUBLISH SURPLUS
     fun publishSurplus(

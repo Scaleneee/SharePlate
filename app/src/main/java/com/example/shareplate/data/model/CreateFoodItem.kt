@@ -3,6 +3,7 @@ package com.example.shareplate.data.model
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+// use to insert data into Supabase
 @Serializable
 data class CreateFoodItem(
 
