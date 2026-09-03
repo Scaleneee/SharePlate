@@ -150,7 +150,12 @@ fun LoginScreen(
                             sessionManager.saveSession(profile.role)
                             onLoginSuccess(profile.role)
                         }.onFailure { e ->
-                            errorMessage = e.message ?: "Login failed. Please try again."
+                            val raw = e.message ?: ""
+                            errorMessage = if (raw.contains("invalid", ignoreCase = true) || raw.contains("credential", ignoreCase = true)) {
+                                "Invalid email or password."
+                            } else {
+                                "Could not log in. Please try again."
+                            }
                         }
                     }
                 },

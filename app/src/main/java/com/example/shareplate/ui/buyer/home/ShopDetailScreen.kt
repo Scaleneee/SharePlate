@@ -10,11 +10,10 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,11 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shareplate.data.model.User
 import com.example.shareplate.data.model.UserRole
-import com.example.shareplate.data.repository.BuyerRepository
+import com.example.shareplate.ui.buyer.BuyerViewModel
 import com.example.shareplate.ui.buyer.navigation.BuyerBottomBar
-import com.example.shareplate.ui.buyer.order.BuyerCartStore
 import com.example.shareplate.ui.theme.SharePlateTheme
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -38,13 +37,21 @@ import java.util.Locale
 data class FoodDeal(
 
     val listingId: Long,
+
     val foodItemId: Long,
+
     val sellerId: String,
+
     val name: String,
+
     val description: String,
+
     val price: String,
+
     val pickupTime: String,
+
     val availableQuantity: Int,
+
     val discountPercent: Int
 )
 
@@ -53,168 +60,246 @@ data class FoodDeal(
 fun ShopDetailScreen(
 
     sellerId: String,
+
+    buyerViewModel: BuyerViewModel? = null,
+
     onBackClick: () -> Unit = {},
+
     onHomeClick: () -> Unit = {},
+
     onOrderClick: () -> Unit = {},
+
     onActivityClick: () -> Unit = {},
+
     onProfileClick: () -> Unit = {}
+
 ) {
 
-    val repository = remember { BuyerRepository() }
     val isPreview = LocalInspectionMode.current
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-    var seller by remember(sellerId) { mutableStateOf<User?>(null)}
-    var foodDeals by remember(sellerId) { mutableStateOf<List<FoodDeal>>(emptyList()) }
-    var isLoading by remember(sellerId) { mutableStateOf(true) }
-    var errorMessage by remember(sellerId) { mutableStateOf<String?>(null)}
 
-    // LOAD SELLER + FOOD FROM SUPABASE
-    LaunchedEffect(
-        sellerId
-    ) {
-        // PREVIEW DAT
+
+    val actualViewModel: BuyerViewModel? =
+
         if (isPreview) {
 
+            null
 
-            seller = User(
-                userId = "preview-seller-1",
-                name = "Ondo Bakery",
-                email = "preview@email.com",
-                role = UserRole.SELLER,
-                organisationName = "Ondo Bakery",
-                address = "Petaling Jaya"
-            )
+        } else {
 
-
-            foodDeals =
-                listOf(
-                    FoodDeal(
-                        listingId = 1,
-                        foodItemId = 1,
-                        sellerId = "preview-seller-1",
-                        name = "Blueberry Bread",
-                        description = "Best Before: 3 days • Surplus Food: 7",
-                        price = "RM 1.00",
-                        pickupTime = "Pickup today",
-                        availableQuantity = 7,
-                        discountPercent = 80
-                    ),
-
-
-                    FoodDeal(
-                        listingId = 2,
-                        foodItemId = 2,
-                        sellerId = "preview-seller-1",
-                        name = "Sausage Bread",
-                        description = "Best Before: 3 days • Surplus Food: 5",
-                        price = "RM 1.50",
-                        pickupTime = "Pickup today",
-                        availableQuantity = 5,
-                        discountPercent = 70
-                    )
-                )
-
-
-            isLoading = false
-
-
-            return@LaunchedEffect
+            buyerViewModel ?: viewModel()
         }
 
-        try {
 
-            isLoading = true
-            errorMessage = null
+    val snackbarHostState = remember {
+        SnackbarHostState()
+    }
 
-            // GET SELLER
-            val sellerResult = repository.getSellerById(
+
+    val coroutineScope = rememberCoroutineScope()
+
+
+    // VIEWMODEL STATES
+    val sellerState = actualViewModel?.selectedSeller?.collectAsState()
+
+
+    val foodItemsState = actualViewModel?.foodItems?.collectAsState()
+
+
+    val listingsState = actualViewModel?.listings?.collectAsState()
+
+
+    val loadingState = actualViewModel?.isLoading?.collectAsState()
+
+
+    val errorState = actualViewModel?.errorMessage?.collectAsState()
+
+
+    // PREVIEW SELLER
+    val previewSeller =
+
+        User(
+
+            userId = "preview-seller-1",
+
+            name = "Ondo Bakery",
+
+            email = "preview@email.com",
+
+            role = UserRole.SELLER,
+
+            organisationName = "Ondo Bakery",
+
+            address = "Petaling Jaya"
+        )
+
+
+    val seller =
+
+        if (isPreview) {
+
+            previewSeller
+
+        } else {
+
+            sellerState?.value
+        }
+
+
+    val foodItems = foodItemsState?.value ?: emptyList()
+
+
+    val listings = listingsState?.value ?: emptyList()
+
+
+    val isLoading =
+
+        if (isPreview) {
+
+            false
+
+        } else {
+
+            loadingState?.value ?: false
+        }
+
+
+    val errorMessage =
+
+        if (isPreview) {
+
+            null
+
+        } else {
+
+            errorState?.value
+        }
+
+
+    // LOAD SHOP USING VIEWMODEL
+    LaunchedEffect(
+        sellerId, actualViewModel
+    ) {
+
+        if (!isPreview) {
+
+            actualViewModel?.loadShop(
                     sellerId
                 )
-
-            if (sellerResult == null) {
-                errorMessage = "Seller not found."
-                isLoading = false
+        }
+    }
 
 
-                return@LaunchedEffect
+    // CREATE FOOD DEAL LIST
+    val foodDeals: List<FoodDeal> =
+
+        if (isPreview) {
+
+            listOf(
+
+                FoodDeal(
+
+                    listingId = 1,
+
+                    foodItemId = 1,
+
+                    sellerId = "preview-seller-1",
+
+                    name = "Blueberry Bread",
+
+                    description = "Best Before: 3 days • Surplus Food: 7",
+
+                    price = "RM 1.00",
+
+                    pickupTime = "Pickup today",
+
+                    availableQuantity = 7,
+
+                    discountPercent = 80
+                ),
+
+
+                FoodDeal(
+
+                    listingId = 2,
+
+                    foodItemId = 2,
+
+                    sellerId = "preview-seller-1",
+
+                    name = "Sausage Bread",
+
+                    description = "Best Before: 3 days • Surplus Food: 5",
+
+                    price = "RM 1.50",
+
+                    pickupTime = "Pickup today",
+
+                    availableQuantity = 5,
+
+                    discountPercent = 70
+                )
+            )
+
+        } else {
+
+
+            val foodItemMap = foodItems.associateBy {
+
+                it.foodItemId
             }
 
 
-            seller =
-                sellerResult
+            listings.sortedByDescending {
 
-            //Get Food
-            val foodItems =
-                repository
-                    .getFoodItemsBySeller(
-                        sellerId
-                    )
-
-            // GET ACTIVE SURPLUS LISTING
-            val listings =
-                repository
-                    .getActiveListingsBySeller(
-                        sellerId
-                    )
+                    it.publishedAt
+                }.mapNotNull { listing ->
 
 
-            val foodItemMap =
-                foodItems.associateBy {
+                    val food = foodItemMap[listing.foodItemId]
 
-                    it.foodItemId
+
+                    if (food == null) {
+
+                        null
+
+                    } else {
+
+
+                        FoodDeal(
+
+                            listingId = listing.listingId,
+
+                            foodItemId = food.foodItemId,
+
+                            sellerId = listing.sellerId,
+
+                            name = food.foodName,
+
+                            description = buildFoodDescription(
+
+                                foodDescription = food.description,
+
+                                bestBeforeDays = food.bestBeforeDays,
+
+                                availableQuantity = listing.availableQuantity
+                            ),
+
+                            price = formatPrice(
+                                listing.currentPriceCents
+                            ),
+
+                            pickupTime = formatPickupTime(
+                                listing.pickupEndAt
+                            ),
+
+                            availableQuantity = listing.availableQuantity,
+
+                            discountPercent = listing.currentDiscountPercent
+                        )
+                    }
                 }
-
-
-            foodDeals =
-                listings
-                    .sortedByDescending {
-
-                        it.publishedAt
-                    }
-                    .mapNotNull { listing ->
-
-
-                        val food =
-                            foodItemMap[
-                                listing.foodItemId
-                            ]
-
-                        if (
-                            food == null
-                        ) {
-                            null
-                        } else {
-
-
-                            FoodDeal(
-
-                                listingId = listing.listingId,
-                                foodItemId = food.foodItemId,
-                                sellerId = listing.sellerId,
-                                name = food.foodName,
-                                description = buildFoodDescription(
-                                    foodDescription = food.description,
-                                    bestBeforeDays = food.bestBeforeDays,
-                                    availableQuantity = listing.availableQuantity
-                                    ),
-                                price = formatPrice(listing.currentPriceCents),
-                                pickupTime = formatPickupTime(listing.pickupEndAt),
-                                availableQuantity = listing.availableQuantity,
-                                discountPercent = listing.currentDiscountPercent
-                            )
-                        }
-                    }
-
-
-        } catch (e: Exception) {
-            errorMessage = e.message ?: "Unable to load shop information."
-
-
-        } finally {
-            isLoading = false
         }
-    }
+
 
     // SCREEN
     Scaffold(
@@ -222,6 +307,7 @@ fun ShopDetailScreen(
         snackbarHost = {
 
             SnackbarHost(
+
                 hostState = snackbarHostState
             )
         },
@@ -231,9 +317,13 @@ fun ShopDetailScreen(
             BuyerBottomBar(
 
                 selectedIndex = 0,
+
                 onHomeClick = onHomeClick,
+
                 onOrderClick = onOrderClick,
+
                 onActivityClick = onActivityClick,
+
                 onProfileClick = onProfileClick
             )
         }
@@ -245,7 +335,9 @@ fun ShopDetailScreen(
 
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(
+                    innerPadding
+                )
                 .padding(
                     horizontal = 20.dp
                 )
@@ -254,19 +346,25 @@ fun ShopDetailScreen(
 
 
             Spacer(
-                modifier = Modifier.height(24.dp)
+
+                modifier = Modifier.height(
+                    24.dp
+                )
             )
+
 
             // TOP BAR
             Row(
 
                 modifier = Modifier.fillMaxWidth(),
+
                 verticalAlignment = Alignment.CenterVertically
 
             ) {
 
 
                 IconButton(
+
                     onClick = onBackClick
 
                 ) {
@@ -275,46 +373,64 @@ fun ShopDetailScreen(
                     Icon(
 
                         imageVector = Icons.Default.ArrowBack,
+
                         contentDescription = "Back"
                     )
                 }
 
 
                 Text(
+
                     text = "Shop Details",
+
                     fontSize = 20.sp,
+
                     fontWeight = FontWeight.SemiBold
                 )
 
 
                 Spacer(
-                    modifier = Modifier.weight(1f)
+
+                    modifier = Modifier.weight(
+                        1f
+                    )
                 )
 
 
                 TextButton(
 
-                    onClick =
-                        onOrderClick
+                    onClick = onOrderClick
 
                 ) {
 
 
                     Text(
+
                         text = "Cart",
-                        color = Color(0xFF4CAF50),
+
+                        color = Color(
+                            0xFF4CAF50
+                        ),
+
                         fontWeight = FontWeight.SemiBold
                     )
                 }
             }
 
+
             // CONTENT
             when {
+
+
                 isLoading -> {
+
+
                     Box(
+
                         modifier = Modifier.fillMaxSize(),
 
                         contentAlignment = Alignment.Center
+
                     ) {
 
 
@@ -325,14 +441,20 @@ fun ShopDetailScreen(
 
                 errorMessage != null -> {
 
+
                     Box(
+
                         modifier = Modifier.fillMaxSize(),
+
                         contentAlignment = Alignment.Center
+
                     ) {
 
 
                         Text(
-                            text = errorMessage ?: "Something went wrong.",
+
+                            text = errorMessage,
+
                             color = Color.Red
                         )
                     }
@@ -343,31 +465,43 @@ fun ShopDetailScreen(
 
 
                     Box(
+
                         modifier = Modifier.fillMaxSize(),
+
                         contentAlignment = Alignment.Center
+
                     ) {
 
+
                         Text(
-                            text =  "Seller not found."
+
+                            text = "Seller not found."
                         )
                     }
                 }
 
 
                 else -> {
-                    val currentSeller = seller!!
-                    val shopName = currentSeller
-                            .organisationName
-                            ?.takeIf {
+
+
+                    val currentSeller = seller
+
+
+                    val shopName =
+
+                        currentSeller.organisationName?.takeIf {
 
                                 it.isNotBlank()
-                            }
-                            ?: currentSeller.name
+                            } ?: currentSeller.name
 
 
                     Spacer(
-                        modifier = Modifier.height(18.dp)
+
+                        modifier = Modifier.height(
+                            18.dp
+                        )
                     )
+
 
                     // SHOP INFORMATION
                     Row(
@@ -382,11 +516,15 @@ fun ShopDetailScreen(
 
                     ) {
 
+
                         Surface(
+
                             modifier = Modifier.size(
                                 82.dp
                             ),
+
                             shape = CircleShape,
+
                             color = Color(
                                 0xFFFFF4D6
                             )
@@ -395,106 +533,145 @@ fun ShopDetailScreen(
 
 
                             Box(
+
                                 contentAlignment = Alignment.Center
 
                             ) {
 
 
                                 Text(
+
                                     text = createShopShortName(
                                         shopName
                                     ),
+
                                     fontSize = 22.sp,
+
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFD99B00)
+
+                                    color = Color(
+                                        0xFFD99B00
+                                    )
                                 )
                             }
                         }
 
 
                         Spacer(
-                            modifier = Modifier.width(16.dp)
+
+                            modifier = Modifier.width(
+                                16.dp
+                            )
                         )
 
 
                         Column(
 
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(
+                                1f
+                            )
 
                         ) {
 
 
                             Text(
+
                                 text = shopName,
+
                                 fontSize = 18.sp,
+
                                 fontWeight = FontWeight.SemiBold
                             )
 
 
                             Spacer(
-                                modifier = Modifier.height(4.dp)
+
+                                modifier = Modifier.height(
+                                    4.dp
+                                )
                             )
 
 
                             Text(
+
                                 text = currentSeller.address ?: "Address not provided",
+
                                 fontSize = 12.sp,
+
                                 color = Color.Gray
                             )
 
 
                             Spacer(
-                                modifier = Modifier.height(6.dp)
+
+                                modifier = Modifier.height(
+                                    6.dp
+                                )
                             )
 
 
                             Text(
+
                                 text =
-                                    if (
-                                        currentSeller
-                                            .closingTime
-                                            .isNullOrBlank()
-                                    ) {
+
+                                    if (currentSeller.closingTime.isNullOrBlank()) {
+
                                         "Save surplus food and reduce food waste."
+
                                     } else {
+
                                         "Closing time: ${currentSeller.closingTime}"
                                     },
 
                                 fontSize = 11.sp,
+
                                 color = Color.Gray
                             )
                         }
                     }
 
+
                     Spacer(
-                        modifier = Modifier.height(18.dp)
+
+                        modifier = Modifier.height(
+                            18.dp
+                        )
                     )
 
+
                     HorizontalDivider(
+
                         color = Color.LightGray
                     )
 
+
                     // EMPTY FOOD
-                    if (
-                        foodDeals.isEmpty()
-                    ) {
+                    if (foodDeals.isEmpty()) {
+
 
                         Box(
+
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(
                                     top = 50.dp
                                 ),
+
                             contentAlignment = Alignment.TopCenter
 
                         ) {
 
+
                             Text(
+
                                 text = "No surplus food available right now.",
+
                                 fontSize = 14.sp,
+
                                 color = Color.Gray
                             )
                         }
+
 
                     } else {
 
@@ -502,95 +679,126 @@ fun ShopDetailScreen(
                         LazyColumn(
 
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 20.dp)
+
+                            contentPadding = PaddingValues(
+                                bottom = 20.dp
+                            )
 
                         ) {
 
 
                             items(
+
                                 items = foodDeals,
-                                key = { it.listingId }
+
+                                key = {
+
+                                    it.listingId
+                                }
+
                             ) { food ->
 
 
                                 FoodDealRow(
+
                                     food = food,
+
                                     onAddClick = {
 
+
+                                        val viewModel = actualViewModel
+
+
+                                        if (viewModel == null) {
+
+                                            return@FoodDealRow
+                                        }
+
                                         // CHECK DIFFERENT SHOP
-                                        if (
-                                            !BuyerCartStore
-                                                .canAddFromSeller(
+                                        if (!viewModel.canAddFromSeller(
                                                     food.sellerId
                                                 )
                                         ) {
 
+
                                             coroutineScope.launch {
 
-                                                snackbarHostState
-                                                    .showSnackbar(
+
+                                                snackbarHostState.showSnackbar(
+
                                                         message = "Your cart contains items from another shop. Please clear your cart first."
                                                     )
                                             }
+
 
                                             return@FoodDealRow
                                         }
 
 
-
+                                        // =================================
                                         // CHECK MAXIMUM QUANTITY
-                                       val currentQuantity =
-                                            BuyerCartStore
-                                                .getQuantityForListing(
-                                                    food.listingId
-                                                )
+                                        // =================================
+
+                                        val currentQuantity = viewModel.getQuantityForListing(
+                                                food.listingId
+                                            )
 
 
-                                        if (
-                                            currentQuantity >=
-                                            food.availableQuantity
-                                        ) {
+                                        if (currentQuantity >= food.availableQuantity) {
+
+
                                             coroutineScope.launch {
-                                                snackbarHostState
-                                                    .showSnackbar(
+
+
+                                                snackbarHostState.showSnackbar(
 
                                                         message = "Maximum available quantity reached for ${food.name}."
                                                     )
                                             }
 
+
                                             return@FoodDealRow
                                         }
 
-                                        // ADD TO CART
-                                        val added =
-                                            BuyerCartStore
-                                                .addItem(
-                                                    shopName = shopName,
-                                                    foodDeal = food
-                                                )
+                                        // ADD TO CART THROUGH VIEWMODEL
+                                        val added = viewModel.addToCart(
+
+                                                shopName = shopName,
+
+                                                foodDeal = food
+                                            )
+
 
                                         if (added) {
 
+
                                             coroutineScope.launch {
-                                                snackbarHostState
-                                                    .showSnackbar(
+
+
+                                                snackbarHostState.showSnackbar(
+
                                                         message = "${food.name} added to cart."
                                                     )
                                             }
 
+
                                         } else {
+
+
                                             coroutineScope.launch {
-                                                snackbarHostState
-                                                    .showSnackbar(
+
+
+                                                snackbarHostState.showSnackbar(
+
                                                         message = "Unable to add ${food.name} to cart."
                                                     )
                                             }
                                         }
-                                    }
-                                )
+                                    })
 
 
                                 HorizontalDivider(
+
                                     color = Color.LightGray
                                 )
                             }
@@ -608,6 +816,7 @@ fun ShopDetailScreen(
 private fun FoodDealRow(
 
     food: FoodDeal,
+
     onAddClick: () -> Unit
 
 ) {
@@ -621,18 +830,27 @@ private fun FoodDealRow(
                 vertical = 14.dp
             ),
 
-        verticalAlignment =
-            Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically
+
     ) {
+
 
         Surface(
 
             modifier = Modifier.size(
-                    width = 76.dp,
-                    height = 70.dp
-                ),
-            shape = RoundedCornerShape(6.dp),
-            color = Color(0xFFFFF4D6)
+
+                width = 76.dp,
+
+                height = 70.dp
+            ),
+
+            shape = RoundedCornerShape(
+                6.dp
+            ),
+
+            color = Color(
+                0xFFFFF4D6
+            )
 
         ) {
 
@@ -646,69 +864,95 @@ private fun FoodDealRow(
 
                 Text(
 
-                    text =
-                        food.name
-                            .take(2)
-                            .uppercase(),
+                    text = food.name.take(2).uppercase(),
+
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFD99B00)
+
+                    color = Color(
+                        0xFFD99B00
+                    )
                 )
             }
         }
 
 
         Spacer(
-            modifier = Modifier.width(12.dp)
+
+            modifier = Modifier.width(
+                12.dp
+            )
         )
 
 
         Column(
-            modifier = Modifier.weight(1f)
+
+            modifier = Modifier.weight(
+                1f
+            )
+
         ) {
 
 
             Text(
 
                 text = food.name,
+
                 fontSize = 14.sp,
+
                 fontWeight = FontWeight.Medium
             )
 
 
             Spacer(
-                modifier = Modifier.height(3.dp)
+
+                modifier = Modifier.height(
+                    3.dp
+                )
             )
 
 
             Text(
 
                 text = food.description,
+
                 fontSize = 10.sp,
+
                 color = Color.Gray
             )
 
+
             Spacer(
-                modifier = Modifier.height(3.dp)
+
+                modifier = Modifier.height(
+                    3.dp
+                )
             )
 
 
             Text(
 
                 text = food.pickupTime,
+
                 fontSize = 10.sp,
+
                 color = Color.Gray
             )
 
 
             Spacer(
-                modifier = Modifier.height(8.dp)
+
+                modifier = Modifier.height(
+                    8.dp
+                )
             )
 
 
             Row(
 
                 modifier = Modifier.fillMaxWidth(),
+
                 verticalAlignment = Alignment.CenterVertically,
+
                 horizontalArrangement = Arrangement.SpaceBetween
 
             ) {
@@ -716,25 +960,37 @@ private fun FoodDealRow(
 
                 Column {
 
+
                     Text(
 
                         text = food.price,
+
                         fontSize = 14.sp,
+
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF388E3C)
+
+                        color = Color(
+                            0xFF388E3C
+                        )
                     )
 
 
                     if (food.discountPercent > 0) {
+
+
                         Text(
 
                             text = "${food.discountPercent}% OFF",
+
                             fontSize = 10.sp,
+
                             color = Color.Gray
                         )
                     }
 
+
                     Spacer(
+
                         modifier = Modifier.height(
                             2.dp
                         )
@@ -743,14 +999,11 @@ private fun FoodDealRow(
 
                     Text(
 
-                        text =
-                            "${food.availableQuantity} available",
+                        text = "${food.availableQuantity} available",
 
-                        fontSize =
-                            10.sp,
+                        fontSize = 10.sp,
 
-                        color =
-                            Color.Gray
+                        color = Color.Gray
                     )
                 }
 
@@ -758,13 +1011,30 @@ private fun FoodDealRow(
                 Button(
 
                     onClick = onAddClick,
+
                     enabled = food.availableQuantity > 0,
-                    modifier = Modifier.height(38.dp),
-                    shape = RoundedCornerShape(8.dp),
+
+                    modifier = Modifier.height(
+                        38.dp
+                    ),
+
+                    shape = RoundedCornerShape(
+                        8.dp
+                    ),
+
                     colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF4CAF50)
+
+                            containerColor = Color(
+                                0xFF4CAF50
+                            )
                         ),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)
+
+                    contentPadding = PaddingValues(
+
+                        horizontal = 14.dp,
+
+                        vertical = 4.dp
+                    )
 
                 ) {
 
@@ -772,8 +1042,11 @@ private fun FoodDealRow(
                     Text(
 
                         text = "Add",
+
                         fontSize = 12.sp,
+
                         fontWeight = FontWeight.SemiBold,
+
                         color = Color.White
                     )
                 }
@@ -782,20 +1055,23 @@ private fun FoodDealRow(
     }
 }
 
-// BUILD FOOD DESCRIPTION
+
+// FOOD DESCRIPTION
 private fun buildFoodDescription(
 
     foodDescription: String?,
+
     bestBeforeDays: Int,
+
     availableQuantity: Int
 
 ): String {
 
+
     val foodInformation = "Best Before: $bestBeforeDays days • Surplus Food: $availableQuantity"
 
-    return if (
-        foodDescription.isNullOrBlank()
-    ) {
+
+    return if (foodDescription.isNullOrBlank()) {
 
         foodInformation
 
@@ -805,12 +1081,14 @@ private fun buildFoodDescription(
     }
 }
 
+
 // PRICE
 private fun formatPrice(
 
     priceCent: Int
 
 ): String {
+
 
     val price = priceCent / 100.0
 
@@ -833,33 +1111,33 @@ private fun formatPickupTime(
 ): String {
 
 
-    if (
-        pickupEndAt <= 0
-    ) {
+    if (pickupEndAt <= 0) {
+
         return "Pickup time not available"
     }
+
 
     return try {
 
 
         val milliseconds =
 
-            if (
-                pickupEndAt < 100_000_000_000L
-            ) {
+            if (pickupEndAt < 100_000_000_000L) {
 
                 pickupEndAt * 1000
 
             } else {
+
                 pickupEndAt
             }
 
 
-        val dateFormat =
-            SimpleDateFormat(
-                "dd MMM, hh:mm a",
-                Locale.getDefault()
-            )
+        val dateFormat = SimpleDateFormat(
+
+            "dd MMM, hh:mm a",
+
+            Locale.getDefault()
+        )
 
 
         "Pickup before ${
@@ -869,6 +1147,7 @@ private fun formatPickupTime(
                 )
             )
         }"
+
 
     } catch (e: Exception) {
 
@@ -883,27 +1162,27 @@ private fun createShopShortName(
 
 ): String {
 
-    val words =
-        shopName
-            .trim()
-            .split(" ")
-            .filter {
 
-                it.isNotBlank()
-            }
+    val words = shopName.trim().split(" ").filter {
+
+            it.isNotBlank()
+        }
+
 
     return when {
+
+
         words.isEmpty() -> {
+
             "SP"
         }
 
+
         words.size == 1 -> {
 
-            words
-                .first()
-                .take(2)
-                .uppercase()
+            words.first().take(2).uppercase()
         }
+
 
         else -> {
 
@@ -914,17 +1193,19 @@ private fun createShopShortName(
 
 // PREVIEW
 @Preview(
-    showBackground = true,
-    showSystemUi = true
+    showBackground = true, showSystemUi = true
 )
 @Composable
 fun ShopDetailScreenPreview() {
+
 
     SharePlateTheme(
         dynamicColor = false
     ) {
 
+
         ShopDetailScreen(
+
             sellerId = "preview-seller-1"
         )
     }

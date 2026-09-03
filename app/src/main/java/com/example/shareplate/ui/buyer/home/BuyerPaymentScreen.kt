@@ -23,61 +23,115 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.shareplate.ui.buyer.BuyerViewModel
 import com.example.shareplate.ui.theme.SharePlateTheme
-import kotlinx.coroutines.launch
 
 
 @Composable
 fun BuyerPaymentScreen(
 
+    buyerViewModel: BuyerViewModel? = null,
+
     onBackClick: () -> Unit = {},
 
     onPaymentSuccess: (
-        pickupCode: String,
-        totalPriceCent: Int
+        pickupCode: String, totalPriceCent: Int
     ) -> Unit = { _, _ -> }
 
 ) {
 
-    val orderManager =
-        remember {
-            BuyerOrderManager()
+    val isPreview = LocalInspectionMode.current
+
+
+    val actualViewModel: BuyerViewModel? =
+
+        if (isPreview) {
+
+            null
+
+        } else {
+
+            buyerViewModel ?: viewModel()
         }
 
-    val coroutineScope =
-        rememberCoroutineScope()
 
-
+    // PAYMENT METHOD
     var selectedPaymentMethod by remember {
-        mutableStateOf("")
+
+        mutableStateOf(
+            "CASH"
+        )
     }
 
 
-    var isSubmitting by remember {
-        mutableStateOf(false)
-    }
+    // VIEWMODEL STATES
+    val loadingState = actualViewModel?.isLoading?.collectAsState()
 
 
-    var errorMessage by remember {
-        mutableStateOf<String?>(null)
-    }
+    val errorState = actualViewModel?.errorMessage?.collectAsState()
 
 
+    val isLoading =
+
+        if (isPreview) {
+
+            false
+
+        } else {
+
+            loadingState?.value ?: false
+        }
+
+
+    val errorMessage =
+
+        if (isPreview) {
+
+            null
+
+        } else {
+
+            errorState?.value
+        }
+
+
+    // PREVIEW TOTAL
     val totalPrice =
-        BuyerCartStore
-            .getTotalPrice()
+
+        if (isPreview) {
+
+            3.50
+
+        } else {
+
+            actualViewModel?.getCartTotal() ?: 0.0
+        }
+
+
+    val isCartEmpty =
+
+        if (isPreview) {
+
+            false
+
+        } else {
+
+            actualViewModel?.isCartEmpty() ?: true
+        }
 
 
     Scaffold { innerPadding ->
@@ -87,461 +141,306 @@ fun BuyerPaymentScreen(
 
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(
+                    innerPadding
+                ),
 
-            color =
-                Color(0xFFF7F7F7)
+            color = Color(
+                0xFFF7F7F7
+            )
 
         ) {
 
 
             Column(
-                modifier =
-                    Modifier.fillMaxSize()
+
+                modifier = Modifier.fillMaxSize()
+
             ) {
 
 
-                // =================================================
                 // TOP BAR
-                // =================================================
-
                 Row(
-
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.White)
-                        .padding(
-                            horizontal = 16.dp,
-                            vertical = 12.dp
-                        ),
-
-                    verticalAlignment =
-                        Alignment.CenterVertically
-
-                ) {
-
-
-                    IconButton(
-                        onClick = onBackClick,
-                        enabled = !isSubmitting
-                    ) {
-
-                        Text(
-                            text = "←",
-                            fontSize = 26.sp,
-                            fontWeight =
-                                FontWeight.Bold
-                        )
-                    }
-
-
-                    Text(
-                        text = "Payment",
-                        fontSize = 21.sp,
-                        fontWeight =
-                            FontWeight.Bold
-                    )
-                }
-
-
-                HorizontalDivider(
-                    color =
-                        Color(0xFFE0E0E0)
-                )
-
-
-                Column(
-
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .padding(20.dp)
-
-                ) {
-
-
-                    // =================================================
-                    // TOTAL PAYMENT
-                    // =================================================
-
-                    Text(
-                        text = "Total Payment",
-                        fontSize = 15.sp,
-                        color =
-                            Color.DarkGray
-                    )
-
-
-                    Spacer(
-                        modifier =
-                            Modifier.height(5.dp)
-                    )
-
-
-                    Text(
-
-                        text =
-                            "RM %.2f".format(
-                                totalPrice
-                            ),
-
-                        fontSize = 30.sp,
-
-                        fontWeight =
-                            FontWeight.Bold,
-
-                        color =
-                            Color(0xFF4CAF50)
-                    )
-
-
-                    Spacer(
-                        modifier =
-                            Modifier.height(28.dp)
-                    )
-
-
-                    Text(
-                        text =
-                            "Choose Payment Method",
-                        fontSize = 18.sp,
-                        fontWeight =
-                            FontWeight.Bold
-                    )
-
-
-                    Spacer(
-                        modifier =
-                            Modifier.height(14.dp)
-                    )
-
-
-                    // =================================================
-                    // CASH ON PICKUP
-                    // =================================================
-
-                    PaymentMethodCard(
-
-                        title =
-                            "Cash on Pickup",
-
-                        description =
-                            "Pay when you collect your food.",
-
-                        selected =
-                            selectedPaymentMethod ==
-                                    "CASH",
-
-                        onClick = {
-
-                            if (!isSubmitting) {
-
-                                selectedPaymentMethod =
-                                    "CASH"
-
-                                errorMessage =
-                                    null
-                            }
-                        }
-                    )
-
-
-                    Spacer(
-                        modifier =
-                            Modifier.height(12.dp)
-                    )
-
-
-                    // =================================================
-                    // CARD
-                    // =================================================
-
-                    PaymentMethodCard(
-
-                        title =
-                            "Credit / Debit Card",
-
-                        description =
-                            "Pay using your bank card.",
-
-                        selected =
-                            selectedPaymentMethod ==
-                                    "CARD",
-
-                        onClick = {
-
-                            if (!isSubmitting) {
-
-                                selectedPaymentMethod =
-                                    "CARD"
-
-                                errorMessage =
-                                    null
-                            }
-                        }
-                    )
-
-
-                    Spacer(
-                        modifier =
-                            Modifier.height(12.dp)
-                    )
-
-
-                    // =================================================
-                    // E-WALLET
-                    // =================================================
-
-                    PaymentMethodCard(
-
-                        title =
-                            "E-Wallet",
-
-                        description =
-                            "Pay using an e-wallet.",
-
-                        selected =
-                            selectedPaymentMethod ==
-                                    "EWALLET",
-
-                        onClick = {
-
-                            if (!isSubmitting) {
-
-                                selectedPaymentMethod =
-                                    "EWALLET"
-
-                                errorMessage =
-                                    null
-                            }
-                        }
-                    )
-
-
-                    Spacer(
-                        modifier =
-                            Modifier.height(22.dp)
-                    )
-
-
-                    // =================================================
-                    // INFORMATION
-                    // =================================================
-
-                    if (
-                        selectedPaymentMethod
-                            .isNotEmpty()
-                    ) {
-
-
-                        Card(
-
-                            modifier =
-                                Modifier.fillMaxWidth(),
-
-                            shape =
-                                RoundedCornerShape(
-                                    10.dp
-                                ),
-
-                            colors =
-                                CardDefaults.cardColors(
-                                    containerColor =
-                                        Color(
-                                            0xFFE8F5E9
-                                        )
-                                )
-
-                        ) {
-
-
-                            Text(
-
-                                text =
-                                    when (
-                                        selectedPaymentMethod
-                                    ) {
-
-                                        "CASH" ->
-                                            "You will pay the seller when collecting your food."
-
-                                        "CARD" ->
-                                            "Card payment selected."
-
-                                        "EWALLET" ->
-                                            "E-Wallet payment selected."
-
-                                        else ->
-                                            ""
-                                    },
-
-                                modifier =
-                                    Modifier.padding(
-                                        14.dp
-                                    ),
-
-                                fontSize =
-                                    13.sp,
-
-                                color =
-                                    Color(
-                                        0xFF2E7D32
-                                    )
-                            )
-                        }
-                    }
-
-
-                    if (
-                        errorMessage != null
-                    ) {
-
-
-                        Spacer(
-                            modifier =
-                                Modifier.height(
-                                    18.dp
-                                )
-                        )
-
-
-                        Text(
-                            text =
-                                errorMessage
-                                    ?: "",
-                            fontSize =
-                                13.sp,
-                            color =
-                                Color.Red
-                        )
-                    }
-                }
-
-
-                // =================================================
-                // CONFIRM BUTTON
-                // =================================================
-
-                Column(
 
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
                             Color.White
                         )
-                        .padding(20.dp)
+                        .padding(
+
+                            horizontal = 16.dp,
+
+                            vertical = 12.dp
+                        ),
+
+                    verticalAlignment = Alignment.CenterVertically
 
                 ) {
 
 
+                    IconButton(
+
+                        onClick = onBackClick
+
+                    ) {
+
+
+                        Text(
+
+                            text = "←",
+
+                            fontSize = 26.sp,
+
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+
+                    Text(
+
+                        text = "Payment",
+
+                        fontSize = 21.sp,
+
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+
+                HorizontalDivider(
+
+                    color = Color(
+                        0xFFE0E0E0
+                    )
+                )
+
+
+                Column(
+
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(
+                            20.dp
+                        )
+
+                ) {
+
+
+                    // TOTAL
+                    Text(
+
+                        text = "Total Payment",
+
+                        fontSize = 15.sp,
+
+                        color = Color.DarkGray
+                    )
+
+
+                    Spacer(
+
+                        modifier = Modifier.height(
+                            6.dp
+                        )
+                    )
+
+
+                    Text(
+
+                        text = "RM %.2f".format(
+                            totalPrice
+                        ),
+
+                        fontSize = 28.sp,
+
+                        fontWeight = FontWeight.Bold,
+
+                        color = Color(
+                            0xFF4CAF50
+                        )
+                    )
+
+
+                    Spacer(
+
+                        modifier = Modifier.height(
+                            28.dp
+                        )
+                    )
+
+
+                    // PAYMENT METHOD TITLE
+                    Text(
+
+                        text = "Select Payment Method",
+
+                        fontSize = 18.sp,
+
+                        fontWeight = FontWeight.Bold
+                    )
+
+
+                    Spacer(
+
+                        modifier = Modifier.height(
+                            14.dp
+                        )
+                    )
+
+
+                    // CASH
+                    PaymentMethodCard(
+
+                        title = "Cash",
+
+                        subtitle = "Pay during pickup",
+
+                        selected = selectedPaymentMethod == "CASH",
+
+                        onClick = {
+
+                            selectedPaymentMethod = "CASH"
+                        })
+
+
+                    Spacer(
+
+                        modifier = Modifier.height(
+                            12.dp
+                        )
+                    )
+
+
+                    // CARD
+                    PaymentMethodCard(
+
+                        title = "Credit / Debit Card",
+
+                        subtitle = "Card payment",
+
+                        selected = selectedPaymentMethod == "CARD",
+
+                        onClick = {
+
+                            selectedPaymentMethod = "CARD"
+                        })
+
+
+                    Spacer(
+
+                        modifier = Modifier.height(
+                            12.dp
+                        )
+                    )
+
+
+                    // EWALLET
+                    PaymentMethodCard(
+
+                        title = "E-Wallet",
+
+                        subtitle = "Pay using e-wallet",
+
+                        selected = selectedPaymentMethod == "EWALLET",
+
+                        onClick = {
+
+                            selectedPaymentMethod = "EWALLET"
+                        })
+
+
+                    Spacer(
+
+                        modifier = Modifier.height(
+                            24.dp
+                        )
+                    )
+
+                    // ERROR
+                    if (errorMessage != null) {
+
+
+                        Text(
+
+                            text = errorMessage,
+
+                            fontSize = 13.sp,
+
+                            color = Color.Red
+                        )
+
+
+                        Spacer(
+
+                            modifier = Modifier.height(
+                                12.dp
+                            )
+                        )
+                    }
+
+
+                    Spacer(
+
+                        modifier = Modifier.weight(
+                            1f
+                        )
+                    )
+
+                    // CONFIRM PAYMENT
                     Button(
 
                         onClick = {
 
 
-                            if (
-                                selectedPaymentMethod
-                                    .isBlank()
-                            ) {
+                            actualViewModel?.submitOrder(
 
-                                errorMessage =
-                                    "Please select a payment method."
-
-                                return@Button
-                            }
+                                    onSuccess = { pickupCode, totalPriceCent ->
 
 
-                            if (
-                                BuyerCartStore
-                                    .isCartEmpty()
-                            ) {
+                                        onPaymentSuccess(
 
-                                errorMessage =
-                                    "Your cart is empty."
+                                            pickupCode,
 
-                                return@Button
-                            }
-
-
-                            coroutineScope.launch {
-
-
-                                isSubmitting =
-                                    true
-
-                                errorMessage =
-                                    null
-
-
-                                val result =
-                                    orderManager
-                                        .submitOrder()
-
-
-                                if (
-                                    result.success
-                                ) {
-
-
-                                    val pickupCode =
-                                        result.pickupCode
-                                            ?: "N/A"
-
-
-                                    onPaymentSuccess(
-
-                                        pickupCode,
-
-                                        result
-                                            .totalPriceCent
-                                    )
-
-
-                                } else {
-
-
-                                    errorMessage =
-                                        result.message
-                                }
-
-
-                                isSubmitting =
-                                    false
-                            }
+                                            totalPriceCent
+                                        )
+                                    })
                         },
 
-                        enabled =
-                            !isSubmitting &&
-                                    BuyerCartStore
-                                        .cartItems
-                                        .isNotEmpty(),
+                        enabled = !isLoading && !isCartEmpty,
 
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(54.dp),
-
-                        shape =
-                            RoundedCornerShape(
-                                12.dp
+                            .height(
+                                52.dp
                             ),
 
-                        colors =
-                            ButtonDefaults
-                                .buttonColors(
-                                    containerColor =
-                                        Color(
-                                            0xFF4CAF50
-                                        )
+                        shape = RoundedCornerShape(
+                            12.dp
+                        ),
+
+                        colors = ButtonDefaults.buttonColors(
+
+                                containerColor = Color(
+                                    0xFF4CAF50
                                 )
+                            )
+
                     ) {
 
 
-                        if (isSubmitting) {
+                        if (isLoading) {
 
 
                             CircularProgressIndicator(
-                                color =
-                                    Color.White
+
+                                modifier = Modifier.height(
+                                    22.dp
+                                ),
+
+                                strokeWidth = 2.dp,
+
+                                color = Color.White
                             )
 
 
@@ -549,17 +448,48 @@ fun BuyerPaymentScreen(
 
 
                             Text(
-                                text =
-                                    "Confirm Payment",
-                                fontSize =
-                                    16.sp,
-                                fontWeight =
-                                    FontWeight.Bold,
-                                color =
-                                    Color.White
+
+                                text = "Confirm Payment",
+
+                                fontSize = 16.sp,
+
+                                fontWeight = FontWeight.Bold,
+
+                                color = Color.White
                             )
                         }
                     }
+
+
+                    Spacer(
+
+                        modifier = Modifier.height(
+                            8.dp
+                        )
+                    )
+
+
+                    Text(
+
+                        text =
+
+                            when (selectedPaymentMethod) {
+
+                                "CASH" -> "Cash payment will be made during pickup."
+
+                                "CARD" -> "Card payment is simulated in this prototype."
+
+                                "EWALLET" -> "E-Wallet payment is simulated in this prototype."
+
+                                else -> ""
+                            },
+
+                        modifier = Modifier.fillMaxWidth(),
+
+                        fontSize = 11.sp,
+
+                        color = Color.Gray
+                    )
                 }
             }
         }
@@ -567,12 +497,13 @@ fun BuyerPaymentScreen(
 }
 
 
+// PAYMENT METHOD CARD
 @Composable
 private fun PaymentMethodCard(
 
     title: String,
 
-    description: String,
+    subtitle: String,
 
     selected: Boolean,
 
@@ -586,18 +517,17 @@ private fun PaymentMethodCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
+
                 onClick()
             },
 
-        shape =
-            RoundedCornerShape(
-                12.dp
-            ),
+        shape = RoundedCornerShape(
+            12.dp
+        ),
 
-        colors =
-            CardDefaults.cardColors(
-                containerColor =
-                    Color.White
+        colors = CardDefaults.cardColors(
+
+                containerColor = Color.White
             )
 
     ) {
@@ -607,118 +537,75 @@ private fun PaymentMethodCard(
 
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(
+                    16.dp
+                ),
 
-            verticalAlignment =
-                Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically,
 
-            horizontalArrangement =
-                Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween
 
         ) {
 
 
             Column(
-                modifier =
-                    Modifier.weight(1f)
+
+                modifier = Modifier.weight(
+                    1f
+                )
+
             ) {
 
 
                 Text(
+
                     text = title,
+
                     fontSize = 16.sp,
-                    fontWeight =
-                        FontWeight.SemiBold
+
+                    fontWeight = FontWeight.SemiBold
                 )
 
 
                 Spacer(
-                    modifier =
-                        Modifier.height(
-                            4.dp
-                        )
+
+                    modifier = Modifier.height(
+                        4.dp
+                    )
                 )
 
 
                 Text(
-                    text =
-                        description,
-                    fontSize =
-                        12.sp,
-                    color =
-                        Color.Gray
+
+                    text = subtitle,
+
+                    fontSize = 12.sp,
+
+                    color = Color.Gray
                 )
             }
 
 
             RadioButton(
 
-                selected =
-                    selected,
+                selected = selected,
 
-                onClick =
-                    onClick
+                onClick = onClick
             )
         }
     }
 }
 
-
 @Preview(
-    showBackground = true,
-    showSystemUi = true
+    showBackground = true, showSystemUi = true
 )
 @Composable
 fun BuyerPaymentScreenPreview() {
 
 
-    if (
-        BuyerCartStore
-            .cartItems
-            .isEmpty()
-    ) {
-
-
-        BuyerCartStore
-            .cartItems
-            .addAll(
-
-                listOf(
-
-                    BuyerCartItem(
-                        listingId = 1,
-                        foodItemId = 1,
-                        sellerId = "preview-seller-1",
-                        shopName = "Ondo Bakery",
-                        foodName = "Blueberry Bread",
-                        price = 1.00,
-                        pickupTime = "Pickup before 8:00 PM",
-                        availableQuantity = 7,
-                        quantity = 2
-                    ),
-
-
-                    BuyerCartItem(
-                        listingId = 2,
-                        foodItemId = 2,
-                        sellerId = "preview-seller-1",
-                        shopName = "Ondo Bakery",
-                        foodName = "Sausage Bread",
-                        price = 1.50,
-                        pickupTime = "Pickup before 8:00 PM",
-                        availableQuantity = 5,
-                        quantity = 1
-                    )
-                )
-            )
-    }
-
-
     SharePlateTheme(
         dynamicColor = false
     ) {
-
-
         BuyerPaymentScreen()
     }
 }

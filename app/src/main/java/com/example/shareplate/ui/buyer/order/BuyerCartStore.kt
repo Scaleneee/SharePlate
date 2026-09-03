@@ -5,6 +5,7 @@ import com.example.shareplate.ui.buyer.home.FoodDeal
 
 
 data class BuyerCartItem(
+
     val listingId: Long,
     val foodItemId: Long,
     val sellerId: String,
