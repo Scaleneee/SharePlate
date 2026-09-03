@@ -1,4 +1,4 @@
-package com.example.assignment.ngo
+package com.example.shareplate.ui.NGO
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home

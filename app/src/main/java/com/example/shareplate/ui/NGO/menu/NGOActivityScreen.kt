@@ -1,4 +1,4 @@
-package com.example.shareplate.ui.NGO.menu
+package com.example.shareplate.ui.NGO
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.rememberScrollState
@@ -48,43 +48,9 @@ data class NGOActivityItem(
 )
 
 @Composable
-fun NGOActivityScreen() {
+fun NGOActivityScreen(pickups: List<NGOActivityItem>) {
     var selectedTab by remember { mutableIntStateOf(0) }
 
-    val activities = listOf(
-        NGOActivityItem(
-            name = "Sunrise Bakery",
-            location = "Penang - 1.2 km",
-            shortName = "SB",
-            pickupTime = "Pickup: 10:00 - 10:30 PM",
-            items = "Bread - 10, Croissant - 8, Muffin - 7",
-            done = false
-        ),
-        NGOActivityItem(
-            name = "Daily Bake",
-            location = "Penang - 2.4 km",
-            shortName = "DB",
-            pickupTime = "Pickup: 8:00 - 8:30 PM",
-            items = "Sandwich - 6, Bun - 7",
-            done = false
-        ),
-        NGOActivityItem(
-            name = "Ondo Bakery",
-            location = "George Town - 5.0 km",
-            shortName = "OB",
-            pickupTime = "Pickup: 9:00 - 9:30 PM",
-            items = "Bread - 8, Cookie pack - 4",
-            done = true
-        ),
-        NGOActivityItem(
-            name = "Daily Bake",
-            location = "Penang - 2.4 km",
-            shortName = "DB",
-            pickupTime = "Pickup: 6:00 - 6:30 PM",
-            items = "Cake slice - 5",
-            done = true
-        )
-    )
 
     Column(
         modifier = Modifier
@@ -102,9 +68,9 @@ fun NGOActivityScreen() {
         Spacer(modifier = Modifier.height(20.dp))
 
         val shown = if (selectedTab == 0) {
-            activities.filter { !it.done }
+            pickups.filter { !it.done }
         } else {
-            activities.filter { it.done }
+            pickups.filter { it.done }
         }
 
         if (shown.isEmpty()) {
@@ -380,5 +346,5 @@ private fun NGOItemDetailRow(name: String, surplus: Int) {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun NGOActivityScreenPreview() {
-    NGOActivityScreen()
+    NGOActivityScreen(pickups = emptyList())
 }
