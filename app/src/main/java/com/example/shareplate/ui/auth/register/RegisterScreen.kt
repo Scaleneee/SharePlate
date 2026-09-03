@@ -201,7 +201,12 @@ fun RegisterScreen(
                             sessionManager.saveSession(profile.role)
                             onRegisterSuccess(profile.role)
                         }.onFailure { e ->
-                            errorMessage = e.message ?: "Registration failed. Please try again."
+                            val raw = e.message ?: ""
+                            errorMessage = if (raw.contains("already", ignoreCase = true) || raw.contains("registered", ignoreCase = true)) {
+                                "That email is already registered. Please sign in instead."
+                            } else {
+                                "Could not create an account. Please try again."
+                            }
                         }
                     }
                 },
