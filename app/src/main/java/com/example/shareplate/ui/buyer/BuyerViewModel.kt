@@ -58,6 +58,11 @@ class BuyerViewModel(
 
     val sellers: StateFlow<List<User>> = _sellers.asStateFlow()
 
+    //save/favourite sellers
+    private val _savedSellerIds = MutableStateFlow<Set<String>>(emptySet())
+
+    val savedSellerIds: StateFlow<Set<String>> = _savedSellerIds.asStateFlow()
+
     // SELECTED SELLER
     private val _selectedSeller = MutableStateFlow<User?>(null)
 
@@ -137,6 +142,22 @@ class BuyerViewModel(
                 // GET SELLERS / SHOPS
                 _sellers.value = repository.getSellers()
 
+                val currentUser =
+                    SupabaseProvider
+                        .client
+                        .auth
+                        .currentUserOrNull()
+
+
+                if (currentUser != null) {
+
+                    _savedSellerIds.value =
+                        repository
+                            .getSavedSellerIds(
+                                currentUser.id
+                            )
+                }
+
 
             } catch (e: Exception) {
 
@@ -145,6 +166,108 @@ class BuyerViewModel(
             } finally {
 
                 _isLoading.value = false
+            }
+        }
+    }
+
+    // LOAD FAVOURITES
+    fun loadFavourites() {
+
+        viewModelScope.launch {
+
+            try { val currentUser = SupabaseProvider.client.auth.currentUserOrNull() ?: return@launch
+                _savedSellerIds.value = repository.getSavedSellerIds(currentUser.id)
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Unable to load favourites."
+            }
+        }
+    }
+
+    // CHECK FAVOURITE
+    fun isFavourite(
+        sellerId: String
+    ): Boolean {
+
+        return _savedSellerIds.value.contains(
+                sellerId
+            )
+    }
+
+    // TOGGLE FAVOURITE
+    fun toggleFavourite(
+
+        sellerId: String,
+
+        onResult: (
+            success: Boolean, message: String
+        ) -> Unit = { _, _ -> }
+
+    ) {
+
+        viewModelScope.launch {
+
+            try {
+
+                val currentUser = SupabaseProvider.client.auth.currentUserOrNull()
+
+
+                if (currentUser == null) {
+
+                    onResult(
+                        false, "Please log in first."
+                    )
+
+                    return@launch
+                }
+
+
+                val buyerId = currentUser.id
+
+
+                val currentlySaved = _savedSellerIds.value.contains(
+                        sellerId
+                    )
+
+
+                if (currentlySaved) {
+
+                    // REMOVE FAVOURITE
+                    repository.removeSavedSeller(
+                            buyerId = buyerId, sellerId = sellerId
+                        )
+
+
+                    _savedSellerIds.value = _savedSellerIds.value - sellerId
+
+
+                    onResult(
+                        true, "Removed from favourites."
+                    )
+
+                } else {
+
+                    // ADD FAVOURITE
+                    repository.saveSeller(
+                            buyerId = buyerId, sellerId = sellerId
+                        )
+
+
+                    _savedSellerIds.value = _savedSellerIds.value + sellerId
+
+
+                    onResult(
+                        true, "Added to favourites."
+                    )
+                }
+
+
+            } catch (e: Exception) {
+
+                _errorMessage.value = e.message ?: "Unable to update favourite."
+
+                onResult(
+                    false, e.message ?: "Unable to update favourite."
+                )
             }
         }
     }
@@ -228,13 +351,13 @@ class BuyerViewModel(
                     phone = phone.trim(),
 
                     address = address.trim().ifBlank {
-                            null
-                        })
+                        null
+                    })
 
 
                 val result = authRepository.updateProfile(
-                        updatedProfile
-                    )
+                    updatedProfile
+                )
 
 
                 result.onSuccess {
@@ -279,8 +402,8 @@ class BuyerViewModel(
             try {
 
                 val seller = repository.getSellerById(
-                        sellerId
-                    )
+                    sellerId
+                )
 
 
                 if (seller == null) {
@@ -295,13 +418,13 @@ class BuyerViewModel(
 
 
                 _foodItems.value = repository.getFoodItemsBySeller(
-                        sellerId
-                    )
+                    sellerId
+                )
 
 
                 _listings.value = repository.getActiveListingsBySeller(
-                        sellerId
-                    )
+                    sellerId
+                )
 
 
             } catch (e: Exception) {
@@ -337,10 +460,10 @@ class BuyerViewModel(
 
         return BuyerCartStore.addItem(
 
-                shopName = shopName,
+            shopName = shopName,
 
-                foodDeal = foodDeal
-            )
+            foodDeal = foodDeal
+        )
     }
 
 
@@ -352,8 +475,8 @@ class BuyerViewModel(
     ): Boolean {
 
         return BuyerCartStore.canAddFromSeller(
-                sellerId
-            )
+            sellerId
+        )
     }
 
     // CART ITEM QUANTITY
@@ -364,8 +487,8 @@ class BuyerViewModel(
     ): Int {
 
         return BuyerCartStore.getQuantityForListing(
-                listingId
-            )
+            listingId
+        )
     }
 
     // INCREASE QUANTITY
@@ -376,8 +499,8 @@ class BuyerViewModel(
     ): Boolean {
 
         return BuyerCartStore.increaseQuantity(
-                index
-            )
+            index
+        )
     }
 
     // DECREASE QUANTITY
@@ -388,8 +511,8 @@ class BuyerViewModel(
     ) {
 
         BuyerCartStore.decreaseQuantity(
-                index
-            )
+            index
+        )
     }
 
     // REMOVE CART ITEM
@@ -400,8 +523,8 @@ class BuyerViewModel(
     ) {
 
         BuyerCartStore.removeItem(
-                index
-            )
+            index
+        )
     }
 
     // CLEAR CART
@@ -509,8 +632,8 @@ class BuyerViewModel(
 
 
                 val buyerOrders = repository.getBuyerOrders(
-                        currentUser.id
-                    )
+                    currentUser.id
+                )
 
 
                 val orderDetails = mutableListOf<BuyerOrderDetails>()
@@ -519,8 +642,8 @@ class BuyerViewModel(
                 for (order in buyerOrders) {
 
                     val listing = repository.getListingById(
-                            order.listingId
-                        )
+                        order.listingId
+                    )
 
 
                     val foodItem =
@@ -528,8 +651,8 @@ class BuyerViewModel(
                         if (listing != null) {
 
                             repository.getFoodItemById(
-                                    listing.foodItemId
-                                )
+                                listing.foodItemId
+                            )
 
                         } else {
 
@@ -542,8 +665,8 @@ class BuyerViewModel(
                         if (listing != null) {
 
                             repository.getSellerById(
-                                    listing.sellerId
-                                )
+                                listing.sellerId
+                            )
 
                         } else {
 
@@ -611,8 +734,8 @@ class BuyerViewModel(
 
 
                 val order = repository.getOrderById(
-                        orderId
-                    )
+                    orderId
+                )
 
 
                 if (order == null) {
@@ -632,8 +755,8 @@ class BuyerViewModel(
 
 
                 val listing = repository.getListingById(
-                        order.listingId
-                    )
+                    order.listingId
+                )
 
 
                 val foodItem =
@@ -641,8 +764,8 @@ class BuyerViewModel(
                     if (listing != null) {
 
                         repository.getFoodItemById(
-                                listing.foodItemId
-                            )
+                            listing.foodItemId
+                        )
 
                     } else {
 
@@ -655,8 +778,8 @@ class BuyerViewModel(
                     if (listing != null) {
 
                         repository.getSellerById(
-                                listing.sellerId
-                            )
+                            listing.sellerId
+                        )
 
                     } else {
 
@@ -712,6 +835,8 @@ class BuyerViewModel(
                 _profile.value = null
 
                 _sellers.value = emptyList()
+
+                _savedSellerIds.value = emptySet()
 
                 _selectedSeller.value = null
 
