@@ -185,6 +185,145 @@ fun AppNavGraph(
             )
         }
 
+        // NGO home screen
+        composable(AppRoutes.NGO_HOME) {
+            NGOHomeScreen(
+                onAcceptDonation = { donation, items ->
+                    NGOCartStore.donation = donation
+                    NGOCartStore.cartItems.clear()
+                    NGOCartStore.cartItems.addAll(items)
+                    navController.navigate(AppRoutes.NGO_CART)
+                },
+                onActivityClick = {
+                    navController.navigate(AppRoutes.NGO_ACTIVITY) {
+                        launchSingleTop = true
+                    }
+                },
+                onProfileClick = {
+                    navController.navigate(AppRoutes.NGO_PROFILE)
+                }
+            )
+        }
+
+        // NGO activity screen
+        composable(AppRoutes.NGO_ACTIVITY) {
+            val ngoViewModel: NGOViewModel = viewModel()
+            NGOActivityScreen(
+                ngoViewModel = ngoViewModel,
+                onHomeClick = {
+                    navController.navigate(AppRoutes.NGO_HOME) {
+                        launchSingleTop = true
+                    }
+                },
+                onMenuClick = {
+                    navController.navigate(AppRoutes.NGO_HOME) {
+                        launchSingleTop = true
+                    }
+                },
+                onActivityClick = {
+                    // already on activity
+                },
+                onProfileClick = {
+                    navController.navigate(AppRoutes.NGO_PROFILE) {
+                        launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        // NGO cart screen
+        composable(AppRoutes.NGO_CART) {
+            NGOCartScreen(
+                onBackClick = { navController.popBackStack() },
+                onCheckoutClick = { navController.navigate(AppRoutes.NGO_CHECKOUT) }
+            )
+        }
+
+        // NGO checkout screen
+        composable(AppRoutes.NGO_CHECKOUT) {
+            NGOCheckoutScreen(
+                donation = NGOCartStore.donation ?: return@composable,
+                items = NGOCartStore.cartItems,
+                onBackClick = { navController.popBackStack() },
+                onProceedClick = { navController.navigate(AppRoutes.NGO_PAYMENT) }
+            )
+        }
+
+        // NGO payment screen
+        composable(AppRoutes.NGO_PAYMENT) {
+            val ngoViewModel: NGOViewModel = viewModel()
+            NGOPaymentScreen(
+                donation = NGOCartStore.donation ?: return@composable,
+                items = NGOCartStore.cartItems,
+                onBackClick = { navController.popBackStack() },
+                onCompleteClick = {
+                    val donation = NGOCartStore.donation
+                    val orderItems = NGOCartStore.cartItems.toList()
+                    ngoViewModel.submitOrder { _, pickupCode, _ ->
+                        val code = pickupCode.ifBlank { "ND${(1000..9999).random()}" }
+                        if (donation != null) {
+                            val itemsText = orderItems.joinToString(", ") { "${it.foodName} - ${it.quantity}" }
+                            NgoLocalStore(context).addOrder(
+                                "${donation.name}|${donation.location}|${donation.name.take(2).uppercase()}|Pickup today|${itemsText}|$code|${System.currentTimeMillis()}|false"
+                            )
+                        }
+                        navController.navigate(AppRoutes.ngoSuccessRoute(code)) {
+                            popUpTo(AppRoutes.NGO_CART) { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+
+        // NGO successful screen
+        composable(
+            route = AppRoutes.NGO_SUCCESS,
+            arguments = listOf(
+                navArgument("pickupCode") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val pickupCode = backStackEntry.arguments?.getString("pickupCode") ?: ""
+            NGOSuccessScreen(
+                pickupCode = pickupCode,
+                onBackClick = {
+                    navController.navigate(AppRoutes.NGO_HOME) {
+                        popUpTo(AppRoutes.NGO_HOME)
+                    }
+                }
+            )
+        }
+
+        // NGO profile screen
+        composable(AppRoutes.NGO_PROFILE) {
+            NGOProfileScreen(
+                onHomeClick = {
+                    navController.navigate(AppRoutes.NGO_HOME) {
+                        launchSingleTop = true
+                    }
+                },
+                onMenuClick = {
+                    navController.navigate(AppRoutes.NGO_HOME) {
+                        launchSingleTop = true
+                    }
+                },
+                onActivityClick = {
+                    navController.navigate(AppRoutes.NGO_ACTIVITY) {
+                        launchSingleTop = true
+                    }
+                },
+                onProfileClick = {
+                    // already on profile
+                },
+                onLogout = {
+                    navController.navigate(AppRoutes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         // seller home screen
         // seller home screen
         composable(AppRoutes.SELLER_HOME) {
