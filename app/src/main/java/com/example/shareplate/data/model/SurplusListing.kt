@@ -25,7 +25,7 @@ data class SurplusListing(
     val availableQuantity: Int,
 
     // original price of the food
-    @SerialName("original_price_cent")
+    @SerialName("original_price_cents")
     val originalPriceCents: Int,
 
     // discount percentage: 60 -> 70 -> 80
@@ -33,19 +33,22 @@ data class SurplusListing(
     val currentDiscountPercent: Int,
 
     // discounted price
-    @SerialName("current_price_cent")
+    @SerialName("current_price_cents")
     val currentPriceCents: Int,
 
     // date and time when seller published it
     @SerialName("published_at")
+    @Serializable(with = FlexibleTimestampSerializer ::class)
     val publishedAt: Long,
 
     // date and time when store closes
     @SerialName("closing_at")
+    @Serializable(with = FlexibleTimestampSerializer ::class)
     val closingAt: Long,
 
     // last allowed pickup time
     @SerialName("pickup_end_at")
+    @Serializable(with = FlexibleTimestampSerializer ::class)
     val pickupEndAt: Long,
 
     // listing status

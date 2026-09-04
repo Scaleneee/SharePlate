@@ -16,6 +16,7 @@ import com.example.shareplate.data.supabase.SupabaseClient
 import com.example.shareplate.ui.theme.SharePlateTheme
 import io.github.jan.supabase.annotations.SupabaseInternal
 import io.github.jan.supabase.auth.handleDeeplinks
+import com.example.shareplate.data.remote.SupabaseProvider
 
 class MainActivity : ComponentActivity() {
 
@@ -48,7 +49,7 @@ class MainActivity : ComponentActivity() {
     private fun handleDeepLink(intent: Intent?) {
         val data = intent?.data
         if (data?.scheme == "shareplate" && data.host == "reset") {
-            SupabaseClient.client.handleDeeplinks(intent, onSessionSuccess = {
+            SupabaseProvider.client.handleDeeplinks(intent, onSessionSuccess = {
                 navController?.navigate(AppRoutes.NEW_PASSWORD)
             })
         }

@@ -11,7 +11,10 @@ object SupabaseProvider {
         supabaseUrl = "https://gpwtlihsibqrunnqjxzh.supabase.co",
         supabaseKey = "sb_publishable_RsyEyJmY55X_gRUdcjDg3g_5D0mgnZj"
     ) {
-        install(Auth)
+        install(Auth){
+            scheme = "shareplate"
+            host = "reset"
+        }
         install(Postgrest)
         install(Storage)
     }

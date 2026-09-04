@@ -7,8 +7,15 @@ import com.example.shareplate.data.model.SurplusListing
 import com.example.shareplate.data.model.User
 import com.example.shareplate.data.remote.SupabaseProvider
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
+import kotlinx.serialization.Serializable
 
-
+@Serializable
+data class ReduceListingQuantityParams(
+    val p_listing_id: Long,
+    val p_ordered_quantity: Int
+)
 class BuyerRepository {
 
     private val supabase =
@@ -58,16 +65,7 @@ class BuyerRepository {
 
         return supabase
             .from("food_items")
-            .select {
-
-                filter {
-
-                    eq(
-                        "is_active",
-                        true
-                    )
-                }
-            }
+            .select()
             .decodeList<FoodItem>()
     }
 
@@ -85,11 +83,6 @@ class BuyerRepository {
                     eq(
                         "seller_id",
                         sellerId
-                    )
-
-                    eq(
-                        "is_active",
-                        true
                     )
                 }
             }
@@ -251,74 +244,23 @@ class BuyerRepository {
         orderedQuantity: Int
     ): Boolean {
 
-        val listing =
-            getListingById(
-                listingId
-            )
-                ?: return false
+        return try {
 
+            supabase
+                .postgrest
+                .rpc(
+                    function = "reduce_listing_quantity",
+                    parameters =
+                        ReduceListingQuantityParams(
+                            p_listing_id = listingId,
+                            p_ordered_quantity = orderedQuantity
+                        )
+                )
+                .decodeAs<Boolean>()
 
-        if (
-            listing.status != "ACTIVE"
-        ) {
+        } catch (e: Exception) {
 
-            return false
+            false
         }
-
-
-        if (
-            listing.availableQuantity <
-            orderedQuantity
-        ) {
-
-            return false
-        }
-
-
-        val newQuantity =
-            listing.availableQuantity -
-                    orderedQuantity
-
-
-        val newStatus =
-
-            if (newQuantity == 0) {
-
-                "SOLD_OUT"
-
-            } else {
-
-                "ACTIVE"
-            }
-
-
-        val updatedListing =
-            listing.copy(
-
-                availableQuantity =
-                    newQuantity,
-
-                status =
-                    newStatus
-            )
-
-
-        supabase
-            .from("surplus_listings")
-            .update(
-                updatedListing
-            ) {
-
-                filter {
-
-                    eq(
-                        "listing_id",
-                        listingId
-                    )
-                }
-            }
-
-
-        return true
     }
 }

@@ -27,5 +27,5 @@ data class CreateOrder(
     @SerialName("pickup_code")
     val pickupCode: String,
 
-    val status: String = "PENDING"
+    val status: String
 )
