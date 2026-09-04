@@ -90,8 +90,8 @@ class NGOOrderManager(
                     totalPriceCent = 0,
                     orderedAt = orderedAt,
                     pickupCode = pickupCode,
-                    pickupNote = "",
-                    paymentMethod = "",
+                    pickupNote = null,
+                    paymentMethod = "FREE DONATION",
                     status = "PENDING"
                 )
 
