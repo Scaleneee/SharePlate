@@ -57,7 +57,6 @@ fun MenuFoodForm(
     initialPrice: String = "",
     initialBestBeforeDays: String = "",
     initialImageUrl: String? = null,
-    initialIsActive: Boolean = true,
     buttonText: String,
     onBackClick: () -> Unit,
     onSubmit: (
@@ -66,7 +65,6 @@ fun MenuFoodForm(
         originalPrice: String,
         bestBeforeDays: String,
         selectedImageUri: Uri?,
-        isActive: Boolean
     ) -> Unit
 ) {
     // use to store the user input
@@ -88,10 +86,6 @@ fun MenuFoodForm(
 
     var selectedImageUri by remember {
         mutableStateOf<Uri?>(null)
-    }
-
-    var isActive by remember(initialIsActive) {
-        mutableStateOf(initialIsActive)
     }
 
     val photoPickerLauncher =
@@ -247,21 +241,6 @@ fun MenuFoodForm(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement =
-                    Arrangement.Absolute.Right
-            ) {
-                Text("Active")
-                Spacer(Modifier.width(12.dp))
-                Switch(
-                    checked = isActive,
-                    onCheckedChange = {
-                        isActive = it
-                    }
-                )
-            }
             // to decide whether the button enable or not
             val isFormValid =
                 foodName.isNotBlank() &&
@@ -279,7 +258,6 @@ fun MenuFoodForm(
                         price,
                         bestBeforeDays,
                         selectedImageUri,
-                        isActive
                     )
                 },
                 enabled = isFormValid,

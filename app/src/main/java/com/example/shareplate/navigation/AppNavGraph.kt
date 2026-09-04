@@ -83,6 +83,8 @@ fun AppNavGraph(
     // Create SellerViewModel AFTER Supabase finished restoring session
     val sellerViewModel: SellerViewModel = viewModel()
 
+    val closingTime by sellerViewModel.closingTime.collectAsStateWithLifecycle()
+
     // Decide startup screen using Supabase Auth
     val startDestination =
         when (sessionStatus) {
@@ -272,6 +274,66 @@ fun AppNavGraph(
             SellerHomeScreen(
                 sellerName = sellerName, foodItems = foodItems,
 
+                onPublishClick = { foodItems, quantities ->
+
+                    val itemsToPublish = foodItems.mapNotNull { foodItem ->
+
+                        val quantity = quantities[foodItem.foodItemId]?.toIntOrNull()
+
+                        if (quantity != null && quantity > 0) {
+                            foodItem to quantity
+                        } else {
+                            null
+                        }
+                    }
+
+                    when {
+
+                        itemsToPublish.isEmpty() -> {
+
+                            Toast.makeText(
+                                context, "Please enter at least one quantity", Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        closingTime.isNullOrBlank() -> {
+
+                            Toast.makeText(
+                                context, "Closing time is not set", Toast.LENGTH_LONG
+                            ).show()
+                        }
+
+                        else -> {
+
+                            var successCount = 0
+
+                            itemsToPublish.forEach { (foodItem, quantity) ->
+
+                                sellerViewModel.publishTodaySurplus(
+                                    foodItem = foodItem,
+                                    quantity = quantity,
+                                    closingTime = closingTime!!,
+
+                                    onSuccess = {
+
+                                        successCount++
+
+                                        // all selected foods successfully published
+                                        if (successCount == itemsToPublish.size) {
+
+                                            Toast.makeText(
+                                                context,
+                                                "Today's surplus published successfully",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                },
+
                 onHomeClick = {
                     // already home
                 },
@@ -292,7 +354,8 @@ fun AppNavGraph(
                     navController.navigate(
                         AppRoutes.SELLER_PROFILE
                     )
-                })
+                }
+            )
         }
         // seller menu screen
         composable(AppRoutes.SELLER_MENU) {
@@ -384,8 +447,7 @@ fun AppNavGraph(
                                 category,
                                 originalPrice,
                                 bestBeforeDays,
-                                imageUri,
-                                isActive ->
+                                imageUri ->
 
                     if (sellerId != null) {
 
@@ -402,7 +464,6 @@ fun AppNavGraph(
                             bestBeforeDays =
                                 bestBeforeDays.toInt(),
                             selectedImageUri = imageUri,
-                            isActive = isActive,
 
                             onSuccess = {
 
@@ -456,7 +517,7 @@ fun AppNavGraph(
                         navController.popBackStack()
                     },
 
-                    onSaveClick = { foodName, category, originalPrice, bestBeforeDays, imageUri, isActive ->
+                    onSaveClick = { foodName, category, originalPrice, bestBeforeDays, imageUri ->
 
                         // convert RM to cent
                         val originalPriceCent = (originalPrice.toDouble() * 100).toInt()
