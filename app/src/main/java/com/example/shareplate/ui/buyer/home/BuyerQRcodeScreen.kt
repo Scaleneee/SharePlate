@@ -127,7 +127,7 @@ fun BuyerQrCodeScreen(
 
                 currentPriceCents = 100,
 
-                publishedAt = System.currentTimeMillis(),
+                publishedAt = "",
 
                 closingAt = "",
 

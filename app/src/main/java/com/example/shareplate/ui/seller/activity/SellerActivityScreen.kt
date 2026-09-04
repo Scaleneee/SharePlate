@@ -14,22 +14,27 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.shareplate.data.model.SellerPickupActivityItem
@@ -58,6 +63,10 @@ fun SellerActivityScreen(
     pickupActivities: List<SellerPickupActivityItem>,
 
     onMarkPickedUp: (SellerPickupActivityItem) -> Unit = {},
+
+    onUpdateQuantity:
+        (SellerActivityItem, Int) -> Unit =
+        { _, _ -> },
 
     onHomeClick: () -> Unit = {},
     onMenuClick: () -> Unit = {},
@@ -178,10 +187,13 @@ fun SellerActivityScreen(
             when (selectedTab) {
 
                 0 -> {
-
                     SurplusActivityList(
+
                         activities =
-                            surplusActivities
+                            surplusActivities,
+
+                        onUpdateQuantity =
+                            onUpdateQuantity
                     )
                 }
 
@@ -205,8 +217,11 @@ fun SellerActivityScreen(
 @Composable
 fun SurplusActivityList(
 
-    activities: List<SellerActivityItem>
+    activities:
+    List<SellerActivityItem>,
 
+    onUpdateQuantity:
+        (SellerActivityItem, Int) -> Unit
 ) {
 
     Column(
@@ -219,17 +234,15 @@ fun SurplusActivityList(
                 )
     ) {
 
-
         Spacer(
             modifier =
                 Modifier.height(20.dp)
         )
 
-
         Text(
 
             text =
-                "Surplus Activity",
+                "Published Surplus",
 
             style =
                 MaterialTheme
@@ -240,17 +253,15 @@ fun SurplusActivityList(
                 FontWeight.Bold
         )
 
-
         Spacer(
             modifier =
                 Modifier.height(6.dp)
         )
 
-
         Text(
 
             text =
-                "Track your published surplus food.",
+                "View and update your published surplus quantity.",
 
             style =
                 MaterialTheme
@@ -263,12 +274,10 @@ fun SurplusActivityList(
                     .onSurfaceVariant
         )
 
-
         Spacer(
             modifier =
                 Modifier.height(20.dp)
         )
-
 
         if (
             activities.isEmpty()
@@ -277,7 +286,7 @@ fun SurplusActivityList(
             EmptyActivity(
 
                 title =
-                    "No surplus activity",
+                    "No published surplus",
 
                 message =
                     "Published surplus will appear here."
@@ -293,7 +302,6 @@ fun SurplusActivityList(
                     )
             ) {
 
-
                 items(
 
                     items =
@@ -305,13 +313,15 @@ fun SurplusActivityList(
 
                 ) { activity ->
 
-
                     SurplusActivityCard(
+
                         activity =
-                            activity
+                            activity,
+
+                        onUpdateQuantity =
+                            onUpdateQuantity
                     )
                 }
-
 
                 item {
 
@@ -335,8 +345,48 @@ fun SurplusActivityList(
 fun SurplusActivityCard(
 
     activity:
-    SellerActivityItem
+    SellerActivityItem,
+
+    onUpdateQuantity:
+        (SellerActivityItem, Int) -> Unit
 ) {
+
+    var isEditing by remember(
+        activity.listingId
+    ) {
+        mutableStateOf(false)
+    }
+
+
+    var quantityText by remember(
+        activity.listingId,
+        activity.publishedQuantity
+    ) {
+
+        mutableStateOf(
+            activity
+                .publishedQuantity
+                .toString()
+        )
+    }
+
+
+    /**
+     * Cannot edit after NGO transfer,
+     * completed or cancelled.
+     */
+    val canEdit =
+        activity.status == "ACTIVE" ||
+                activity.status == "SOLD_OUT"
+
+
+    /**
+     * Number already reserved by buyers.
+     */
+    val reservedQuantity =
+        activity.publishedQuantity -
+                activity.availableQuantity
+
 
     Column(
 
@@ -357,10 +407,14 @@ fun SurplusActivityCard(
                             18.dp
                         )
                 )
-                .padding(18.dp)
+                .padding(
+                    18.dp
+                )
     ) {
 
-
+        /**
+         * Food name + status
+         */
         Row(
 
             modifier =
@@ -373,13 +427,11 @@ fun SurplusActivityCard(
                 Alignment.CenterVertically
         ) {
 
-
             Column(
 
                 modifier =
                     Modifier.weight(1f)
             ) {
-
 
                 Text(
 
@@ -407,8 +459,7 @@ fun SurplusActivityCard(
                 Text(
 
                     text =
-                        activity
-                            .publishedTime,
+                        activity.publishedTime,
 
                     style =
                         MaterialTheme
@@ -446,6 +497,9 @@ fun SurplusActivityCard(
         )
 
 
+        /**
+         * Quantity information
+         */
         Row(
 
             modifier =
@@ -454,7 +508,6 @@ fun SurplusActivityCard(
             horizontalArrangement =
                 Arrangement.SpaceBetween
         ) {
-
 
             ActivityInfo(
 
@@ -508,7 +561,6 @@ fun SurplusActivityCard(
                 Arrangement.SpaceBetween
         ) {
 
-
             Text(
                 text =
                     "Current Price"
@@ -526,6 +578,204 @@ fun SurplusActivityCard(
                 fontWeight =
                     FontWeight.Bold
             )
+        }
+
+
+        /**
+         * Edit section
+         */
+        if (
+            isEditing
+        ) {
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        18.dp
+                    )
+            )
+
+
+            OutlinedTextField(
+
+                value =
+                    quantityText,
+
+                onValueChange = { value ->
+
+                    if (
+                        value.all {
+                            it.isDigit()
+                        } &&
+                        value.length <= 4
+                    ) {
+
+                        quantityText =
+                            value
+                    }
+                },
+
+                label = {
+
+                    Text(
+                        "Published Quantity"
+                    )
+                },
+
+                supportingText = {
+
+                    Text(
+                        "Minimum: $reservedQuantity " +
+                                "($reservedQuantity already reserved)"
+                    )
+                },
+
+                singleLine = true,
+
+                keyboardOptions =
+                    KeyboardOptions(
+
+                        keyboardType =
+                            KeyboardType.Number
+                    ),
+
+                modifier =
+                    Modifier.fillMaxWidth()
+            )
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        12.dp
+                    )
+            )
+
+
+            Row(
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.End
+            ) {
+
+                TextButton(
+
+                    onClick = {
+
+                        quantityText =
+                            activity
+                                .publishedQuantity
+                                .toString()
+
+                        isEditing =
+                            false
+                    }
+
+                ) {
+
+                    Text(
+                        "Cancel"
+                    )
+                }
+
+
+                Spacer(
+                    modifier =
+                        Modifier.width(
+                            8.dp
+                        )
+                )
+
+
+                Button(
+
+                    onClick = {
+
+                        val newQuantity =
+                            quantityText
+                                .toIntOrNull()
+
+                        if (
+                            newQuantity != null
+                        ) {
+
+                            onUpdateQuantity(
+                                activity,
+                                newQuantity
+                            )
+
+                            isEditing =
+                                false
+                        }
+                    },
+
+                    enabled =
+                        quantityText
+                            .toIntOrNull()
+                            ?.let {
+
+                                it >=
+                                        reservedQuantity
+
+                            } == true
+
+                ) {
+
+                    Text(
+                        "Save"
+                    )
+                }
+            }
+
+        } else {
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        18.dp
+                    )
+            )
+
+
+            Button(
+
+                onClick = {
+
+                    quantityText =
+                        activity
+                            .publishedQuantity
+                            .toString()
+
+                    isEditing =
+                        true
+                },
+
+                enabled =
+                    canEdit,
+
+                modifier =
+                    Modifier.fillMaxWidth()
+
+            ) {
+
+                Text(
+
+                    text =
+                        if (
+                            canEdit
+                        ) {
+
+                            "Edit Quantity"
+
+                        } else {
+
+                            "Quantity Locked"
+                        }
+                )
+            }
         }
     }
 }

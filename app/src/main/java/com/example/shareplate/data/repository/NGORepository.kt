@@ -73,30 +73,59 @@ class NGORepository {
     }
 
     // GET ALL ACTIVE SURPLUS LISTINGS
-    suspend fun getActiveListings(): List<SurplusListing> {
+    /**
+     * Get food that has been transferred
+     * from sellers to NGOs.
+     */
+    suspend fun getActiveListings():
+            List<SurplusListing> {
+
         return supabase
             .from("surplus_listings")
             .select {
+
                 filter {
-                    eq("status", "ACTIVE")
+
+                    eq(
+                        "status",
+                        "TRANSFERRED_TO_NGO"
+                    )
                 }
             }
             .decodeList<SurplusListing>()
-            .filter { it.availableQuantity > 0 }
+            .filter {
+
+                it.availableQuantity > 0
+            }
     }
 
     // GET ACTIVE SURPLUS LISTINGS FROM ONE SELLER
-    suspend fun getActiveListingsBySeller(sellerId: String): List<SurplusListing> {
+    suspend fun getActiveListingsBySeller(
+        sellerId: String
+    ): List<SurplusListing> {
+
         return supabase
             .from("surplus_listings")
             .select {
+
                 filter {
-                    eq("seller_id", sellerId)
-                    eq("status", "ACTIVE")
+
+                    eq(
+                        "seller_id",
+                        sellerId
+                    )
+
+                    eq(
+                        "status",
+                        "TRANSFERRED_TO_NGO"
+                    )
                 }
             }
             .decodeList<SurplusListing>()
-            .filter { it.availableQuantity > 0 }
+            .filter {
+
+                it.availableQuantity > 0
+            }
     }
 
     // GET ONE SURPLUS LISTING

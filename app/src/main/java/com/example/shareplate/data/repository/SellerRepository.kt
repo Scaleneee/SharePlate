@@ -2,8 +2,10 @@ package com.example.shareplate.data.repository
 
 import android.content.Context
 import android.net.Uri
+import com.example.shareplate.data.model.CreateDonation
 import com.example.shareplate.data.model.CreateFoodItem
 import com.example.shareplate.data.model.CreateSurplusListing
+import com.example.shareplate.data.model.Donation
 import com.example.shareplate.data.remote.SupabaseProvider
 import com.example.shareplate.data.model.FoodItem
 import com.example.shareplate.data.model.SellerPickupActivityItem
@@ -16,18 +18,23 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.OffsetDateTime
 
+@Serializable
+private data class UpdateListingStatusPayload(
 
-//data class SellerPickupActivityItem(
-//    val pickupId: Long,
-//    val donationId: Long? = null,
-//    val receiverName: String,
-//    val pickupType: String,
-//    val foodName: String,
-//    val quantity: Int,
-//    val pickupCode: String,
-//    val pickupTime: String,
-//    val status: String
-//)
+    val status: String
+)
+
+@Serializable
+private data class UpdateSurplusQuantityPayload(
+
+    @SerialName("published_quantity")
+    val publishedQuantity: Int,
+
+    @SerialName("available_quantity")
+    val availableQuantity: Int,
+
+    val status: String
+)
 
 @Serializable
 private data class SellerOrderRow(
@@ -143,6 +150,224 @@ private data class UpdateSurplusPricePayload(
 class SellerRepository {
 
     private val supabase = SupabaseProvider.client
+
+    /**
+     * Get all surplus listings published by seller.
+     */
+    suspend fun getSellerSurplusListings(
+        sellerId: String
+    ): List<SurplusListing> {
+
+        return supabase
+            .from("surplus_listings")
+            .select {
+
+                filter {
+                    eq(
+                        "seller_id",
+                        sellerId
+                    )
+                }
+            }
+            .decodeList<SurplusListing>()
+            .sortedByDescending {
+                it.publishedAt
+            }
+    }
+
+    /**
+     * Check whether this surplus listing
+     * has already been converted to a donation.
+     */
+    suspend fun getDonationByListingId(
+        listingId: Long
+    ): Donation? {
+
+        return supabase
+            .from("donations")
+            .select {
+
+                filter {
+
+                    eq(
+                        "listing_id",
+                        listingId
+                    )
+                }
+            }
+            .decodeList<Donation>()
+            .firstOrNull()
+    }
+
+
+    /**
+     * Convert remaining unsold food
+     * into an NGO donation.
+     */
+    suspend fun transferListingToNgo(
+        listing: SurplusListing
+    ) {
+
+        // only ACTIVE listings can be transferred
+        if (
+            listing.status != "ACTIVE"
+        ) {
+            return
+        }
+
+
+        // nothing remaining = nothing to donate
+        if (
+            listing.availableQuantity <= 0
+        ) {
+            return
+        }
+
+
+        /**
+         * Prevent duplicate donations.
+         *
+         * Smart pricing runs repeatedly,
+         * so this check is important.
+         */
+        val existingDonation =
+            getDonationByListingId(
+                listing.listingId
+            )
+
+
+        if (
+            existingDonation == null
+        ) {
+
+            val now =
+                java.time.OffsetDateTime
+                    .now()
+                    .toString()
+
+
+            val donation =
+                CreateDonation(
+
+                    listingId =
+                        listing.listingId,
+
+                    sellerId =
+                        listing.sellerId,
+
+                    // no NGO selected yet
+                    ngoId =
+                        null,
+
+                    // donate only UNSOLD quantity
+                    donationQuantity =
+                        listing.availableQuantity,
+
+                    // donation becomes available now
+                    availableAt =
+                        now,
+
+                    /**
+                     * NGO pickup can start
+                     * when the shop closes.
+                     */
+                    pickupStartAt =
+                        listing.closingAt,
+
+                    /**
+                     * Existing listing already stores
+                     * closing + 30 minutes.
+                     */
+                    pickupEndAt =
+                        listing.pickupEndAt,
+
+                    status =
+                        "AVAILABLE"
+                )
+
+
+            // create donation row
+            supabase
+                .from("donations")
+                .insert(
+                    donation
+                )
+        }
+
+
+        /**
+         * Remove it from buyer ACTIVE listings.
+         *
+         * IMPORTANT:
+         * Do NOT change available_quantity to 0.
+         *
+         * NGO still needs the remaining quantity
+         * to display the donated food.
+         */
+        supabase
+            .from("surplus_listings")
+            .update(
+
+                UpdateListingStatusPayload(
+                    status =
+                        "TRANSFERRED_TO_NGO"
+                )
+
+            ) {
+
+                filter {
+
+                    eq(
+                        "listing_id",
+                        listing.listingId
+                    )
+                }
+            }
+    }
+
+    /**
+     * Update already-published surplus quantity.
+     *
+     * We update:
+     * - published_quantity
+     * - available_quantity
+     * - status
+     */
+    suspend fun updatePublishedSurplusQuantity(
+        listingId: Long,
+        publishedQuantity: Int,
+        availableQuantity: Int,
+        status: String
+    ) {
+
+        val updateData =
+            UpdateSurplusQuantityPayload(
+
+                publishedQuantity =
+                    publishedQuantity,
+
+                availableQuantity =
+                    availableQuantity,
+
+                status =
+                    status
+            )
+
+        supabase
+            .from("surplus_listings")
+            .update(
+                updateData
+            ) {
+
+                filter {
+
+                    eq(
+                        "listing_id",
+                        listingId
+                    )
+                }
+            }
+    }
 
     // FOOD ITEMS
     suspend fun getFoodItems(
