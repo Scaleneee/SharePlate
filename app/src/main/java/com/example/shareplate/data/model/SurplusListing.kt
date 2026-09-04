@@ -42,7 +42,7 @@ data class SurplusListing(
 
     // date and time when store closes
     @SerialName("closing_at")
-    val closingAt: Long,
+    val closingAt: String,
 
     // last allowed pickup time
     @SerialName("pickup_end_at")
