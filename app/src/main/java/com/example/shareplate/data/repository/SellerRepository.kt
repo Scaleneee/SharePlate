@@ -2,8 +2,10 @@ package com.example.shareplate.data.repository
 
 import android.content.Context
 import android.net.Uri
+import com.example.shareplate.data.model.CreateDonation
 import com.example.shareplate.data.model.CreateFoodItem
 import com.example.shareplate.data.model.CreateSurplusListing
+import com.example.shareplate.data.model.Donation
 import com.example.shareplate.data.remote.SupabaseProvider
 import com.example.shareplate.data.model.FoodItem
 import com.example.shareplate.data.model.SellerPickupActivityItem
@@ -16,6 +18,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.OffsetDateTime
 
+@Serializable
+private data class UpdateListingStatusPayload(
+
+    val status: String
+)
 
 @Serializable
 private data class UpdateSurplusQuantityPayload(
@@ -168,6 +175,155 @@ class SellerRepository {
             }
     }
 
+    /**
+     * Check whether this surplus listing
+     * has already been converted to a donation.
+     */
+    suspend fun getDonationByListingId(
+        listingId: Long
+    ): Donation? {
+
+        return supabase
+            .from("donations")
+            .select {
+
+                filter {
+
+                    eq(
+                        "listing_id",
+                        listingId
+                    )
+                }
+            }
+            .decodeList<Donation>()
+            .firstOrNull()
+    }
+
+
+    /**
+     * Convert remaining unsold food
+     * into an NGO donation.
+     */
+    suspend fun transferListingToNgo(
+        listing: SurplusListing
+    ) {
+
+        // only ACTIVE listings can be transferred
+        if (
+            listing.status != "ACTIVE"
+        ) {
+            return
+        }
+
+
+        // nothing remaining = nothing to donate
+        if (
+            listing.availableQuantity <= 0
+        ) {
+            return
+        }
+
+
+        /**
+         * Prevent duplicate donations.
+         *
+         * Smart pricing runs repeatedly,
+         * so this check is important.
+         */
+        val existingDonation =
+            getDonationByListingId(
+                listing.listingId
+            )
+
+
+        if (
+            existingDonation == null
+        ) {
+
+            val now =
+                java.time.OffsetDateTime
+                    .now()
+                    .toString()
+
+
+            val donation =
+                CreateDonation(
+
+                    listingId =
+                        listing.listingId,
+
+                    sellerId =
+                        listing.sellerId,
+
+                    // no NGO selected yet
+                    ngoId =
+                        null,
+
+                    // donate only UNSOLD quantity
+                    donationQuantity =
+                        listing.availableQuantity,
+
+                    // donation becomes available now
+                    availableAt =
+                        now,
+
+                    /**
+                     * NGO pickup can start
+                     * when the shop closes.
+                     */
+                    pickupStartAt =
+                        listing.closingAt,
+
+                    /**
+                     * Existing listing already stores
+                     * closing + 30 minutes.
+                     */
+                    pickupEndAt =
+                        listing.pickupEndAt,
+
+                    status =
+                        "AVAILABLE"
+                )
+
+
+            // create donation row
+            supabase
+                .from("donations")
+                .insert(
+                    donation
+                )
+        }
+
+
+        /**
+         * Remove it from buyer ACTIVE listings.
+         *
+         * IMPORTANT:
+         * Do NOT change available_quantity to 0.
+         *
+         * NGO still needs the remaining quantity
+         * to display the donated food.
+         */
+        supabase
+            .from("surplus_listings")
+            .update(
+
+                UpdateListingStatusPayload(
+                    status =
+                        "TRANSFERRED_TO_NGO"
+                )
+
+            ) {
+
+                filter {
+
+                    eq(
+                        "listing_id",
+                        listing.listingId
+                    )
+                }
+            }
+    }
 
     /**
      * Update already-published surplus quantity.

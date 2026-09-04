@@ -840,40 +840,91 @@ class SellerViewModel(
                 sellerId
             )
 
+
         val currentTime =
             OffsetDateTime.now()
 
+
         listings.forEach { listing ->
 
-            val closingAt =
-                OffsetDateTime.parse(
-                    listing.closingAt
-                )
+            try {
 
-            val transferAt =
-                closingAt.minusMinutes(10)
+                val closingAt =
+                    OffsetDateTime.parse(
+                        listing.closingAt
+                    )
 
-            // NGO transfer will be implemented later
-            if (
-                currentTime.isBefore(
-                    transferAt
-                )
-            ) {
+
+                /**
+                 * 10 minutes before closing:
+                 * stop buyer sale and transfer
+                 * remaining food to NGO.
+                 */
+                val transferAt =
+                    closingAt.minusMinutes(
+                        10
+                    )
+
+
+                // ====================================
+                // TRANSFER UNSOLD FOOD TO NGO
+                // ====================================
+                if (
+                    currentTime >= transferAt
+                ) {
+
+                    if (
+                        listing.availableQuantity > 0
+                    ) {
+
+                        repository
+                            .transferListingToNgo(
+                                listing
+                            )
+
+
+                        Log.d(
+                            "SmartPricing",
+                            "Listing ${listing.listingId} transferred to NGO. " +
+                                    "Quantity: ${listing.availableQuantity}"
+                        )
+
+                    }
+
+                    /**
+                     * Already reached transfer time.
+                     * Don't calculate buyer price anymore.
+                     */
+                    return@forEach
+                }
+
+
+                // ====================================
+                // NORMAL SMART PRICING
+                // ====================================
 
                 val newDiscount =
                     when {
 
                         currentTime >=
-                                closingAt.minusMinutes(30) -> {
+                                closingAt
+                                    .minusMinutes(
+                                        30
+                                    ) -> {
 
                             80
                         }
 
+
                         currentTime >=
-                                closingAt.minusHours(1) -> {
+                                closingAt
+                                    .minusHours(
+                                        1
+                                    ) -> {
 
                             70
                         }
+
 
                         else -> {
 
@@ -881,44 +932,69 @@ class SellerViewModel(
                         }
                     }
 
-                // don't repeatedly update same price
+
+                /**
+                 * Only update Supabase if
+                 * discount actually changed.
+                 */
                 if (
                     newDiscount !=
                     listing.currentDiscountPercent
                 ) {
 
                     val foodItem =
-                        repository.getFoodItemById(
-                            listing.foodItemId
-                        )
+                        repository
+                            .getFoodItemById(
+                                listing.foodItemId
+                            )
+
 
                     val newPriceCent =
                         PriceCalculator
                             .calculateDiscountedPrice(
+
                                 originalPriceCent =
-                                    foodItem.originalPriceCent,
+                                    foodItem
+                                        .originalPriceCent,
+
                                 discountPercent =
                                     newDiscount
                             )
 
-                    repository.updateListingPrice(
-                        listingId =
-                            listing.listingId,
 
-                        discountPercent =
-                            newDiscount,
+                    repository
+                        .updateListingPrice(
 
-                        currentPriceCent =
-                            newPriceCent
-                    )
+                            listingId =
+                                listing.listingId,
+
+                            discountPercent =
+                                newDiscount,
+
+                            currentPriceCent =
+                                newPriceCent
+                        )
+
 
                     Log.d(
                         "SmartPricing",
-                        "Listing ${listing.listingId} updated: " +
-                                "$newDiscount% off, " +
-                                "$newPriceCent cents"
+
+                        "Listing ${listing.listingId}: " +
+                                "$newDiscount% off"
                     )
                 }
+
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "SmartPricing",
+
+                    "Failed processing listing " +
+                            "${listing.listingId}",
+
+                    e
+                )
             }
         }
     }
