@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
+import com.example.shareplate.data.model.Notification
 
 data class BuyerOrderDetails(
 
@@ -63,6 +63,14 @@ class BuyerViewModel(
 
     val savedSellerIds: StateFlow<Set<String>> = _savedSellerIds.asStateFlow()
 
+    // NOTIFICATIONS
+    private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
+
+    val notifications: StateFlow<List<Notification>> = _notifications.asStateFlow()
+    private val _unreadNotificationCount = MutableStateFlow(0)
+
+    val unreadNotificationCount: StateFlow<Int> = _unreadNotificationCount.asStateFlow()
+
     // SELECTED SELLER
     private val _selectedSeller = MutableStateFlow<User?>(null)
 
@@ -97,11 +105,13 @@ class BuyerViewModel(
     val selectedOrder: StateFlow<BuyerOrderDetails?> = _selectedOrder.asStateFlow()
 
     // ORDER RESULT
-    private val _orderResult = MutableStateFlow<BuyerOrderResult?>(
-        null
-    )
+    private val _orderResult = MutableStateFlow<BuyerOrderResult?>(null)
 
     val orderResult: StateFlow<BuyerOrderResult?> = _orderResult.asStateFlow()
+
+    private val _pickupNote = MutableStateFlow("")
+
+    val pickupNote: StateFlow<String> = _pickupNote.asStateFlow()
 
     // LOADING
     private val _isLoading = MutableStateFlow(false)
@@ -142,20 +152,27 @@ class BuyerViewModel(
                 // GET SELLERS / SHOPS
                 _sellers.value = repository.getSellers()
 
-                val currentUser =
-                    SupabaseProvider
-                        .client
-                        .auth
-                        .currentUserOrNull()
+                val currentUser = SupabaseProvider.client.auth.currentUserOrNull()
 
 
                 if (currentUser != null) {
 
-                    _savedSellerIds.value =
-                        repository
-                            .getSavedSellerIds(
-                                currentUser.id
-                            )
+                    // LOAD FAVOURITES
+                    _savedSellerIds.value = repository.getSavedSellerIds(
+                        currentUser.id
+                    )
+
+
+                    // LOAD NOTIFICATIONS
+                    val notificationList = repository.getNotifications(
+                        currentUser.id
+                    )
+
+                    _notifications.value = notificationList
+
+                    _unreadNotificationCount.value = notificationList.count {
+                        !it.isRead
+                    }
                 }
 
 
@@ -175,7 +192,8 @@ class BuyerViewModel(
 
         viewModelScope.launch {
 
-            try { val currentUser = SupabaseProvider.client.auth.currentUserOrNull() ?: return@launch
+            try {
+                val currentUser = SupabaseProvider.client.auth.currentUserOrNull() ?: return@launch
                 _savedSellerIds.value = repository.getSavedSellerIds(currentUser.id)
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Unable to load favourites."
@@ -189,8 +207,8 @@ class BuyerViewModel(
     ): Boolean {
 
         return _savedSellerIds.value.contains(
-                sellerId
-            )
+            sellerId
+        )
     }
 
     // TOGGLE FAVOURITE
@@ -225,16 +243,16 @@ class BuyerViewModel(
 
 
                 val currentlySaved = _savedSellerIds.value.contains(
-                        sellerId
-                    )
+                    sellerId
+                )
 
 
                 if (currentlySaved) {
 
                     // REMOVE FAVOURITE
                     repository.removeSavedSeller(
-                            buyerId = buyerId, sellerId = sellerId
-                        )
+                        buyerId = buyerId, sellerId = sellerId
+                    )
 
 
                     _savedSellerIds.value = _savedSellerIds.value - sellerId
@@ -248,8 +266,8 @@ class BuyerViewModel(
 
                     // ADD FAVOURITE
                     repository.saveSeller(
-                            buyerId = buyerId, sellerId = sellerId
-                        )
+                        buyerId = buyerId, sellerId = sellerId
+                    )
 
 
                     _savedSellerIds.value = _savedSellerIds.value + sellerId
@@ -268,6 +286,114 @@ class BuyerViewModel(
                 onResult(
                     false, e.message ?: "Unable to update favourite."
                 )
+            }
+        }
+    }
+
+    // LOAD NOTIFICATIONS
+    fun loadNotifications() {
+
+        viewModelScope.launch {
+
+            try {
+
+                val currentUser = SupabaseProvider.client.auth.currentUserOrNull() ?: return@launch
+
+
+                val result = repository.getNotifications(
+                    currentUser.id
+                )
+
+
+                _notifications.value = result
+
+
+                _unreadNotificationCount.value = result.count {
+                    !it.isRead
+                }
+
+
+            } catch (e: Exception) {
+
+                _errorMessage.value = e.message ?: "Unable to load notifications."
+            }
+        }
+    }
+
+    // MARK NOTIFICATION AS READ
+    fun markNotificationAsRead(
+        notificationId: Long
+    ) {
+
+        viewModelScope.launch {
+
+            try {
+
+                val currentUser = SupabaseProvider.client.auth.currentUserOrNull() ?: return@launch
+
+
+                repository.markNotificationAsRead(
+                    notificationId = notificationId,
+
+                    userId = currentUser.id
+                )
+
+
+                _notifications.value = _notifications.value.map { notification ->
+
+                    if (notification.notificationId == notificationId) {
+
+                        notification.copy(
+                            isRead = true
+                        )
+
+                    } else {
+
+                        notification
+                    }
+                }
+
+
+                _unreadNotificationCount.value = _notifications.value.count {
+                    !it.isRead
+                }
+
+
+            } catch (e: Exception) {
+
+                _errorMessage.value = e.message ?: "Unable to update notification."
+            }
+        }
+    }
+
+    // MARK ALL NOTIFICATIONS AS READ
+    fun markAllNotificationsAsRead() {
+
+        viewModelScope.launch {
+
+            try {
+
+                val currentUser = SupabaseProvider.client.auth.currentUserOrNull() ?: return@launch
+
+
+                repository.markAllNotificationsAsRead(
+                    currentUser.id
+                )
+
+
+                _notifications.value = _notifications.value.map {
+                    it.copy(
+                        isRead = true
+                    )
+                }
+
+
+                _unreadNotificationCount.value = 0
+
+
+            } catch (e: Exception) {
+
+                _errorMessage.value = e.message ?: "Unable to update notifications."
             }
         }
     }
@@ -554,6 +680,8 @@ class BuyerViewModel(
     // SUBMIT ORDER
     fun submitOrder(
 
+        paymentMethod: String,
+
         onSuccess: (
             pickupCode: String, totalPriceCent: Int
         ) -> Unit = { _, _ -> }
@@ -571,7 +699,12 @@ class BuyerViewModel(
 
             try {
 
-                val result = orderManager.submitOrder()
+                val result = orderManager.submitOrder(
+
+                    pickupNote = _pickupNote.value,
+
+                    paymentMethod = paymentMethod
+                )
 
 
                 _orderResult.value = result
@@ -581,6 +714,7 @@ class BuyerViewModel(
 
                     _successMessage.value = result.message
 
+                    clearPickupNote()
 
                     onSuccess(
 
@@ -621,81 +755,73 @@ class BuyerViewModel(
 
             try {
 
-                val currentUser = SupabaseProvider.client.auth.currentUserOrNull()
-
-                if (currentUser == null) {
-
-                    _errorMessage.value = "Please log in to view your orders."
-
-                    return@launch
-                }
+                val currentUser =
+                    SupabaseProvider
+                        .client
+                        .auth
+                        .currentUserOrNull()
+                        ?: return@launch
 
 
-                val buyerOrders = repository.getBuyerOrders(
-                    currentUser.id
-                )
+                val buyerOrders =
+                    repository
+                        .getBuyerOrders(
+                            currentUser.id
+                        )
 
 
-                val orderDetails = mutableListOf<BuyerOrderDetails>()
+                val details =
+                    mutableListOf<BuyerOrderDetails>()
 
 
                 for (order in buyerOrders) {
 
-                    val listing = repository.getListingById(
-                        order.listingId
-                    )
-
+                    val listing =
+                        repository
+                            .getListingById(
+                                order.listingId
+                            )
 
                     val foodItem =
-
                         if (listing != null) {
-
                             repository.getFoodItemById(
                                 listing.foodItemId
                             )
-
                         } else {
-
                             null
                         }
 
-
                     val seller =
-
                         if (listing != null) {
-
                             repository.getSellerById(
                                 listing.sellerId
                             )
-
                         } else {
-
                             null
                         }
 
 
-                    orderDetails.add(
+                    details.add(
 
                         BuyerOrderDetails(
-
                             order = order,
-
                             listing = listing,
-
                             foodItem = foodItem,
-
                             seller = seller
                         )
                     )
                 }
 
 
-                _orders.value = orderDetails
+                _orders.value =
+                    details
 
 
             } catch (e: Exception) {
 
-                _errorMessage.value = e.message ?: "Unable to load orders."
+                _errorMessage.value =
+                    e.message
+                        ?: "Unable to load orders."
 
             } finally {
 
@@ -810,6 +936,19 @@ class BuyerViewModel(
         }
     }
 
+    fun updatePickupNote(
+        note: String
+    ) {
+
+        _pickupNote.value = note
+    }
+
+
+    fun clearPickupNote() {
+
+        _pickupNote.value = ""
+    }
+
     // SIGN OUT
     fun signOut(
 
@@ -828,15 +967,17 @@ class BuyerViewModel(
 
                 authRepository.signOut()
 
-
                 BuyerCartStore.clearCart()
-
 
                 _profile.value = null
 
                 _sellers.value = emptyList()
 
                 _savedSellerIds.value = emptySet()
+
+                _notifications.value = emptyList()
+
+                _unreadNotificationCount.value = 0
 
                 _selectedSeller.value = null
 

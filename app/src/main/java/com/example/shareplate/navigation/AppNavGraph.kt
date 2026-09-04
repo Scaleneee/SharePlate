@@ -36,6 +36,7 @@ import com.example.shareplate.ui.auth.login.LoginScreen
 import com.example.shareplate.ui.auth.password.NewPasswordScreen
 import com.example.shareplate.ui.auth.profile.ProfileScreen
 import com.example.shareplate.ui.auth.register.RegisterScreen
+import com.example.shareplate.ui.buyer.BuyerViewModel
 import com.example.shareplate.ui.seller.SellerViewModel
 import com.example.shareplate.ui.seller.home.SellerHomeScreen
 import com.example.shareplate.ui.seller.menu.AddFoodScreen
@@ -51,9 +52,9 @@ import com.example.shareplate.ui.buyer.order.BuyerCheckoutScreen
 import com.example.shareplate.ui.buyer.order.BuyerPaymentScreen
 import com.example.shareplate.ui.buyer.order.BuyerQrCodeScreen
 import com.example.shareplate.ui.buyer.profile.BuyerProfileScreen
-import com.example.shareplate.ui.seller.activity.SellerActivityItem
 import com.example.shareplate.ui.seller.activity.SellerActivityScreen
 import io.github.jan.supabase.auth.status.SessionStatus
+import com.example.shareplate.ui.buyer.home.BuyerNotificationScreen
 
 @Composable
 fun AppNavGraph(
@@ -86,6 +87,9 @@ fun AppNavGraph(
 
     // Create SellerViewModel AFTER Supabase finished restoring session
     val sellerViewModel: SellerViewModel = viewModel()
+
+    //create BuyerViewModel
+    val buyerViewModel: BuyerViewModel = viewModel()
 
     // Decide startup screen using Supabase Auth
     val startDestination =
@@ -172,53 +176,115 @@ fun AppNavGraph(
             )
         }
 
-        composable(AppRoutes.SELLER_ACTIVITY) {
+        composable(
+            AppRoutes.SELLER_ACTIVITY
+        ) {
+
+            val sellerId =
+                SupabaseProvider
+                    .client
+                    .auth
+                    .currentUserOrNull()
+                    ?.id
+
+
+            val pickupActivities by
+            sellerViewModel
+                .pickupActivities
+                .collectAsStateWithLifecycle()
+
+
+            /**
+             * Load pickups from Supabase
+             * when screen opens.
+             */
+            LaunchedEffect(
+                sellerId
+            ) {
+
+                if (
+                    sellerId != null
+                ) {
+
+                    sellerViewModel
+                        .loadPickupActivities(
+                            sellerId
+                        )
+                }
+            }
+
 
             SellerActivityScreen(
 
-                // temporary testing data
-                activities = listOf(
+                /**
+                 * We will connect real surplus
+                 * history next.
+                 */
+                surplusActivities =
+                    emptyList(),
 
-                    SellerActivityItem(
-                        listingId = 1,
-                        foodName = "Blueberry Bread",
-                        publishedQuantity = 10,
-                        availableQuantity = 6,
-                        discountPercent = 60,
-                        currentPriceCent = 220,
-                        status = "ACTIVE",
-                        publishedTime = "Today, 8:05 PM"
-                    ),
+                /**
+                 * REAL SUPABASE DATA
+                 */
+                pickupActivities =
+                    pickupActivities,
 
-                    SellerActivityItem(
-                        listingId = 2,
-                        foodName = "Chocolate Croissant",
-                        publishedQuantity = 8,
-                        availableQuantity = 0,
-                        discountPercent = 80,
-                        currentPriceCent = 130,
-                        status = "SOLD_OUT",
-                        publishedTime = "Today, 8:10 PM"
-                    )
-                ),
+
+                /**
+                 * Mark as picked up.
+                 */
+                onMarkPickedUp = { pickup ->
+
+                    if (
+                        sellerId != null
+                    ) {
+
+                        sellerViewModel
+                            .markPickupCollected(
+
+                                pickup =
+                                    pickup,
+
+                                sellerId =
+                                    sellerId,
+
+                                onSuccess = {
+
+                                    Toast.makeText(
+                                        context,
+                                        "Pickup completed",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            )
+                    }
+                },
+
 
                 onHomeClick = {
+
                     navController.navigate(
                         AppRoutes.SELLER_HOME
                     )
                 },
 
+
                 onMenuClick = {
+
                     navController.navigate(
                         AppRoutes.SELLER_MENU
                     )
                 },
 
+
                 onActivityClick = {
-                    // already activity
+
+                    // already here
                 },
 
+
                 onProfileClick = {
+
                     navController.navigate(
                         AppRoutes.SELLER_PROFILE
                     )
@@ -659,9 +725,9 @@ fun AppNavGraph(
         // seller edit food screen
         composable(
             route = AppRoutes.SELLER_EDIT_FOOD, arguments = listOf(
-            navArgument("foodItemId") {
-                type = NavType.LongType
-            })) { backStackEntry ->
+                navArgument("foodItemId") {
+                    type = NavType.LongType
+                })) { backStackEntry ->
 
             val context = LocalContext.current
 
@@ -725,6 +791,18 @@ fun AppNavGraph(
                     )
                 },
 
+                buyerViewModel =
+                    buyerViewModel,
+
+                onNotificationClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_NOTIFICATION
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
                 onHomeClick = {
                     // Already on home
                 },
@@ -754,6 +832,22 @@ fun AppNavGraph(
                     ) {
                         launchSingleTop = true
                     }
+                }
+            )
+        }
+
+        // BUYER NOTIFICATION
+        composable(
+            AppRoutes.BUYER_NOTIFICATION
+        ) {
+
+            BuyerNotificationScreen(
+
+                buyerViewModel =
+                    buyerViewModel,
+
+                onBackClick = {
+                    navController.popBackStack()
                 }
             )
         }

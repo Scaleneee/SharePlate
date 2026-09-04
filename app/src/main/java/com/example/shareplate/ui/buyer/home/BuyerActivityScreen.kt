@@ -55,7 +55,8 @@ import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 data class BuyerOrderDisplay(
 
@@ -300,16 +301,18 @@ fun BuyerActivityScreen(
 
         if (!isPreview) {
 
-            // First load
-            actualViewModel?.loadOrders()
+            // FIRST LOAD
+            actualViewModel
+                ?.loadOrders()
 
 
-            // Automatically refresh orders
+            // AUTO REFRESH
             while (isActive) {
 
                 delay(3000)
 
-                actualViewModel?.loadOrders(
+                actualViewModel
+                    ?.loadOrders(
                         showLoading = false
                     )
             }

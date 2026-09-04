@@ -23,6 +23,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -67,10 +68,9 @@ fun BuyerCheckoutScreen(
 
 
     // PICKUP NOTE
-    var pickupNote by remember {
+    val pickupNoteState = actualViewModel?.pickupNote?.collectAsState()
 
-        mutableStateOf("")
-    }
+    val pickupNote = pickupNoteState?.value ?: ""
 
     // PREVIEW CART
     val previewCartItems = listOf(
@@ -398,7 +398,8 @@ fun BuyerCheckoutScreen(
 
                             onValueChange = {
 
-                                pickupNote = it
+                                actualViewModel
+                                    ?.updatePickupNote(it)
                             },
 
                             modifier = Modifier.fillMaxWidth(),

@@ -35,7 +35,10 @@ class BuyerOrderManager(
         SupabaseProvider.client
 
 
-    suspend fun submitOrder(): BuyerOrderResult {
+    suspend fun submitOrder(
+        pickupNote: String?,
+        paymentMethod: String
+    ): BuyerOrderResult {
 
         try {
 
@@ -283,6 +286,16 @@ class BuyerOrderManager(
 
                         pickupCode =
                             pickupCode,
+
+                        pickupNote =
+                            pickupNote
+                                ?.trim()
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                },
+
+                        paymentMethod =
+                            paymentMethod,
 
                         status =
                             "PENDING"

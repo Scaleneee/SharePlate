@@ -9,6 +9,7 @@ import com.example.shareplate.data.repository.SellerRepository
 import com.example.shareplate.data.model.CreateFoodItem
 import com.example.shareplate.data.model.CreateSurplusListing
 import com.example.shareplate.data.model.FoodItem
+import com.example.shareplate.data.model.SellerPickupActivityItem
 import com.example.shareplate.util.PriceCalculator
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import kotlin.collections.emptyList
 
 class SellerViewModel(
     private val repository: SellerRepository = SellerRepository()
@@ -49,6 +51,10 @@ class SellerViewModel(
 
     private var smartPricingJob: Job? = null
 
+    // SELLER PICKUP ACTIVITIES
+    private val _pickupActivities = MutableStateFlow<List<SellerPickupActivityItem>>(emptyList())
+    val pickupActivities: StateFlow<List<SellerPickupActivityItem>> = _pickupActivities.asStateFlow()
+
     // fetch seller name and seller closing time
     fun fetchSellerName() {
         viewModelScope.launch {
@@ -59,6 +65,140 @@ class SellerViewModel(
             } catch (e: Exception) {
                 // keep default "Seller", optionally log e
                 _errorMessage.value = e.message
+            }
+        }
+    }
+
+    /**
+     * Load buyer + NGO pickup activity.
+     */
+    fun loadPickupActivities(
+        sellerId: String
+    ) {
+
+        viewModelScope.launch {
+
+            _isLoading.value = true
+
+            _errorMessage.value = null
+
+
+            try {
+
+                _pickupActivities.value =
+                    repository
+                        .getSellerPickupActivities(
+                            sellerId
+                        )
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "SellerPickup",
+                    "Failed to load pickups",
+                    e
+                )
+
+                _errorMessage.value =
+                    e.message
+                        ?: "Failed to load pickup activity"
+
+            } finally {
+
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun markPickupCollected(
+
+        pickup:
+        SellerPickupActivityItem,
+
+        sellerId: String,
+
+        onSuccess: () -> Unit = {}
+    ) {
+
+        viewModelScope.launch {
+
+            _isLoading.value = true
+
+            _errorMessage.value = null
+
+
+            try {
+
+                when (
+                    pickup.pickupType
+                ) {
+
+                    "BUYER" -> {
+
+                        /**
+                         * For buyer:
+                         * pickupId actually contains order_id.
+                         */
+                        repository
+                            .markBuyerOrderCollected(
+                                orderId =
+                                    pickup.pickupId
+                            )
+                    }
+
+
+                    "NGO" -> {
+
+                        val donationId =
+                            pickup.donationId
+                                ?: throw Exception(
+                                    "Donation ID is missing"
+                                )
+
+
+                        repository
+                            .markNgoPickupCollected(
+
+                                pickupId =
+                                    pickup.pickupId,
+
+                                donationId =
+                                    donationId
+                            )
+                    }
+
+
+                    else -> {
+
+                        throw Exception(
+                            "Unknown pickup type"
+                        )
+                    }
+                }
+
+
+                // Reload in the same coroutine so the UI is updated
+                // before the success callback is fired.
+                _pickupActivities.value =
+                    repository.getSellerPickupActivities(sellerId)
+
+                onSuccess()
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "SellerPickup",
+                    "Failed to mark pickup",
+                    e
+                )
+
+                _errorMessage.value =
+                    e.message
+                        ?: "Failed to update pickup"
+
+            } finally {
+
+                _isLoading.value = false
             }
         }
     }
@@ -205,8 +345,7 @@ class SellerViewModel(
 
             try {
 
-                val deletedFood =
-                    repository.deleteFoodItem(foodItemId)
+                repository.deleteFoodItem(foodItemId)
 
                 loadFoodItems(sellerId)
 
@@ -418,12 +557,16 @@ class SellerViewModel(
                     listing.currentDiscountPercent
                 ) {
 
+                    val foodItem =
+                        repository.getFoodItemById(
+                            listing.foodItemId
+                        )
+
                     val newPriceCent =
                         PriceCalculator
                             .calculateDiscountedPrice(
                                 originalPriceCent =
-                                    listing.originalPriceCents,
-
+                                    foodItem.originalPriceCent,
                                 discountPercent =
                                     newDiscount
                             )

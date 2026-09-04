@@ -71,6 +71,8 @@ fun BuyerHomeScreen(
 
     onShopClick: (Shop) -> Unit = {},
 
+    onNotificationClick: () -> Unit = {},
+
     onHomeClick: () -> Unit = {},
 
     onOrderClick: () -> Unit = {},
@@ -102,6 +104,9 @@ fun BuyerHomeScreen(
     // FAVOURITE FILTER
     var showFavouritesOnly by rememberSaveable { mutableStateOf(false) }
 
+    //NEAR ME
+    var showNearMeOnly by rememberSaveable { mutableStateOf(false) }
+
     // VIEWMODEL STATES
     val profileState = actualViewModel?.profile?.collectAsState()
     val sellersState = actualViewModel?.sellers?.collectAsState()
@@ -109,6 +114,7 @@ fun BuyerHomeScreen(
     val errorState = actualViewModel?.errorMessage?.collectAsState()
     val savedSellerIdsState = actualViewModel?.savedSellerIds?.collectAsState()
     val profile = profileState?.value
+    val buyerAddress = profile?.address.orEmpty()
     val sellers = sellersState?.value ?: emptyList()
     val savedSellerIds = savedSellerIdsState?.value ?: emptySet()
     val isLoading =
@@ -149,8 +155,8 @@ fun BuyerHomeScreen(
 
             profile?.name?.takeIf {
 
-                    it.isNotBlank()
-                } ?: "Buyer"
+                it.isNotBlank()
+            } ?: "Buyer"
         }
 
 
@@ -207,8 +213,8 @@ fun BuyerHomeScreen(
 
                 val shopName = seller.organisationName?.takeIf {
 
-                        it.isNotBlank()
-                    } ?: seller.name
+                    it.isNotBlank()
+                } ?: seller.name
 
 
                 Shop(
@@ -252,7 +258,16 @@ fun BuyerHomeScreen(
                     )
 
 
-        matchesSearch && matchesFavourite
+        val matchesNearMe =
+
+            !showNearMeOnly ||
+
+                    isNearbyAddress(
+                        buyerAddress = buyerAddress, sellerAddress = shop.address
+                    )
+
+
+        matchesSearch && matchesFavourite && matchesNearMe
     }
 
 
@@ -310,7 +325,10 @@ fun BuyerHomeScreen(
                 // HEADER
                 BuyerHeaderSection(
 
-                    buyerName = buyerName
+                    buyerName = buyerName,
+
+                    onNotificationClick =
+                        onNotificationClick
                 )
 
 
@@ -344,13 +362,30 @@ fun BuyerHomeScreen(
                 // QUICK BUTTONS
                 BuyerQuickButtons(
 
-                    showFavouritesOnly =
-                        showFavouritesOnly,
+                    showNearMeOnly = showNearMeOnly,
+
+                    showFavouritesOnly = showFavouritesOnly,
+
+                    onNearMeClick = {
+
+                        showNearMeOnly = !showNearMeOnly
+
+                        if (showNearMeOnly) {
+
+                            showFavouritesOnly = false
+                        }
+                    },
 
                     onFavouriteClick = {
 
                         showFavouritesOnly =
                             !showFavouritesOnly
+
+                        if (showFavouritesOnly) {
+
+                            showNearMeOnly =
+                                false
+                        }
 
                         actualViewModel
                             ?.loadFavourites()
@@ -369,8 +404,11 @@ fun BuyerHomeScreen(
                 Text(
 
                     text =
-
                         when {
+
+                            showNearMeOnly -> {
+                                "SHOPS NEAR ME"
+                            }
 
                             showFavouritesOnly -> {
                                 "FAVOURITE SHOPS"
@@ -478,19 +516,35 @@ fun BuyerHomeScreen(
                         Text(
 
                             text =
+                                when {
 
-                                if (showFavouritesOnly) {
+                                    showNearMeOnly &&
+                                            buyerAddress.isBlank() -> {
 
-                                    "No favourite shops yet"
+                                        "Please add your address in Profile first"
+                                    }
 
-                                } else {
+                                    showNearMeOnly -> {
 
-                                    "No shops found"
+                                        "No nearby shops found"
+                                    }
+
+                                    showFavouritesOnly -> {
+
+                                        "No favourite shops yet"
+                                    }
+
+                                    else -> {
+
+                                        "No shops found"
+                                    }
                                 },
 
-                            style = MaterialTheme.typography.bodyMedium,
+                            style =
+                                MaterialTheme.typography.bodyMedium,
 
-                            color = Color.Gray
+                            color =
+                                Color.Gray
                         )
                     }
                 }
@@ -539,7 +593,9 @@ fun BuyerHomeScreen(
 @Composable
 fun BuyerHeaderSection(
 
-    buyerName: String
+    buyerName: String,
+
+    onNotificationClick: () -> Unit
 
 ) {
 
@@ -589,7 +645,7 @@ fun BuyerHeaderSection(
 
         IconButton(
 
-            onClick = {}
+            onClick = onNotificationClick
 
         ) {
 
@@ -663,7 +719,11 @@ fun BuyerSearchField(
 @Composable
 fun BuyerQuickButtons(
 
+    showNearMeOnly: Boolean,
+
     showFavouritesOnly: Boolean,
+
+    onNearMeClick: () -> Unit,
 
     onFavouriteClick: () -> Unit
 
@@ -711,14 +771,23 @@ fun BuyerQuickButtons(
 
 
             Text(
-                text = "Near Me"
+                text =
+
+                    if (showNearMeOnly) {
+
+                        "All Shops"
+
+                    } else {
+
+                        "Near Me"
+                    }
             )
         }
 
 
         OutlinedButton(
 
-            onClick = {},
+            onClick = onNearMeClick,
 
             modifier = Modifier.weight(
                 1f
@@ -887,8 +956,8 @@ private fun createShortName(
 
     val words = shopName.trim().split(" ").filter {
 
-            it.isNotBlank()
-        }
+        it.isNotBlank()
+    }
 
 
     return when {
@@ -909,6 +978,39 @@ private fun createShortName(
         else -> {
 
             "${words[0].first()}${words[1].first()}".uppercase()
+        }
+    }
+}
+
+private fun isNearbyAddress(
+    buyerAddress: String, sellerAddress: String
+): Boolean {
+
+    if (buyerAddress.isBlank() || sellerAddress.isBlank()) {
+        return false
+    }
+
+    val buyerParts = buyerAddress.lowercase().split(",").map {
+            it.trim()
+        }.filter {
+            it.length >= 4 && !it.all(Char::isDigit)
+        }
+
+    val sellerParts = sellerAddress.lowercase().split(",").map {
+            it.trim()
+        }
+
+    return buyerParts.any { buyerPart ->
+
+        sellerParts.any { sellerPart ->
+
+            sellerPart.contains(
+                buyerPart
+            ) ||
+
+                    buyerPart.contains(
+                        sellerPart
+                    )
         }
     }
 }
