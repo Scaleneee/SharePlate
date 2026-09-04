@@ -7,12 +7,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shareplate.data.repository.SellerRepository
 import com.example.shareplate.data.model.CreateFoodItem
+import com.example.shareplate.data.model.CreateSurplusListing
 import com.example.shareplate.data.model.FoodItem
-import com.example.shareplate.data.model.SurplusListing
+import com.example.shareplate.util.PriceCalculator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 class SellerViewModel(
     private val repository: SellerRepository = SellerRepository()
@@ -36,11 +39,17 @@ class SellerViewModel(
     private val _sellerName = MutableStateFlow("Seller")
     val sellerName: StateFlow<String> = _sellerName
 
+    // seller closing time
+    private val _closingTime = MutableStateFlow<String?>(null)
+    val closingTime: StateFlow<String?> = _closingTime.asStateFlow()
+
+    // fetch seller name and seller closing time
     fun fetchSellerName() {
         viewModelScope.launch {
             try {
                 val user = repository.getCurrentSeller()
                 _sellerName.value = user?.organisationName ?: "Seller"
+                _closingTime.value = user?.closingTime
             } catch (e: Exception) {
                 // keep default "Seller", optionally log e
                 _errorMessage.value = e.message
@@ -72,7 +81,6 @@ class SellerViewModel(
         }
     }
 
-
     // ADD FOOD
     fun addFood(
         context: Context,
@@ -82,7 +90,6 @@ class SellerViewModel(
         originalPriceCent: Int,
         bestBeforeDays: Int,
         selectedImageUri: Uri?,
-        isActive: Boolean,
         onSuccess: () -> Unit = {}
     ) {
 
@@ -184,29 +191,6 @@ class SellerViewModel(
         }
     }
 
-    // PUBLISH SURPLUS
-    fun publishSurplus(
-        listing: SurplusListing, onSuccess: () -> Unit = {}
-    ) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
-
-            try {
-                repository.publishSurplus(
-                    listing
-                )
-                onSuccess()
-
-            } catch (e: Exception) {
-                _errorMessage.value = e.message
-
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
     fun deleteFood(
         foodItemId: Long,
         sellerId: String
@@ -230,6 +214,144 @@ class SellerViewModel(
 
                 _errorMessage.value =
                     e.message ?: "Failed to delete food"
+            }
+        }
+    }
+
+    fun publishTodaySurplus(
+        foodItem: FoodItem,
+        quantity: Int,
+        closingTime: String,
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            try {
+
+                if (quantity <= 0) {
+                    throw Exception(
+                        "Quantity must be more than 0"
+                    )
+                }
+
+                val zone =
+                    ZoneId.systemDefault()
+
+                val today =
+                    java.time.LocalDate.now(zone)
+
+                val sellerClosingTime =
+                    java.time.LocalTime.parse(closingTime)
+
+                val closingAt =
+                    ZonedDateTime.of(
+                        today,
+                        sellerClosingTime,
+                        zone
+                    )
+
+                val currentTime =
+                    ZonedDateTime.now(zone)
+
+                // NGO transfer starts 10 minutes before closing
+                val transferAt =
+                    closingAt.minusMinutes(10)
+
+                if (currentTime >= transferAt) {
+                    throw Exception(
+                        "Too late to publish this food for buyers"
+                    )
+                }
+
+                // calculate current discount
+                val discountPercent =
+                    when {
+
+                        currentTime >= closingAt.minusMinutes(30) ->
+                            80
+
+                        currentTime >= closingAt.minusHours(1) ->
+                            70
+
+                        else ->
+                            60
+                    }
+
+                val currentPriceCent =
+                    PriceCalculator.calculateDiscountedPrice(
+                        originalPriceCent =
+                            foodItem.originalPriceCent,
+                        discountPercent =
+                            discountPercent
+                    )
+
+                val listing =
+                    CreateSurplusListing(
+
+                        foodItemId =
+                            foodItem.foodItemId,
+
+                        sellerId =
+                            foodItem.sellerId,
+
+                        publishedQuantity =
+                            quantity,
+
+                        availableQuantity =
+                            quantity,
+
+                        originalPriceCent =
+                            foodItem.originalPriceCent,
+
+                        currentDiscountPercent =
+                            discountPercent,
+
+                        currentPriceCent =
+                            currentPriceCent,
+
+                        publishedAt =
+                            currentTime
+                                .toOffsetDateTime()
+                                .toString(),
+
+                        closingAt =
+                            closingAt
+                                .toOffsetDateTime()
+                                .toString(),
+
+                        pickupEndAt =
+                            closingAt
+                                .plusMinutes(30)
+                                .toOffsetDateTime()
+                                .toString(),
+
+                        status =
+                            "ACTIVE"
+                    )
+
+                repository.publishSurplus(
+                    listing
+                )
+
+                onSuccess()
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "PublishSurplus",
+                    "Failed to publish surplus",
+                    e
+                )
+
+                _errorMessage.value =
+                    e.message ?: "Failed to publish surplus"
+
+            } finally {
+
+                _isLoading.value = false
             }
         }
     }

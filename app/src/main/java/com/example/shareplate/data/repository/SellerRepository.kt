@@ -3,6 +3,7 @@ package com.example.shareplate.data.repository
 import android.content.Context
 import android.net.Uri
 import com.example.shareplate.data.model.CreateFoodItem
+import com.example.shareplate.data.model.CreateSurplusListing
 import com.example.shareplate.data.remote.SupabaseProvider
 import com.example.shareplate.data.model.FoodItem
 import com.example.shareplate.data.model.SurplusListing
@@ -83,7 +84,7 @@ class SellerRepository {
 
     // SURPLUS LISTINGS
     suspend fun publishSurplus(
-        listing: SurplusListing
+        listing: CreateSurplusListing
     ) {
         supabase
             .from("surplus_listings")

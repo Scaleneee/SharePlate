@@ -9,7 +9,6 @@ import com.example.shareplate.ui.theme.SharePlateTheme
 @Composable
 fun AddFoodScreenPreview() {
     SharePlateTheme {
-        AddFoodScreen({}, {foodName, category, originalPrice, bestBeforeDays, imageURI, isActive -> })
     }
 }
 
@@ -22,7 +21,6 @@ fun AddFoodScreen(
         originalPrice: String,
         bestBeforeDays: String,
         imageUri: Uri?,
-        isActive: Boolean
     ) -> Unit
 ) {
     // call the menu food form
