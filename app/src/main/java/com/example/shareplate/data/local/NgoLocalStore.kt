@@ -34,6 +34,20 @@ class NgoLocalStore(context: Context) {
         prefs.edit().remove(KEY_ORDERS).apply()
     }
 
+    fun markOrderDone(pickupCode: String) {
+        val updated = getOrders().map { raw ->
+            val parts = raw.split("|")
+            if (parts.getOrElse(5) { "" } == pickupCode) {
+                val new = parts.toMutableList()
+                if (new.isNotEmpty()) new[new.size - 1] = "true"
+                new.joinToString("|")
+            } else {
+                raw
+            }
+        }
+        prefs.edit().putString(KEY_ORDERS, updated.joinToString(ORDER_SEP)).apply()
+    }
+
     companion object {
         private const val KEY_FAVOURITES = "favourites"
         private const val KEY_ORDERS = "orders"

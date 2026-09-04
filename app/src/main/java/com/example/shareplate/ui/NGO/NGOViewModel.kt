@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.collections.copy
 
 class NGOViewModel(
     private val repository: NGORepository = NGORepository(),
@@ -152,6 +153,7 @@ class NGOViewModel(
             items = "${food?.foodName ?: "Food Item"} - ${order.quantity}",
             pickupCode = order.pickupCode,
             orderedAt = order.orderedAt,
+            orderId = order.orderId,
             done = order.status.uppercase() in setOf("COMPLETED", "CANCELLED")
         )
     }
@@ -191,5 +193,19 @@ class NGOViewModel(
 
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    fun confirmPickup(activity: NGOActivityItem) {
+        _orders.value = _orders.value.map {
+            if (it.orderId != 0L && it.orderId == activity.orderId) it.copy(done = true) else it
+        }
+        if (activity.orderId != 0L) {
+            viewModelScope.launch {
+                try {
+                    repository.updateOrderStatus(activity.orderId, "COMPLETED")
+                } catch (_: Exception) {
+                }
+            }
+        }
     }
 }

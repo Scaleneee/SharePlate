@@ -7,6 +7,7 @@ import com.example.shareplate.data.model.SurplusListing
 import com.example.shareplate.data.model.User
 import com.example.shareplate.data.remote.SupabaseProvider
 import io.github.jan.supabase.postgrest.from
+import kotlin.collections.copy
 
 class NGORepository {
 
@@ -177,4 +178,18 @@ class NGORepository {
 
         return true
     }
+
+    // UPDATE ORDER STATUS
+    suspend fun updateOrderStatus(orderId: Long, status: String){
+        val order = getOrderById(orderId)?: return
+
+        supabase
+            .from("orders")
+            .update(order.copy(status = status)){
+                filter {
+                    eq("order_id", orderId)
+                }
+            }
+    }
 }
+
