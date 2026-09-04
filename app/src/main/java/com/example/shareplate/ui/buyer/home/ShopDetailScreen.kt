@@ -32,7 +32,8 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 
 data class FoodDeal(
 
@@ -107,12 +108,11 @@ fun ShopDetailScreen(
 
     val listingsState = actualViewModel?.listings?.collectAsState()
 
+    val savedSellerIdsState = actualViewModel?.savedSellerIds?.collectAsState()
 
     val loadingState = actualViewModel?.isLoading?.collectAsState()
 
-
     val errorState = actualViewModel?.errorMessage?.collectAsState()
-
 
     // PREVIEW SELLER
     val previewSeller =
@@ -150,6 +150,9 @@ fun ShopDetailScreen(
 
     val listings = listingsState?.value ?: emptyList()
 
+    val savedSellerIds = savedSellerIdsState?.value ?: emptySet()
+
+    val isFavourite = savedSellerIds.contains(sellerId)
 
     val isLoading =
 
@@ -183,8 +186,10 @@ fun ShopDetailScreen(
         if (!isPreview) {
 
             actualViewModel?.loadShop(
-                    sellerId
-                )
+                sellerId
+            )
+
+            actualViewModel?.loadFavourites()
         }
     }
 
@@ -251,51 +256,51 @@ fun ShopDetailScreen(
 
             listings.sortedByDescending {
 
-                    it.publishedAt
-                }.mapNotNull { listing ->
+                it.publishedAt
+            }.mapNotNull { listing ->
 
 
-                    val food = foodItemMap[listing.foodItemId]
+                val food = foodItemMap[listing.foodItemId]
 
 
-                    if (food == null) {
+                if (food == null) {
 
-                        null
+                    null
 
-                    } else {
+                } else {
 
 
-                        FoodDeal(
+                    FoodDeal(
 
-                            listingId = listing.listingId,
+                        listingId = listing.listingId,
 
-                            foodItemId = food.foodItemId,
+                        foodItemId = food.foodItemId,
 
-                            sellerId = listing.sellerId,
+                        sellerId = listing.sellerId,
 
-                            name = food.foodName,
+                        name = food.foodName,
 
-                            description = buildFoodDescription(
+                        description = buildFoodDescription(
 
-                                bestBeforeDays = food.bestBeforeDays,
+                            bestBeforeDays = food.bestBeforeDays,
 
-                                availableQuantity = listing.availableQuantity
-                            ),
+                            availableQuantity = listing.availableQuantity
+                        ),
 
-                            price = formatPrice(
-                                listing.currentPriceCents
-                            ),
+                        price = formatPrice(
+                            listing.currentPriceCents
+                        ),
 
-                            pickupTime = formatPickupTime(
-                                listing.pickupEndAt
-                            ),
+                        pickupTime = formatPickupTime(
+                            listing.pickupEndAt
+                        ),
 
-                            availableQuantity = listing.availableQuantity,
+                        availableQuantity = listing.availableQuantity,
 
-                            discountPercent = listing.currentDiscountPercent
-                        )
-                    }
+                        discountPercent = listing.currentDiscountPercent
+                    )
                 }
+            }
         }
 
 
@@ -489,8 +494,8 @@ fun ShopDetailScreen(
 
                         currentSeller.organisationName?.takeIf {
 
-                                it.isNotBlank()
-                            } ?: currentSeller.name
+                            it.isNotBlank()
+                        } ?: currentSeller.name
 
 
                     Spacer(
@@ -626,6 +631,63 @@ fun ShopDetailScreen(
                                 color = Color.Gray
                             )
                         }
+                        IconButton(
+
+                            onClick = {
+
+                                actualViewModel?.toggleFavourite(
+                                        sellerId = currentSeller.userId
+                                    ) { success, message ->
+
+                                        coroutineScope.launch {
+
+                                            snackbarHostState.showSnackbar(
+                                                    message = message
+                                                )
+                                        }
+                                    }
+                            }
+
+                        ) {
+
+                            Icon(
+
+                                imageVector =
+
+                                    if (isFavourite) {
+
+                                        Icons.Filled.Favorite
+
+                                    } else {
+
+                                        Icons.Outlined.FavoriteBorder
+                                    },
+
+                                contentDescription =
+
+                                    if (isFavourite) {
+
+                                        "Remove Favourite"
+
+                                    } else {
+
+                                        "Add Favourite"
+                                    },
+
+                                tint =
+
+                                    if (isFavourite) {
+
+                                        Color(
+                                            0xFFE53935
+                                        )
+
+                                    } else {
+
+                                        Color.Gray
+                                    }
+                            )
+                        }
                     }
 
 
@@ -714,8 +776,8 @@ fun ShopDetailScreen(
 
                                         // CHECK DIFFERENT SHOP
                                         if (!viewModel.canAddFromSeller(
-                                                    food.sellerId
-                                                )
+                                                food.sellerId
+                                            )
                                         ) {
 
 
@@ -724,8 +786,8 @@ fun ShopDetailScreen(
 
                                                 snackbarHostState.showSnackbar(
 
-                                                        message = "Your cart contains items from another shop. Please clear your cart first."
-                                                    )
+                                                    message = "Your cart contains items from another shop. Please clear your cart first."
+                                                )
                                             }
 
 
@@ -738,8 +800,8 @@ fun ShopDetailScreen(
                                         // =================================
 
                                         val currentQuantity = viewModel.getQuantityForListing(
-                                                food.listingId
-                                            )
+                                            food.listingId
+                                        )
 
 
                                         if (currentQuantity >= food.availableQuantity) {
@@ -750,8 +812,8 @@ fun ShopDetailScreen(
 
                                                 snackbarHostState.showSnackbar(
 
-                                                        message = "Maximum available quantity reached for ${food.name}."
-                                                    )
+                                                    message = "Maximum available quantity reached for ${food.name}."
+                                                )
                                             }
 
 
@@ -761,10 +823,10 @@ fun ShopDetailScreen(
                                         // ADD TO CART THROUGH VIEWMODEL
                                         val added = viewModel.addToCart(
 
-                                                shopName = shopName,
+                                            shopName = shopName,
 
-                                                foodDeal = food
-                                            )
+                                            foodDeal = food
+                                        )
 
 
                                         if (added) {
@@ -775,8 +837,8 @@ fun ShopDetailScreen(
 
                                                 snackbarHostState.showSnackbar(
 
-                                                        message = "${food.name} added to cart."
-                                                    )
+                                                    message = "${food.name} added to cart."
+                                                )
                                             }
 
 
@@ -788,8 +850,8 @@ fun ShopDetailScreen(
 
                                                 snackbarHostState.showSnackbar(
 
-                                                        message = "Unable to add ${food.name} to cart."
-                                                    )
+                                                    message = "Unable to add ${food.name} to cart."
+                                                )
                                             }
                                         }
                                     })
@@ -1022,10 +1084,10 @@ private fun FoodDealRow(
 
                     colors = ButtonDefaults.buttonColors(
 
-                            containerColor = Color(
-                                0xFF4CAF50
-                            )
-                        ),
+                        containerColor = Color(
+                            0xFF4CAF50
+                        )
+                    ),
 
                     contentPadding = PaddingValues(
 
@@ -1154,8 +1216,8 @@ private fun createShopShortName(
 
     val words = shopName.trim().split(" ").filter {
 
-            it.isNotBlank()
-        }
+        it.isNotBlank()
+    }
 
 
     return when {

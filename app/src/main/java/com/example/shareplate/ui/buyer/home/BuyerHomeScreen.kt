@@ -99,13 +99,18 @@ fun BuyerHomeScreen(
     // SEARCH
     var searchText by rememberSaveable { mutableStateOf("") }
 
+    // FAVOURITE FILTER
+    var showFavouritesOnly by rememberSaveable { mutableStateOf(false) }
+
     // VIEWMODEL STATES
     val profileState = actualViewModel?.profile?.collectAsState()
     val sellersState = actualViewModel?.sellers?.collectAsState()
     val loadingState = actualViewModel?.isLoading?.collectAsState()
     val errorState = actualViewModel?.errorMessage?.collectAsState()
+    val savedSellerIdsState = actualViewModel?.savedSellerIds?.collectAsState()
     val profile = profileState?.value
     val sellers = sellersState?.value ?: emptyList()
+    val savedSellerIds = savedSellerIdsState?.value ?: emptySet()
     val isLoading =
 
         if (isPreview) {
@@ -223,33 +228,32 @@ fun BuyerHomeScreen(
 
 
     // SEARCH FILTER
-    val filteredShops =
+    val filteredShops = shops.filter { shop ->
 
-        if (searchText.isBlank()) {
+        val matchesSearch =
 
-            shops
+            searchText.isBlank() ||
 
-        } else {
+                    shop.name.contains(
+                        searchText, ignoreCase = true
+                    ) ||
 
-            shops.filter { shop ->
+                    shop.address.contains(
+                        searchText, ignoreCase = true
+                    )
 
 
-                shop.name.contains(
+        val matchesFavourite =
 
-                    searchText,
+            !showFavouritesOnly ||
 
-                    ignoreCase = true
+                    savedSellerIds.contains(
+                        shop.sellerId
+                    )
 
-                ) ||
 
-                        shop.address.contains(
-
-                            searchText,
-
-                            ignoreCase = true
-                        )
-            }
-        }
+        matchesSearch && matchesFavourite
+    }
 
 
     // SCREEN
@@ -338,7 +342,20 @@ fun BuyerHomeScreen(
 
 
                 // QUICK BUTTONS
-                BuyerQuickButtons()
+                BuyerQuickButtons(
+
+                    showFavouritesOnly =
+                        showFavouritesOnly,
+
+                    onFavouriteClick = {
+
+                        showFavouritesOnly =
+                            !showFavouritesOnly
+
+                        actualViewModel
+                            ?.loadFavourites()
+                    }
+                )
 
 
                 Spacer(
@@ -353,13 +370,19 @@ fun BuyerHomeScreen(
 
                     text =
 
-                        if (searchText.isBlank()) {
+                        when {
 
-                            "RECOMMENDED SHOPS"
+                            showFavouritesOnly -> {
+                                "FAVOURITE SHOPS"
+                            }
 
-                        } else {
+                            searchText.isNotBlank() -> {
+                                "SEARCH RESULTS"
+                            }
 
-                            "SEARCH RESULTS"
+                            else -> {
+                                "RECOMMENDED SHOPS"
+                            }
                         },
 
                     style = MaterialTheme.typography.bodyLarge
@@ -454,7 +477,16 @@ fun BuyerHomeScreen(
 
                         Text(
 
-                            text = "No shops found",
+                            text =
+
+                                if (showFavouritesOnly) {
+
+                                    "No favourite shops yet"
+
+                                } else {
+
+                                    "No shops found"
+                                },
 
                             style = MaterialTheme.typography.bodyMedium,
 
@@ -629,7 +661,13 @@ fun BuyerSearchField(
 
 // QUICK BUTTONS
 @Composable
-fun BuyerQuickButtons() {
+fun BuyerQuickButtons(
+
+    showFavouritesOnly: Boolean,
+
+    onFavouriteClick: () -> Unit
+
+) {
 
 
     Row(
@@ -645,15 +683,11 @@ fun BuyerQuickButtons() {
 
         OutlinedButton(
 
-            onClick = {},
+            onClick = onFavouriteClick,
 
-            modifier = Modifier.weight(
-                1f
-            ),
+            modifier = Modifier.weight(1f),
 
-            shape = RoundedCornerShape(
-                10.dp
-            )
+            shape = RoundedCornerShape(10.dp)
 
         ) {
 
@@ -716,7 +750,17 @@ fun BuyerQuickButtons() {
 
 
             Text(
-                text = "Favourite"
+
+                text =
+
+                    if (showFavouritesOnly) {
+
+                        "All Shops"
+
+                    } else {
+
+                        "Favourite"
+                    }
             )
         }
     }
