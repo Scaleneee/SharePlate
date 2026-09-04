@@ -2,15 +2,12 @@ package com.example.shareplate.ui.NGO
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.shareplate.data.model.FoodItem
 import com.example.shareplate.data.model.Order
-import com.example.shareplate.data.model.SurplusListing
-import com.example.shareplate.data.model.User
 import com.example.shareplate.data.remote.SupabaseProvider
 import com.example.shareplate.data.repository.NGORepository
 import com.example.shareplate.ui.NGO.order.NGOCartItem
-import com.example.shareplate.ui.NGO.order.NGOOrderManager
-import com.example.shareplate.ui.NGO.order.NGOOrderResult
+import com.example.shareplate.ui.NGO.menu.NGOOrderManager
+import com.example.shareplate.ui.NGO.menu.NGOOrderResult
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
