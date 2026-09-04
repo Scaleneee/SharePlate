@@ -17,17 +17,17 @@ import kotlinx.serialization.Serializable
 import java.time.OffsetDateTime
 
 
-//data class SellerPickupActivityItem(
-//    val pickupId: Long,
-//    val donationId: Long? = null,
-//    val receiverName: String,
-//    val pickupType: String,
-//    val foodName: String,
-//    val quantity: Int,
-//    val pickupCode: String,
-//    val pickupTime: String,
-//    val status: String
-//)
+@Serializable
+private data class UpdateSurplusQuantityPayload(
+
+    @SerialName("published_quantity")
+    val publishedQuantity: Int,
+
+    @SerialName("available_quantity")
+    val availableQuantity: Int,
+
+    val status: String
+)
 
 @Serializable
 private data class SellerOrderRow(
@@ -143,6 +143,75 @@ private data class UpdateSurplusPricePayload(
 class SellerRepository {
 
     private val supabase = SupabaseProvider.client
+
+    /**
+     * Get all surplus listings published by seller.
+     */
+    suspend fun getSellerSurplusListings(
+        sellerId: String
+    ): List<SurplusListing> {
+
+        return supabase
+            .from("surplus_listings")
+            .select {
+
+                filter {
+                    eq(
+                        "seller_id",
+                        sellerId
+                    )
+                }
+            }
+            .decodeList<SurplusListing>()
+            .sortedByDescending {
+                it.publishedAt
+            }
+    }
+
+
+    /**
+     * Update already-published surplus quantity.
+     *
+     * We update:
+     * - published_quantity
+     * - available_quantity
+     * - status
+     */
+    suspend fun updatePublishedSurplusQuantity(
+        listingId: Long,
+        publishedQuantity: Int,
+        availableQuantity: Int,
+        status: String
+    ) {
+
+        val updateData =
+            UpdateSurplusQuantityPayload(
+
+                publishedQuantity =
+                    publishedQuantity,
+
+                availableQuantity =
+                    availableQuantity,
+
+                status =
+                    status
+            )
+
+        supabase
+            .from("surplus_listings")
+            .update(
+                updateData
+            ) {
+
+                filter {
+
+                    eq(
+                        "listing_id",
+                        listingId
+                    )
+                }
+            }
+    }
 
     // FOOD ITEMS
     suspend fun getFoodItems(

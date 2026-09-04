@@ -10,6 +10,7 @@ import com.example.shareplate.data.model.CreateFoodItem
 import com.example.shareplate.data.model.CreateSurplusListing
 import com.example.shareplate.data.model.FoodItem
 import com.example.shareplate.data.model.SellerPickupActivityItem
+import com.example.shareplate.ui.seller.activity.SellerActivityItem
 import com.example.shareplate.util.PriceCalculator
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.collections.emptyList
 
 class SellerViewModel(
@@ -54,6 +56,13 @@ class SellerViewModel(
     // SELLER PICKUP ACTIVITIES
     private val _pickupActivities = MutableStateFlow<List<SellerPickupActivityItem>>(emptyList())
     val pickupActivities: StateFlow<List<SellerPickupActivityItem>> = _pickupActivities.asStateFlow()
+
+    // SELLER SURPLUS ACTIVITIES
+    private val _surplusActivities = MutableStateFlow<List<SellerActivityItem>>(
+        emptyList()
+    )
+
+    val surplusActivities: StateFlow<List<SellerActivityItem>> = _surplusActivities.asStateFlow()
 
     // fetch seller name and seller closing time
     fun fetchSellerName() {
@@ -107,6 +116,327 @@ class SellerViewModel(
 
                 _isLoading.value = false
             }
+        }
+    }
+
+    /**
+     * Load all surplus published by this seller.
+     */
+    fun loadSurplusActivities(
+        sellerId: String
+    ) {
+
+        viewModelScope.launch {
+
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            try {
+
+                val listings =
+                    repository
+                        .getSellerSurplusListings(
+                            sellerId
+                        )
+
+                val activities =
+                    listings.map { listing ->
+
+                        val foodItem =
+                            try {
+
+                                repository
+                                    .getFoodItemById(
+                                        listing.foodItemId
+                                    )
+
+                            } catch (e: Exception) {
+
+                                null
+                            }
+
+                        SellerActivityItem(
+
+                            listingId =
+                                listing.listingId,
+
+                            foodName =
+                                foodItem?.foodName
+                                    ?: "Food Item",
+
+                            publishedQuantity =
+                                listing
+                                    .publishedQuantity,
+
+                            availableQuantity =
+                                listing
+                                    .availableQuantity,
+
+                            discountPercent =
+                                listing
+                                    .currentDiscountPercent,
+
+                            currentPriceCent =
+                                listing
+                                    .currentPriceCents,
+
+                            status =
+                                listing.status,
+
+                            publishedTime =
+                                formatPublishedTime(
+                                    listing.publishedAt
+                                )
+                        )
+                    }
+
+                _surplusActivities.value =
+                    activities
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "SellerSurplus",
+                    "Failed to load surplus",
+                    e
+                )
+
+                _errorMessage.value =
+                    e.message
+                        ?: "Failed to load surplus activity"
+
+            } finally {
+
+                _isLoading.value = false
+            }
+        }
+    }
+
+
+    /**
+     * Seller changes the total published quantity.
+     */
+    fun updatePublishedSurplusQuantity(
+        activity: SellerActivityItem,
+        newPublishedQuantity: Int,
+        sellerId: String,
+        onSuccess: () -> Unit = {}
+    ) {
+
+        viewModelScope.launch {
+
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            try {
+
+                if (
+                    activity.status != "ACTIVE" &&
+                    activity.status != "SOLD_OUT"
+                ) {
+
+                    throw Exception(
+                        "This surplus can no longer be edited"
+                    )
+                }
+
+
+                /**
+                 * Example:
+                 *
+                 * published = 10
+                 * remaining = 6
+                 *
+                 * reserved/sold = 4
+                 */
+                val reservedQuantity =
+                    activity.publishedQuantity -
+                            activity.availableQuantity
+
+
+                /**
+                 * Seller cannot reduce quantity below
+                 * quantity already reserved by buyers.
+                 */
+                if (
+                    newPublishedQuantity <
+                    reservedQuantity
+                ) {
+
+                    throw Exception(
+                        "Minimum quantity is $reservedQuantity because " +
+                                "$reservedQuantity item(s) are already reserved"
+                    )
+                }
+
+
+                if (
+                    newPublishedQuantity < 0
+                ) {
+
+                    throw Exception(
+                        "Quantity cannot be negative"
+                    )
+                }
+
+
+                /**
+                 * Calculate new remaining quantity.
+                 */
+                val newAvailableQuantity =
+                    newPublishedQuantity -
+                            reservedQuantity
+
+
+                /**
+                 * If no remaining items -> SOLD_OUT.
+                 *
+                 * If seller increases a SOLD_OUT item again,
+                 * reactivate it.
+                 */
+                val newStatus =
+                    if (
+                        newAvailableQuantity > 0
+                    ) {
+
+                        "ACTIVE"
+
+                    } else {
+
+                        "SOLD_OUT"
+                    }
+
+
+                repository
+                    .updatePublishedSurplusQuantity(
+
+                        listingId =
+                            activity.listingId,
+
+                        publishedQuantity =
+                            newPublishedQuantity,
+
+                        availableQuantity =
+                            newAvailableQuantity,
+
+                        status =
+                            newStatus
+                    )
+
+
+                /**
+                 * Reload Activity immediately.
+                 */
+                val listings =
+                    repository
+                        .getSellerSurplusListings(
+                            sellerId
+                        )
+
+                val updatedActivities =
+                    listings.map { listing ->
+
+                        val foodItem =
+                            try {
+
+                                repository
+                                    .getFoodItemById(
+                                        listing.foodItemId
+                                    )
+
+                            } catch (e: Exception) {
+
+                                null
+                            }
+
+                        SellerActivityItem(
+
+                            listingId =
+                                listing.listingId,
+
+                            foodName =
+                                foodItem?.foodName
+                                    ?: "Food Item",
+
+                            publishedQuantity =
+                                listing.publishedQuantity,
+
+                            availableQuantity =
+                                listing.availableQuantity,
+
+                            discountPercent =
+                                listing
+                                    .currentDiscountPercent,
+
+                            currentPriceCent =
+                                listing.currentPriceCents,
+
+                            status =
+                                listing.status,
+
+                            publishedTime =
+                                formatPublishedTime(
+                                    listing.publishedAt
+                                )
+                        )
+                    }
+
+                _surplusActivities.value =
+                    updatedActivities
+
+
+                onSuccess()
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "SellerSurplus",
+                    "Failed to update quantity",
+                    e
+                )
+
+                _errorMessage.value =
+                    e.message
+                        ?: "Failed to update quantity"
+
+            } finally {
+
+                _isLoading.value = false
+            }
+        }
+    }
+
+
+    /**
+     * Supabase timestamp:
+     * 2026-09-04T12:30:00+00:00
+     *
+     * Display:
+     * 04 Sep 2026, 08:30 PM
+     */
+    private fun formatPublishedTime(
+        timestamp: String
+    ): String {
+
+        return try {
+
+            val dateTime =
+                OffsetDateTime
+                    .parse(timestamp)
+                    .atZoneSameInstant(
+                        ZoneId.systemDefault()
+                    )
+
+            dateTime.format(
+
+                DateTimeFormatter.ofPattern(
+                    "dd MMM yyyy, hh:mm a"
+                )
+            )
+
+        } catch (e: Exception) {
+
+            timestamp
         }
     }
 

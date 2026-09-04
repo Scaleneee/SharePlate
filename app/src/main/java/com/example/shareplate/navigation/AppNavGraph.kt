@@ -188,16 +188,18 @@ fun AppNavGraph(
                     ?.id
 
 
+            val surplusActivities by
+            sellerViewModel
+                .surplusActivities
+                .collectAsStateWithLifecycle()
+
+
             val pickupActivities by
             sellerViewModel
                 .pickupActivities
                 .collectAsStateWithLifecycle()
 
 
-            /**
-             * Load pickups from Supabase
-             * when screen opens.
-             */
             LaunchedEffect(
                 sellerId
             ) {
@@ -207,32 +209,56 @@ fun AppNavGraph(
                 ) {
 
                     sellerViewModel
+                        .loadSurplusActivities(
+                            sellerId
+                        )
+
+                    sellerViewModel
                         .loadPickupActivities(
                             sellerId
                         )
                 }
             }
-
-
             SellerActivityScreen(
 
-                /**
-                 * We will connect real surplus
-                 * history next.
-                 */
                 surplusActivities =
-                    emptyList(),
+                    surplusActivities,
 
-                /**
-                 * REAL SUPABASE DATA
-                 */
                 pickupActivities =
                     pickupActivities,
 
+                onUpdateQuantity = {
+                        activity,
+                        newQuantity ->
 
-                /**
-                 * Mark as picked up.
-                 */
+                    if (
+                        sellerId != null
+                    ) {
+
+                        sellerViewModel
+                            .updatePublishedSurplusQuantity(
+
+                                activity =
+                                    activity,
+
+                                newPublishedQuantity =
+                                    newQuantity,
+
+                                sellerId =
+                                    sellerId,
+
+                                onSuccess = {
+
+                                    Toast.makeText(
+                                        context,
+                                        "Quantity updated",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            )
+                    }
+                },
+
                 onMarkPickedUp = { pickup ->
 
                     if (
@@ -260,14 +286,12 @@ fun AppNavGraph(
                     }
                 },
 
-
                 onHomeClick = {
 
                     navController.navigate(
                         AppRoutes.SELLER_HOME
                     )
                 },
-
 
                 onMenuClick = {
 
@@ -276,12 +300,9 @@ fun AppNavGraph(
                     )
                 },
 
-
                 onActivityClick = {
-
                     // already here
                 },
-
 
                 onProfileClick = {
 
