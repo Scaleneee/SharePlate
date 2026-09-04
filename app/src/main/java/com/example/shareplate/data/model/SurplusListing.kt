@@ -38,17 +38,14 @@ data class SurplusListing(
 
     // date and time when seller published it
     @SerialName("published_at")
-    @Serializable(with = FlexibleTimestampSerializer ::class)
     val publishedAt: Long,
 
     // date and time when store closes
     @SerialName("closing_at")
-    @Serializable(with = FlexibleTimestampSerializer ::class)
     val closingAt: Long,
 
     // last allowed pickup time
     @SerialName("pickup_end_at")
-    @Serializable(with = FlexibleTimestampSerializer ::class)
     val pickupEndAt: Long,
 
     // listing status
