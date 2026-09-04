@@ -12,7 +12,6 @@ import com.example.shareplate.data.model.User
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.storage.storage
-import java.util.Locale.filter
 
 class SellerRepository {
 

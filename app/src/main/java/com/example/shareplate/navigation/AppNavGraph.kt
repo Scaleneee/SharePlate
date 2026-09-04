@@ -51,6 +51,8 @@ import com.example.shareplate.ui.buyer.order.BuyerCheckoutScreen
 import com.example.shareplate.ui.buyer.order.BuyerPaymentScreen
 import com.example.shareplate.ui.buyer.order.BuyerQrCodeScreen
 import com.example.shareplate.ui.buyer.profile.BuyerProfileScreen
+import com.example.shareplate.ui.seller.activity.SellerActivityItem
+import com.example.shareplate.ui.seller.activity.SellerActivityScreen
 import io.github.jan.supabase.auth.status.SessionStatus
 
 @Composable
@@ -171,7 +173,57 @@ fun AppNavGraph(
         }
 
         composable(AppRoutes.SELLER_ACTIVITY) {
-            PlaceholderScreen("Seller activity is under development")
+
+            SellerActivityScreen(
+
+                // temporary testing data
+                activities = listOf(
+
+                    SellerActivityItem(
+                        listingId = 1,
+                        foodName = "Blueberry Bread",
+                        publishedQuantity = 10,
+                        availableQuantity = 6,
+                        discountPercent = 60,
+                        currentPriceCent = 220,
+                        status = "ACTIVE",
+                        publishedTime = "Today, 8:05 PM"
+                    ),
+
+                    SellerActivityItem(
+                        listingId = 2,
+                        foodName = "Chocolate Croissant",
+                        publishedQuantity = 8,
+                        availableQuantity = 0,
+                        discountPercent = 80,
+                        currentPriceCent = 130,
+                        status = "SOLD_OUT",
+                        publishedTime = "Today, 8:10 PM"
+                    )
+                ),
+
+                onHomeClick = {
+                    navController.navigate(
+                        AppRoutes.SELLER_HOME
+                    )
+                },
+
+                onMenuClick = {
+                    navController.navigate(
+                        AppRoutes.SELLER_MENU
+                    )
+                },
+
+                onActivityClick = {
+                    // already activity
+                },
+
+                onProfileClick = {
+                    navController.navigate(
+                        AppRoutes.SELLER_PROFILE
+                    )
+                }
+            )
         }
 
         composable(AppRoutes.NEW_PASSWORD) {
