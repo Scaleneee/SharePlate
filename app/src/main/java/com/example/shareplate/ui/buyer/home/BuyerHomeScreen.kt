@@ -71,6 +71,8 @@ fun BuyerHomeScreen(
 
     onShopClick: (Shop) -> Unit = {},
 
+    onNotificationClick: () -> Unit = {},
+
     onHomeClick: () -> Unit = {},
 
     onOrderClick: () -> Unit = {},
@@ -323,7 +325,10 @@ fun BuyerHomeScreen(
                 // HEADER
                 BuyerHeaderSection(
 
-                    buyerName = buyerName
+                    buyerName = buyerName,
+
+                    onNotificationClick =
+                        onNotificationClick
                 )
 
 
@@ -588,7 +593,9 @@ fun BuyerHomeScreen(
 @Composable
 fun BuyerHeaderSection(
 
-    buyerName: String
+    buyerName: String,
+
+    onNotificationClick: () -> Unit
 
 ) {
 
@@ -638,7 +645,7 @@ fun BuyerHeaderSection(
 
         IconButton(
 
-            onClick = {}
+            onClick = onNotificationClick
 
         ) {
 

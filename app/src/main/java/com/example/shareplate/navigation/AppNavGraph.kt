@@ -36,6 +36,7 @@ import com.example.shareplate.ui.auth.login.LoginScreen
 import com.example.shareplate.ui.auth.password.NewPasswordScreen
 import com.example.shareplate.ui.auth.profile.ProfileScreen
 import com.example.shareplate.ui.auth.register.RegisterScreen
+import com.example.shareplate.ui.buyer.BuyerViewModel
 import com.example.shareplate.ui.seller.SellerViewModel
 import com.example.shareplate.ui.seller.home.SellerHomeScreen
 import com.example.shareplate.ui.seller.menu.AddFoodScreen
@@ -53,6 +54,7 @@ import com.example.shareplate.ui.buyer.order.BuyerQrCodeScreen
 import com.example.shareplate.ui.buyer.profile.BuyerProfileScreen
 import com.example.shareplate.ui.seller.activity.SellerActivityScreen
 import io.github.jan.supabase.auth.status.SessionStatus
+import com.example.shareplate.ui.buyer.home.BuyerNotificationScreen
 
 @Composable
 fun AppNavGraph(
@@ -85,6 +87,9 @@ fun AppNavGraph(
 
     // Create SellerViewModel AFTER Supabase finished restoring session
     val sellerViewModel: SellerViewModel = viewModel()
+
+    //create BuyerViewModel
+    val buyerViewModel: BuyerViewModel = viewModel()
 
     // Decide startup screen using Supabase Auth
     val startDestination =
@@ -786,6 +791,18 @@ fun AppNavGraph(
                     )
                 },
 
+                buyerViewModel =
+                    buyerViewModel,
+
+                onNotificationClick = {
+
+                    navController.navigate(
+                        AppRoutes.BUYER_NOTIFICATION
+                    ) {
+                        launchSingleTop = true
+                    }
+                },
+
                 onHomeClick = {
                     // Already on home
                 },
@@ -815,6 +832,22 @@ fun AppNavGraph(
                     ) {
                         launchSingleTop = true
                     }
+                }
+            )
+        }
+
+        // BUYER NOTIFICATION
+        composable(
+            AppRoutes.BUYER_NOTIFICATION
+        ) {
+
+            BuyerNotificationScreen(
+
+                buyerViewModel =
+                    buyerViewModel,
+
+                onBackClick = {
+                    navController.popBackStack()
                 }
             )
         }
