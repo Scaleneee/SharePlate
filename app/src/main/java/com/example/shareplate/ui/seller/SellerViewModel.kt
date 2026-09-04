@@ -10,10 +10,14 @@ import com.example.shareplate.data.model.CreateFoodItem
 import com.example.shareplate.data.model.CreateSurplusListing
 import com.example.shareplate.data.model.FoodItem
 import com.example.shareplate.util.PriceCalculator
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
@@ -42,6 +46,8 @@ class SellerViewModel(
     // seller closing time
     private val _closingTime = MutableStateFlow<String?>(null)
     val closingTime: StateFlow<String?> = _closingTime.asStateFlow()
+
+    private var smartPricingJob: Job? = null
 
     // fetch seller name and seller closing time
     fun fetchSellerName() {
@@ -354,6 +360,160 @@ class SellerViewModel(
                 _isLoading.value = false
             }
         }
+    }
+
+    private suspend fun updateSmartPricing(
+        sellerId: String
+    ) {
+
+        val listings =
+            repository.getActiveListings(
+                sellerId
+            )
+
+        val currentTime =
+            OffsetDateTime.now()
+
+        listings.forEach { listing ->
+
+            val closingAt =
+                OffsetDateTime.parse(
+                    listing.closingAt
+                )
+
+            val transferAt =
+                closingAt.minusMinutes(10)
+
+            // NGO transfer will be implemented later
+            if (
+                currentTime.isBefore(
+                    transferAt
+                )
+            ) {
+
+                val newDiscount =
+                    when {
+
+                        currentTime >=
+                                closingAt.minusMinutes(30) -> {
+
+                            80
+                        }
+
+                        currentTime >=
+                                closingAt.minusHours(1) -> {
+
+                            70
+                        }
+
+                        else -> {
+
+                            60
+                        }
+                    }
+
+                // don't repeatedly update same price
+                if (
+                    newDiscount !=
+                    listing.currentDiscountPercent
+                ) {
+
+                    val newPriceCent =
+                        PriceCalculator
+                            .calculateDiscountedPrice(
+                                originalPriceCent =
+                                    listing.originalPriceCents,
+
+                                discountPercent =
+                                    newDiscount
+                            )
+
+                    repository.updateListingPrice(
+                        listingId =
+                            listing.listingId,
+
+                        discountPercent =
+                            newDiscount,
+
+                        currentPriceCent =
+                            newPriceCent
+                    )
+
+                    Log.d(
+                        "SmartPricing",
+                        "Listing ${listing.listingId} updated: " +
+                                "$newDiscount% off, " +
+                                "$newPriceCent cents"
+                    )
+                }
+            }
+        }
+    }
+
+    fun refreshSmartPricing(
+        sellerId: String
+    ) {
+
+        viewModelScope.launch {
+
+            try {
+
+                updateSmartPricing(
+                    sellerId
+                )
+
+            } catch (e: Exception) {
+
+                Log.e(
+                    "SmartPricing",
+                    "Failed to refresh pricing",
+                    e
+                )
+
+                _errorMessage.value =
+                    e.message
+                        ?: "Failed to refresh smart pricing"
+            }
+        }
+    }
+
+    fun startSmartPricing(
+        sellerId: String
+    ) {
+
+        smartPricingJob?.cancel()
+
+        smartPricingJob =
+            viewModelScope.launch {
+
+                while (isActive) {
+
+                    try {
+
+                        updateSmartPricing(
+                            sellerId
+                        )
+
+                    } catch (e: Exception) {
+
+                        Log.e(
+                            "SmartPricing",
+                            "Automatic pricing failed",
+                            e
+                        )
+                    }
+
+                    // check every minute
+                    delay(60_000)
+                }
+            }
+    }
+
+    fun stopSmartPricing() {
+
+        smartPricingJob?.cancel()
+
+        smartPricingJob = null
     }
 
     // CLEAR ERROR

@@ -7,10 +7,12 @@ import com.example.shareplate.data.model.CreateSurplusListing
 import com.example.shareplate.data.remote.SupabaseProvider
 import com.example.shareplate.data.model.FoodItem
 import com.example.shareplate.data.model.SurplusListing
+import com.example.shareplate.data.model.UpdateSurplusPrice
 import com.example.shareplate.data.model.User
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.storage.storage
+import java.util.Locale.filter
 
 class SellerRepository {
 
@@ -91,6 +93,34 @@ class SellerRepository {
             .insert(listing)
     }
 
+    suspend fun updateListingPrice(
+        listingId: Long,
+        discountPercent: Int,
+        currentPriceCent: Int
+    ) {
+
+        val updateData =
+            UpdateSurplusPrice(
+                currentDiscountPercent =
+                    discountPercent,
+
+                currentPriceCent =
+                    currentPriceCent
+            )
+
+        supabase
+            .from("surplus_listings")
+            .update(updateData) {
+
+                filter {
+
+                    eq(
+                        "listing_id",
+                        listingId
+                    )
+                }
+            }
+    }
 
     suspend fun getActiveListings(
         sellerId: String
