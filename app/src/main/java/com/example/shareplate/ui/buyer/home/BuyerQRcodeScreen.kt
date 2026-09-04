@@ -129,7 +129,7 @@ fun BuyerQrCodeScreen(
 
                 publishedAt = System.currentTimeMillis(),
 
-                closingAt = System.currentTimeMillis() + 7_200_000,
+                closingAt = "",
 
                 pickupEndAt = System.currentTimeMillis() + 3_600_000,
 
