@@ -35,6 +35,7 @@ import com.example.shareplate.ui.NGO.NGOViewModel
 import com.example.shareplate.ui.auth.login.LoginScreen
 import com.example.shareplate.ui.auth.password.NewPasswordScreen
 import com.example.shareplate.ui.auth.profile.ProfileScreen
+import com.example.shareplate.ui.auth.profile.SellerProfileScreen
 import com.example.shareplate.ui.auth.register.RegisterScreen
 import com.example.shareplate.ui.buyer.BuyerViewModel
 import com.example.shareplate.ui.seller.SellerViewModel
@@ -178,7 +179,7 @@ fun AppNavGraph(
         }
 
         composable(AppRoutes.SELLER_PROFILE) {
-            ProfileScreen(
+            SellerProfileScreen(
                 onLoggedOut = {
                     sessionManager.clearSession()
                     navController.navigate(AppRoutes.LOGIN) {
@@ -516,28 +517,60 @@ fun AppNavGraph(
                     .currentUserOrNull()
                     ?.id
 
-            LaunchedEffect(sellerId) {
+            val activeListingCount by
+            sellerViewModel
+                .activeListingCount
+                .collectAsStateWithLifecycle()
 
-                if (sellerId != null) {
+
+            val awaitingPickupCount by
+            sellerViewModel
+                .awaitingPickupCount
+                .collectAsStateWithLifecycle()
+
+            LaunchedEffect(
+                sellerId
+            ) {
+
+                if (
+                    sellerId != null
+                ) {
 
                     // seller information
-                    sellerViewModel.fetchSellerName()
+                    sellerViewModel
+                        .fetchSellerName()
 
-                    // frequently wasted foods
-                    sellerViewModel.loadFoodItems(
-                        sellerId
-                    )
 
-                    // start automatic smart pricing
-                    sellerViewModel.startSmartPricing(
-                        sellerId
-                    )
+                    // frequently wasted food
+                    sellerViewModel
+                        .loadFoodItems(
+                            sellerId
+                        )
+
+
+                    // REAL DASHBOARD
+                    sellerViewModel
+                        .loadDashboard(
+                            sellerId
+                        )
+
+
+                    // automatic smart pricing
+                    sellerViewModel
+                        .startSmartPricing(
+                            sellerId
+                        )
                 }
             }
 
             SellerHomeScreen(
                 sellerName = sellerName,
                 foodItems = foodItems,
+                activeListings =
+                    activeListingCount,
+
+                awaitingPickup =
+                    awaitingPickupCount,
                 onNotificationClick = {
                     navController.navigate(AppRoutes.SELLER_NOTIFICATION)
                 },

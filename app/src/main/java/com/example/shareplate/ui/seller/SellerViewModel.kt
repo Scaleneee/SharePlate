@@ -64,6 +64,23 @@ class SellerViewModel(
 
     val surplusActivities: StateFlow<List<SellerActivityItem>> = _surplusActivities.asStateFlow()
 
+    // DASHBOARD - ACTIVE LISTINGS
+    private val _activeListingCount =
+        MutableStateFlow(0)
+
+    val activeListingCount:
+            StateFlow<Int> =
+        _activeListingCount.asStateFlow()
+
+
+    // DASHBOARD - AWAITING PICKUP
+    private val _awaitingPickupCount =
+        MutableStateFlow(0)
+
+    val awaitingPickupCount:
+            StateFlow<Int> =
+        _awaitingPickupCount.asStateFlow()
+
     // fetch seller name and seller closing time
     fun fetchSellerName() {
         viewModelScope.launch {
@@ -74,6 +91,64 @@ class SellerViewModel(
             } catch (e: Exception) {
                 // keep default "Seller", optionally log e
                 _errorMessage.value = e.message
+            }
+        }
+    }
+
+    /**
+     * Load seller dashboard information
+     * directly from Supabase.
+     */
+    fun loadDashboard(
+        sellerId: String
+    ) {
+
+        viewModelScope.launch {
+
+            try {
+
+                val activeListings =
+                    repository
+                        .getActiveListingCount(
+                            sellerId
+                        )
+
+
+                val awaitingPickup =
+                    repository
+                        .getAwaitingPickupCount(
+                            sellerId
+                        )
+
+
+                _activeListingCount.value =
+                    activeListings
+
+
+                _awaitingPickupCount.value =
+                    awaitingPickup
+
+
+                Log.d(
+                    "SellerDashboard",
+                    "Active listings: $activeListings, " +
+                            "Awaiting pickup: $awaitingPickup"
+                )
+
+
+            } catch (
+                e: Exception
+            ) {
+
+                Log.e(
+                    "SellerDashboard",
+                    "Failed to load dashboard",
+                    e
+                )
+
+                _errorMessage.value =
+                    e.message
+                        ?: "Failed to load dashboard"
             }
         }
     }
@@ -385,6 +460,9 @@ class SellerViewModel(
                     updatedActivities
 
 
+                loadDashboard(
+                    sellerId
+                )
                 onSuccess()
 
             } catch (e: Exception) {
@@ -511,6 +589,14 @@ class SellerViewModel(
                 // before the success callback is fired.
                 _pickupActivities.value =
                     repository.getSellerPickupActivities(sellerId)
+
+                loadPickupActivities(
+                    sellerId
+                )
+
+                loadDashboard(
+                    sellerId
+                )
 
                 onSuccess()
 
@@ -811,6 +897,10 @@ class SellerViewModel(
                     listing
                 )
 
+                loadDashboard(
+                    foodItem.sellerId
+                )
+
                 onSuccess()
 
             } catch (e: Exception) {
@@ -975,6 +1065,9 @@ class SellerViewModel(
                                 newPriceCent
                         )
 
+                    loadDashboard(
+                        sellerId
+                    )
 
                     Log.d(
                         "SmartPricing",
