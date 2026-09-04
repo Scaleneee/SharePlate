@@ -157,17 +157,6 @@ fun AppNavGraph(
                     navController.navigate(AppRoutes.LOGIN) {
                         popUpTo(0)
                     }
-                },
-                onHome = {
-                    navController.navigate(homeRouteFor(sessionManager.getRole()))
-                },
-                onMenu = {
-                    val role = sessionManager.getRole()
-                    navController.navigate(if (role == "SELLER") AppRoutes.SELLER_MENU else homeRouteFor(role))
-                },
-                onActivity = {
-                    val role = sessionManager.getRole()
-                    navController.navigate(if (role == "SELLER") AppRoutes.SELLER_ACTIVITY else homeRouteFor(role))
                 }
             )
         }
@@ -179,17 +168,6 @@ fun AppNavGraph(
                     navController.navigate(AppRoutes.LOGIN) {
                         popUpTo(0)
                     }
-                },
-                onHome = {
-                    navController.navigate(homeRouteFor(sessionManager.getRole()))
-                },
-                onMenu = {
-                    val role = sessionManager.getRole()
-                    navController.navigate(if (role == "SELLER") AppRoutes.SELLER_MENU else homeRouteFor(role))
-                },
-                onActivity = {
-                    val role = sessionManager.getRole()
-                    navController.navigate(if (role == "SELLER") AppRoutes.SELLER_ACTIVITY else homeRouteFor(role))
                 }
             )
         }
@@ -314,11 +292,7 @@ fun AppNavGraph(
         composable(AppRoutes.NGO_CART) {
             NGOCartScreen(
                 onBackClick = { navController.popBackStack() },
-                onCheckoutClick = { navController.navigate(AppRoutes.NGO_CHECKOUT) },
-                onHomeClick = { navController.navigate(AppRoutes.NGO_HOME) { launchSingleTop = true } },
-                onMenuClick = { /* already on menu/cart */ },
-                onActivityClick = { navController.navigate(AppRoutes.NGO_ACTIVITY) { launchSingleTop = true } },
-                onProfileClick = { navController.navigate(AppRoutes.NGO_PROFILE) { launchSingleTop = true } }
+                onCheckoutClick = { navController.navigate(AppRoutes.NGO_CHECKOUT) }
             )
         }
 

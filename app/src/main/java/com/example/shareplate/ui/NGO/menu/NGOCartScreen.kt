@@ -39,26 +39,12 @@ import com.example.shareplate.ui.NGO.order.NGOCartStore
 @Composable
 fun NGOCartScreen(
     onBackClick: () -> Unit,
-    onCheckoutClick: () -> Unit,
-    onHomeClick: () -> Unit = {},
-    onMenuClick: () -> Unit = {},
-    onActivityClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {}
+    onCheckoutClick: () -> Unit
 
 ) {
     val cartItems = NGOCartStore.cartItems
 
-    Scaffold (
-        bottomBar = {
-            NGOBottomBar(
-                selectedIndex = 1,
-                onHomeClick = onHomeClick,
-                onMenuClick = onMenuClick,
-                onActivityClick = onActivityClick,
-                onProfileClick = onProfileClick
-            )
-        }
-    ) { innerPadding ->
+    Scaffold{ innerPadding ->
         Surface(
             modifier = Modifier
                 .fillMaxSize()
