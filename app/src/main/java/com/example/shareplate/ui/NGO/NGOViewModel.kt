@@ -49,19 +49,20 @@ class NGOViewModel(
 
                 val shopList = sellers.map { seller ->
                     val sellerListings = listings.filter { it.sellerId == seller.userId }
-                    val sellerInventory = sellerListings.mapNotNull { listing ->
-                        val food = itemsById[listing.foodItemId] ?: return@mapNotNull null
+
+                    val sellerInventory = sellerListings.map { listing ->
+                        val food = itemsById[listing.foodItemId]
                         NGOCartItem(
                             listingId = listing.listingId,
-                            foodItemId = food.foodItemId,
+                            foodItemId = listing.foodItemId,
                             sellerId = seller.userId,
                             shopName = seller.organisationName ?: seller.name,
-                            foodName = food.foodName,
+                            foodName = food?.foodName?: "Food",
                             price = 0.0,
                             pickupTime = formatPickupTime(listing.pickupEndAt),
                             availableQuantity = listing.availableQuantity,
                             quantity = listing.availableQuantity,
-                            imageUrl = food.imageUrl
+                            imageUrl = food?.imageUrl
                         )
                     }
                     val itemStrings = sellerInventory.map { "${it.foodName} - ${it.availableQuantity}" }
