@@ -383,7 +383,7 @@ fun AppNavGraph(
                     }
                 },
                 onMenuClick = {
-                    navController.navigate(AppRoutes.NGO_HOME) {
+                    navController.navigate(AppRoutes.NGO_CART) {
                         launchSingleTop = true
                     }
                 },
@@ -475,7 +475,7 @@ fun AppNavGraph(
                     }
                 },
                 onMenuClick = {
-                    navController.navigate(AppRoutes.NGO_HOME) {
+                    navController.navigate(AppRoutes.NGO_CART) {
                         launchSingleTop = true
                     }
                 },
