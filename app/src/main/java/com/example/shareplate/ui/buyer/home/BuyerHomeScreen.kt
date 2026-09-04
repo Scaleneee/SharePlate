@@ -1,5 +1,12 @@
 package com.example.shareplate.ui.buyer.home
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.pm.PackageManager
+import android.location.Location
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,26 +37,33 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shareplate.R
 import com.example.shareplate.ui.buyer.BuyerViewModel
 import com.example.shareplate.ui.buyer.navigation.BuyerBottomBar
 import com.example.shareplate.ui.theme.SharePlateTheme
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 
 data class Shop(
@@ -60,7 +74,11 @@ data class Shop(
 
     val address: String,
 
-    val shortName: String
+    val shortName: String,
+
+    val latitude: Double? = null,
+
+    val longitude: Double? = null
 )
 
 
@@ -84,7 +102,8 @@ fun BuyerHomeScreen(
 ) {
 
     // PREVIEW
-    val isPreview = LocalInspectionMode.current
+    val isPreview =
+        LocalInspectionMode.current
 
     // VIEW MODEL
     val actualViewModel: BuyerViewModel? =
@@ -99,24 +118,258 @@ fun BuyerHomeScreen(
         }
 
     // SEARCH
-    var searchText by rememberSaveable { mutableStateOf("") }
+    var searchText by rememberSaveable {
 
-    // FAVOURITE FILTER
-    var showFavouritesOnly by rememberSaveable { mutableStateOf(false) }
+        mutableStateOf("")
+    }
 
-    //NEAR ME
-    var showNearMeOnly by rememberSaveable { mutableStateOf(false) }
+    // FAVOURITE
+    var showFavouritesOnly by rememberSaveable {
 
-    // VIEWMODEL STATES
-    val profileState = actualViewModel?.profile?.collectAsState()
-    val sellersState = actualViewModel?.sellers?.collectAsState()
-    val loadingState = actualViewModel?.isLoading?.collectAsState()
-    val errorState = actualViewModel?.errorMessage?.collectAsState()
-    val savedSellerIdsState = actualViewModel?.savedSellerIds?.collectAsState()
-    val profile = profileState?.value
-    val buyerAddress = profile?.address.orEmpty()
-    val sellers = sellersState?.value ?: emptyList()
-    val savedSellerIds = savedSellerIdsState?.value ?: emptySet()
+        mutableStateOf(false)
+    }
+
+    // NEAR ME
+    var showNearMeOnly by rememberSaveable {
+
+        mutableStateOf(false)
+    }
+
+    // LOCATION
+    val context =
+        LocalContext.current
+
+
+    var buyerLatitude by remember {
+
+        mutableStateOf<Double?>(
+            null
+        )
+    }
+
+
+    var buyerLongitude by remember {
+
+        mutableStateOf<Double?>(
+            null
+        )
+    }
+
+
+    var locationError by remember {
+
+        mutableStateOf<String?>(
+            null
+        )
+    }
+
+
+    var isGettingLocation by remember {
+
+        mutableStateOf(false)
+    }
+
+
+    val fusedLocationClient =
+        remember(context) {
+
+            LocationServices
+                .getFusedLocationProviderClient(
+                    context
+                )
+        }
+
+    // GET CURRENT LOCATION
+    @SuppressLint("MissingPermission")
+    fun getCurrentLocation() {
+
+        locationError =
+            null
+
+        isGettingLocation =
+            true
+
+
+        val finePermission =
+            ContextCompat
+                .checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+
+
+        val coarsePermission =
+            ContextCompat
+                .checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+
+
+        if (
+            finePermission !=
+            PackageManager.PERMISSION_GRANTED &&
+
+            coarsePermission !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+
+            isGettingLocation =
+                false
+
+            locationError =
+                "Location permission is required for Near Me."
+
+            return
+        }
+
+
+        val cancellationTokenSource =
+            CancellationTokenSource()
+
+
+        fusedLocationClient
+            .getCurrentLocation(
+
+                Priority.PRIORITY_HIGH_ACCURACY,
+
+                cancellationTokenSource.token
+            )
+            .addOnSuccessListener { location ->
+
+                isGettingLocation =
+                    false
+
+
+                if (location != null) {
+
+                    buyerLatitude =
+                        location.latitude
+
+                    buyerLongitude =
+                        location.longitude
+
+                } else {
+
+                    locationError =
+                        "Unable to get your current location."
+                }
+            }
+            .addOnFailureListener {
+
+                isGettingLocation =
+                    false
+
+                locationError =
+                    "Unable to get your current location."
+            }
+    }
+
+    // LOCATION PERMISSION
+    val locationPermissionLauncher =
+        rememberLauncherForActivityResult(
+
+            contract =
+                ActivityResultContracts
+                    .RequestMultiplePermissions()
+
+        ) { permissions ->
+
+
+            val fineGranted =
+                permissions[
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ] == true
+
+
+            val coarseGranted =
+                permissions[
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ] == true
+
+
+            if (
+                fineGranted ||
+                coarseGranted
+            ) {
+
+                getCurrentLocation()
+
+            } else {
+
+                isGettingLocation =
+                    false
+
+                locationError =
+                    "Location permission is required for Near Me."
+            }
+        }
+
+    // VIEW MODEL STATES
+    val profileState =
+        actualViewModel
+            ?.profile
+            ?.collectAsState()
+
+
+    val sellersState =
+        actualViewModel
+            ?.sellers
+            ?.collectAsState()
+
+
+    val savedSellerIdsState =
+        actualViewModel
+            ?.savedSellerIds
+            ?.collectAsState()
+
+
+    val unreadNotificationCountState =
+        actualViewModel
+            ?.unreadNotificationCount
+            ?.collectAsState()
+
+
+    val loadingState =
+        actualViewModel
+            ?.isLoading
+            ?.collectAsState()
+
+
+    val errorState =
+        actualViewModel
+            ?.errorMessage
+            ?.collectAsState()
+
+
+    val profile =
+        profileState?.value
+
+
+    val sellers =
+        sellersState?.value
+            ?: emptyList()
+
+
+    val savedSellerIds =
+        savedSellerIdsState?.value
+            ?: emptySet()
+
+
+    val unreadNotificationCount =
+
+        if (isPreview) {
+
+            2
+
+        } else {
+
+            unreadNotificationCountState
+                ?.value
+                ?: 0
+        }
+
+
     val isLoading =
 
         if (isPreview) {
@@ -125,24 +378,40 @@ fun BuyerHomeScreen(
 
         } else {
 
-            loadingState?.value ?: false
+            loadingState
+                ?.value
+                ?: false
         }
 
 
-    val errorMessage = errorState?.value
+    val errorMessage =
+        errorState?.value
 
-
-    // LOAD BUYER HOME
+    // LOAD HOME + AUTO REFRESH NOTIFICATIONS
     LaunchedEffect(
         actualViewModel
     ) {
 
         if (!isPreview) {
 
-            actualViewModel?.loadBuyerHome()
+            // FIRST LOAD
+            actualViewModel
+                ?.loadBuyerHome()
+
+
+            // AUTO CHECK NOTIFICATIONS
+            while (isActive) {
+
+                delay(
+                    3000
+                )
+
+
+                actualViewModel
+                    ?.loadNotifications()
+            }
         }
     }
-
 
     // BUYER NAME
     val buyerName =
@@ -153,123 +422,203 @@ fun BuyerHomeScreen(
 
         } else {
 
-            profile?.name?.takeIf {
+            profile
+                ?.name
+                ?.takeIf {
 
-                it.isNotBlank()
-            } ?: "Buyer"
+                    it.isNotBlank()
+                }
+                ?: "Buyer"
         }
 
-
-    // SHOPS
+    // SHOP LIST
     val shops: List<Shop> =
 
         if (isPreview) {
-
 
             listOf(
 
                 Shop(
 
-                    sellerId = "preview-seller-1",
+                    sellerId =
+                        "preview-seller-1",
 
-                    name = "Ondo Bakery",
+                    name =
+                        "Ondo 65",
 
-                    address = "Petaling Jaya",
+                    address =
+                        "George Town, Penang",
 
-                    shortName = "OB"
+                    shortName =
+                        "O6",
+
+                    latitude =
+                        5.4141,
+
+                    longitude =
+                        100.3288
                 ),
 
 
                 Shop(
 
-                    sellerId = "preview-seller-2",
+                    sellerId =
+                        "preview-seller-2",
 
-                    name = "The Coffee Bean & Tea Leaf",
+                    name =
+                        "Mixue",
 
-                    address = "Kuala Lumpur",
+                    address =
+                        "George Town, Penang",
 
-                    shortName = "CB"
-                ),
+                    shortName =
+                        "MX",
 
+                    latitude =
+                        5.4164,
 
-                Shop(
-
-                    sellerId = "preview-seller-3",
-
-                    name = "Bread History",
-
-                    address = "Subang Jaya",
-
-                    shortName = "BH"
+                    longitude =
+                        100.3327
                 )
             )
 
-
         } else {
-
 
             sellers.map { seller ->
 
 
-                val shopName = seller.organisationName?.takeIf {
+                val shopName =
 
-                    it.isNotBlank()
-                } ?: seller.name
+                    seller
+                        .organisationName
+                        ?.takeIf {
+
+                            it.isNotBlank()
+                        }
+                        ?: seller.name
 
 
                 Shop(
 
-                    sellerId = seller.userId,
+                    sellerId =
+                        seller.userId,
 
-                    name = shopName,
+                    name =
+                        shopName,
 
-                    address = seller.address ?: "Address not provided",
+                    address =
+                        seller.address
+                            ?: "Address not provided",
 
-                    shortName = createShortName(
-                        shopName
-                    )
+                    shortName =
+                        createShortName(
+                            shopName
+                        ),
+
+                    latitude =
+                        seller.latitude,
+
+                    longitude =
+                        seller.longitude
                 )
             }
         }
 
 
-    // SEARCH FILTER
-    val filteredShops = shops.filter { shop ->
+    // FILTER SHOPS
+    val filteredShops =
+        shops.filter { shop ->
 
-        val matchesSearch =
+            // SEARCH
+            val matchesSearch =
 
-            searchText.isBlank() ||
+                searchText.isBlank() ||
 
-                    shop.name.contains(
-                        searchText, ignoreCase = true
-                    ) ||
+                        shop.name.contains(
 
-                    shop.address.contains(
-                        searchText, ignoreCase = true
-                    )
+                            searchText,
+
+                            ignoreCase =
+                                true
+
+                        ) ||
+
+                        shop.address.contains(
+
+                            searchText,
+
+                            ignoreCase =
+                                true
+                        )
+
+            // FAVOURITE
+            val matchesFavourite =
+
+                !showFavouritesOnly ||
+
+                        savedSellerIds.contains(
+                            shop.sellerId
+                        )
+
+            // NEAR ME
+            val matchesNearMe =
+
+                if (!showNearMeOnly) {
+
+                    true
+
+                } else {
+
+                    val buyerLat =
+                        buyerLatitude
+
+                    val buyerLng =
+                        buyerLongitude
+
+                    val sellerLat =
+                        shop.latitude
+
+                    val sellerLng =
+                        shop.longitude
 
 
-        val matchesFavourite =
+                    if (
+                        buyerLat == null ||
+                        buyerLng == null ||
+                        sellerLat == null ||
+                        sellerLng == null
+                    ) {
 
-            !showFavouritesOnly ||
+                        false
 
-                    savedSellerIds.contains(
-                        shop.sellerId
-                    )
+                    } else {
+
+                        val distanceKm =
+                            calculateDistanceKm(
+
+                                lat1 =
+                                    buyerLat,
+
+                                lon1 =
+                                    buyerLng,
+
+                                lat2 =
+                                    sellerLat,
+
+                                lon2 =
+                                    sellerLng
+                            )
 
 
-        val matchesNearMe =
-
-            !showNearMeOnly ||
-
-                    isNearbyAddress(
-                        buyerAddress = buyerAddress, sellerAddress = shop.address
-                    )
+                        distanceKm <= 5.0
+                    }
+                }
 
 
-        matchesSearch && matchesFavourite && matchesNearMe
-    }
-
+            matchesSearch &&
+                    matchesFavourite &&
+                    matchesNearMe
+        }
 
     // SCREEN
     Scaffold(
@@ -278,15 +627,20 @@ fun BuyerHomeScreen(
 
             BuyerBottomBar(
 
-                selectedIndex = 0,
+                selectedIndex =
+                    0,
 
-                onHomeClick = onHomeClick,
+                onHomeClick =
+                    onHomeClick,
 
-                onOrderClick = onOrderClick,
+                onOrderClick =
+                    onOrderClick,
 
-                onActivityClick = onActivityClick,
+                onActivityClick =
+                    onActivityClick,
 
-                onProfileClick = onProfileClick
+                onProfileClick =
+                    onProfileClick
             )
         }
 
@@ -295,18 +649,20 @@ fun BuyerHomeScreen(
 
         LazyColumn(
 
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    innerPadding
-                )
-                .padding(
-                    horizontal = 20.dp
-                ),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(
+                        innerPadding
+                    )
+                    .padding(
+                        horizontal = 20.dp
+                    ),
 
-            contentPadding = PaddingValues(
-                bottom = 20.dp
-            )
+            contentPadding =
+                PaddingValues(
+                    bottom = 20.dp
+                )
 
         ) {
 
@@ -316,16 +672,20 @@ fun BuyerHomeScreen(
 
                 Spacer(
 
-                    modifier = Modifier.height(
-                        30.dp
-                    )
+                    modifier =
+                        Modifier.height(
+                            30.dp
+                        )
                 )
-
 
                 // HEADER
                 BuyerHeaderSection(
 
-                    buyerName = buyerName,
+                    buyerName =
+                        buyerName,
+
+                    unreadNotificationCount =
+                        unreadNotificationCount,
 
                     onNotificationClick =
                         onNotificationClick
@@ -334,58 +694,145 @@ fun BuyerHomeScreen(
 
                 Spacer(
 
-                    modifier = Modifier.height(
-                        20.dp
-                    )
+                    modifier =
+                        Modifier.height(
+                            20.dp
+                        )
                 )
-
 
                 // SEARCH
                 BuyerSearchField(
 
-                    searchText = searchText,
+                    searchText =
+                        searchText,
 
                     onSearchTextChange = {
 
-                        searchText = it
-                    })
+                        searchText =
+                            it
+                    }
+                )
 
 
                 Spacer(
 
-                    modifier = Modifier.height(
-                        20.dp
-                    )
+                    modifier =
+                        Modifier.height(
+                            20.dp
+                        )
                 )
-
 
                 // QUICK BUTTONS
                 BuyerQuickButtons(
 
-                    showNearMeOnly = showNearMeOnly,
+                    showNearMeOnly =
+                        showNearMeOnly,
 
-                    showFavouritesOnly = showFavouritesOnly,
+                    showFavouritesOnly =
+                        showFavouritesOnly,
 
+                    // NEAR ME
                     onNearMeClick = {
 
-                        showNearMeOnly = !showNearMeOnly
 
-                        if (showNearMeOnly) {
+                        if (
+                            showNearMeOnly
+                        ) {
 
-                            showFavouritesOnly = false
+                            showNearMeOnly =
+                                false
+
+                            locationError =
+                                null
+
+                        } else {
+
+                            showNearMeOnly =
+                                true
+
+                            showFavouritesOnly =
+                                false
+
+                            locationError =
+                                null
+
+
+                            val finePermission =
+                                ContextCompat
+                                    .checkSelfPermission(
+
+                                        context,
+
+                                        Manifest
+                                            .permission
+                                            .ACCESS_FINE_LOCATION
+                                    )
+
+
+                            val coarsePermission =
+                                ContextCompat
+                                    .checkSelfPermission(
+
+                                        context,
+
+                                        Manifest
+                                            .permission
+                                            .ACCESS_COARSE_LOCATION
+                                    )
+
+
+                            if (
+                                finePermission ==
+                                PackageManager.PERMISSION_GRANTED ||
+
+                                coarsePermission ==
+                                PackageManager.PERMISSION_GRANTED
+                            ) {
+
+                                getCurrentLocation()
+
+                            } else {
+
+                                isGettingLocation =
+                                    true
+
+
+                                locationPermissionLauncher
+                                    .launch(
+
+                                        arrayOf(
+
+                                            Manifest
+                                                .permission
+                                                .ACCESS_FINE_LOCATION,
+
+                                            Manifest
+                                                .permission
+                                                .ACCESS_COARSE_LOCATION
+                                        )
+                                    )
+                            }
                         }
                     },
 
+                    // FAVOURITE
                     onFavouriteClick = {
 
                         showFavouritesOnly =
                             !showFavouritesOnly
 
-                        if (showFavouritesOnly) {
+
+                        if (
+                            showFavouritesOnly
+                        ) {
 
                             showNearMeOnly =
                                 false
+
+                            locationError =
+                                null
                         }
+
 
                         actualViewModel
                             ?.loadFavourites()
@@ -395,49 +842,65 @@ fun BuyerHomeScreen(
 
                 Spacer(
 
-                    modifier = Modifier.height(
-                        28.dp
-                    )
+                    modifier =
+                        Modifier.height(
+                            28.dp
+                        )
                 )
 
-
+                // TITLE
                 Text(
 
                     text =
+
                         when {
 
+
                             showNearMeOnly -> {
+
                                 "SHOPS NEAR ME"
                             }
 
+
                             showFavouritesOnly -> {
+
                                 "FAVOURITE SHOPS"
                             }
 
-                            searchText.isNotBlank() -> {
+
+                            searchText
+                                .isNotBlank() -> {
+
                                 "SEARCH RESULTS"
                             }
 
+
                             else -> {
+
                                 "RECOMMENDED SHOPS"
                             }
                         },
 
-                    style = MaterialTheme.typography.bodyLarge
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodyLarge
                 )
 
 
                 Spacer(
 
-                    modifier = Modifier.height(
-                        15.dp
-                    )
+                    modifier =
+                        Modifier.height(
+                            15.dp
+                        )
                 )
             }
 
-
             // LOADING
-            if (isLoading) {
+            if (
+                isLoading
+            ) {
 
 
                 item {
@@ -445,13 +908,15 @@ fun BuyerHomeScreen(
 
                     Box(
 
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                top = 50.dp
-                            ),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    top = 50.dp
+                                ),
 
-                        contentAlignment = Alignment.Center
+                        contentAlignment =
+                            Alignment.Center
 
                     ) {
 
@@ -461,8 +926,9 @@ fun BuyerHomeScreen(
                 }
 
 
-            } else if (errorMessage != null) {
-
+            } else if (
+                errorMessage != null
+            ) {
 
                 // ERROR
                 item {
@@ -470,45 +936,15 @@ fun BuyerHomeScreen(
 
                     Box(
 
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                top = 40.dp
-                            ),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    top = 40.dp
+                                ),
 
-                        contentAlignment = Alignment.Center
-
-                    ) {
-
-
-                        Text(
-
-                            text = errorMessage ?: "Something went wrong.",
-
-                            color = Color.Red,
-
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-
-
-            } else if (filteredShops.isEmpty()) {
-
-
-                // EMPTY
-                item {
-
-
-                    Box(
-
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                top = 40.dp
-                            ),
-
-                        contentAlignment = Alignment.Center
+                        contentAlignment =
+                            Alignment.Center
 
                     ) {
 
@@ -516,23 +952,87 @@ fun BuyerHomeScreen(
                         Text(
 
                             text =
+                                errorMessage
+                                    ?: "Something went wrong.",
+
+                            color =
+                                Color.Red,
+
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodyMedium
+                        )
+                    }
+                }
+
+
+            } else if (
+                filteredShops.isEmpty()
+            ) {
+
+                // EMPTY
+                item {
+
+
+                    Box(
+
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    top = 40.dp
+                                ),
+
+                        contentAlignment =
+                            Alignment.Center
+
+                    ) {
+
+
+                        Text(
+
+                            text =
+
                                 when {
 
-                                    showNearMeOnly &&
-                                            buyerAddress.isBlank() -> {
 
-                                        "Please add your address in Profile first"
+                                    showNearMeOnly &&
+                                            locationError != null -> {
+
+                                        locationError
+                                            ?: "Unable to get location"
                                     }
+
+
+                                    showNearMeOnly &&
+                                            isGettingLocation -> {
+
+                                        "Getting your current location..."
+                                    }
+
+
+                                    showNearMeOnly &&
+                                            (
+                                                    buyerLatitude == null ||
+                                                            buyerLongitude == null
+                                                    ) -> {
+
+                                        "Getting your current location..."
+                                    }
+
 
                                     showNearMeOnly -> {
 
-                                        "No nearby shops found"
+                                        "No shops found within 5 km"
                                     }
+
 
                                     showFavouritesOnly -> {
 
                                         "No favourite shops yet"
                                     }
+
 
                                     else -> {
 
@@ -541,7 +1041,9 @@ fun BuyerHomeScreen(
                                 },
 
                             style =
-                                MaterialTheme.typography.bodyMedium,
+                                MaterialTheme
+                                    .typography
+                                    .bodyMedium,
 
                             color =
                                 Color.Gray
@@ -552,11 +1054,11 @@ fun BuyerHomeScreen(
 
             } else {
 
-
-                // SHOP LIST
+                // SHOPS
                 items(
 
-                    items = filteredShops,
+                    items =
+                        filteredShops,
 
                     key = { shop ->
 
@@ -568,19 +1070,22 @@ fun BuyerHomeScreen(
 
                     BuyerShopItem(
 
-                        shop = shop,
+                        shop =
+                            shop,
 
                         onClick = {
 
                             onShopClick(
                                 shop
                             )
-                        })
+                        }
+                    )
 
 
                     HorizontalDivider(
 
-                        color = Color.LightGray
+                        color =
+                            Color.LightGray
                     )
                 }
             }
@@ -588,12 +1093,13 @@ fun BuyerHomeScreen(
     }
 }
 
-
 // HEADER
 @Composable
 fun BuyerHeaderSection(
 
     buyerName: String,
+
+    unreadNotificationCount: Int,
 
     onNotificationClick: () -> Unit
 
@@ -602,11 +1108,14 @@ fun BuyerHeaderSection(
 
     Row(
 
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier.fillMaxWidth(),
 
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment =
+            Alignment.CenterVertically,
 
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement =
+            Arrangement.SpaceBetween
 
     ) {
 
@@ -616,54 +1125,126 @@ fun BuyerHeaderSection(
 
             Text(
 
-                text = "Hey, $buyerName",
+                text =
+                    "Hey, $buyerName",
 
-                fontSize = 21.sp,
+                fontSize =
+                    21.sp,
 
-                fontWeight = FontWeight.SemiBold
+                fontWeight =
+                    FontWeight.SemiBold
             )
 
 
             Spacer(
 
-                modifier = Modifier.height(
-                    4.dp
-                )
+                modifier =
+                    Modifier.height(
+                        4.dp
+                    )
             )
 
 
             Text(
 
-                text = "Discover food, save money, reduce waste.",
+                text =
+                    "Discover food, save money, reduce waste.",
 
-                fontSize = 12.sp,
+                fontSize =
+                    12.sp,
 
-                color = Color.Gray
+                color =
+                    Color.Gray
             )
         }
 
-
-        IconButton(
-
-            onClick = onNotificationClick
-
-        ) {
+        // NOTIFICATION BELL + BADGE
+        Box {
 
 
-            Icon(
+            IconButton(
 
-                painter = painterResource(
-                    R.drawable.notification
-                ),
+                onClick =
+                    onNotificationClick
 
-                contentDescription = "Notification"
-            )
+            ) {
+
+
+                Icon(
+
+                    painter =
+                        painterResource(
+                            R.drawable.notification
+                        ),
+
+                    contentDescription =
+                        "Notification"
+                )
+            }
+
+
+            if (
+                unreadNotificationCount > 0
+            ) {
+
+
+                Box(
+
+                    modifier =
+                        Modifier
+                            .align(
+                                Alignment.TopEnd
+                            )
+                            .size(
+                                18.dp
+                            )
+                            .background(
+
+                                color =
+                                    Color.Red,
+
+                                shape =
+                                    CircleShape
+                            ),
+
+                    contentAlignment =
+                        Alignment.Center
+
+                ) {
+
+
+                    Text(
+
+                        text =
+
+                            if (
+                                unreadNotificationCount > 9
+                            ) {
+
+                                "9+"
+
+                            } else {
+
+                                unreadNotificationCount
+                                    .toString()
+                            },
+
+                        color =
+                            Color.White,
+
+                        fontSize =
+                            9.sp,
+
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+                }
+            }
         }
     }
 }
 
-
-// SEARCH FIELD
+// SEARCH
 @Composable
 fun BuyerSearchField(
 
@@ -676,20 +1257,27 @@ fun BuyerSearchField(
 
     OutlinedTextField(
 
-        value = searchText,
+        value =
+            searchText,
 
-        onValueChange = onSearchTextChange,
+        onValueChange =
+            onSearchTextChange,
 
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier.fillMaxWidth(),
 
         placeholder = {
 
 
             Text(
 
-                text = "Search...",
+                text =
+                    "Search...",
 
-                style = MaterialTheme.typography.bodyMedium
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodyMedium
             )
         },
 
@@ -698,22 +1286,25 @@ fun BuyerSearchField(
 
             Icon(
 
-                painter = painterResource(
-                    R.drawable.search
-                ),
+                painter =
+                    painterResource(
+                        R.drawable.search
+                    ),
 
-                contentDescription = "Search"
+                contentDescription =
+                    "Search"
             )
         },
 
-        singleLine = true,
+        singleLine =
+            true,
 
-        shape = RoundedCornerShape(
-            10.dp
-        )
+        shape =
+            RoundedCornerShape(
+                10.dp
+            )
     )
 }
-
 
 // QUICK BUTTONS
 @Composable
@@ -732,109 +1323,141 @@ fun BuyerQuickButtons(
 
     Row(
 
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier.fillMaxWidth(),
 
-        horizontalArrangement = Arrangement.spacedBy(
-            12.dp
-        )
+        horizontalArrangement =
+            Arrangement.spacedBy(
+                12.dp
+            )
 
     ) {
 
-
+        // NEAR ME
         OutlinedButton(
 
-            onClick = onFavouriteClick,
+            onClick =
+                onNearMeClick,
 
-            modifier = Modifier.weight(1f),
+            modifier =
+                Modifier.weight(
+                    1f
+                ),
 
-            shape = RoundedCornerShape(10.dp)
+            shape =
+                RoundedCornerShape(
+                    10.dp
+                )
 
         ) {
 
 
             Icon(
 
-                painter = painterResource(
-                    R.drawable.location_on
-                ),
+                painter =
+                    painterResource(
+                        R.drawable.location_on
+                    ),
 
-                contentDescription = "Nearby"
+                contentDescription =
+                    "Near Me",
+
+                tint =
+
+                    if (
+                        showNearMeOnly
+                    ) {
+
+                        MaterialTheme
+                            .colorScheme
+                            .primary
+
+                    } else {
+
+                        Color.Gray
+                    }
             )
 
 
             Spacer(
 
-                modifier = Modifier.width(
-                    6.dp
-                )
+                modifier =
+                    Modifier.width(
+                        6.dp
+                    )
             )
 
 
             Text(
+
                 text =
-
-                    if (showNearMeOnly) {
-
-                        "All Shops"
-
-                    } else {
-
-                        "Near Me"
-                    }
+                    "Near Me"
             )
         }
 
-
+        // FAVOURITE
         OutlinedButton(
 
-            onClick = onNearMeClick,
+            onClick =
+                onFavouriteClick,
 
-            modifier = Modifier.weight(
-                1f
-            ),
+            modifier =
+                Modifier.weight(
+                    1f
+                ),
 
-            shape = RoundedCornerShape(
-                10.dp
-            )
+            shape =
+                RoundedCornerShape(
+                    10.dp
+                )
 
         ) {
 
 
             Icon(
 
-                painter = painterResource(
-                    R.drawable.favourite
-                ),
+                painter =
+                    painterResource(
+                        R.drawable.favourite
+                    ),
 
-                contentDescription = "Favourite"
+                contentDescription =
+                    "Favourite",
+
+                tint =
+
+                    if (
+                        showFavouritesOnly
+                    ) {
+
+                        MaterialTheme
+                            .colorScheme
+                            .primary
+
+                    } else {
+
+                        Color.Gray
+                    }
             )
 
 
             Spacer(
 
-                modifier = Modifier.width(
-                    6.dp
-                )
+                modifier =
+                    Modifier.width(
+                        6.dp
+                    )
             )
 
 
             Text(
 
                 text =
-
-                    if (showFavouritesOnly) {
-
-                        "All Shops"
-
-                    } else {
-
-                        "Favourite"
-                    }
+                    "Favourite"
             )
         }
     }
 }
-
 
 // SHOP ITEM
 @Composable
@@ -849,56 +1472,65 @@ fun BuyerShopItem(
 
     Row(
 
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable {
 
-                onClick()
-            }
-            .padding(
-                vertical = 16.dp
-            ),
+                    onClick()
+                }
+                .padding(
+                    vertical = 16.dp
+                ),
 
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment =
+            Alignment.CenterVertically
 
     ) {
 
 
         Surface(
 
-            modifier = Modifier
-                .size(
-                    65.dp
-                )
-                .clip(
-                    CircleShape
-                ),
+            modifier =
+                Modifier
+                    .size(
+                        65.dp
+                    )
+                    .clip(
+                        CircleShape
+                    ),
 
-            color = Color(
-                0xFFFFF4D6
-            )
+            color =
+                Color(
+                    0xFFFFF4D6
+                )
 
         ) {
 
 
             Box(
 
-                contentAlignment = Alignment.Center
+                contentAlignment =
+                    Alignment.Center
 
             ) {
 
 
                 Text(
 
-                    text = shop.shortName,
+                    text =
+                        shop.shortName,
 
-                    fontSize = 18.sp,
+                    fontSize =
+                        18.sp,
 
-                    fontWeight = FontWeight.Bold,
+                    fontWeight =
+                        FontWeight.Bold,
 
-                    color = Color(
-                        0xFFD99B00
-                    )
+                    color =
+                        Color(
+                            0xFFD99B00
+                        )
                 )
             }
         }
@@ -906,9 +1538,10 @@ fun BuyerShopItem(
 
         Spacer(
 
-            modifier = Modifier.width(
-                15.dp
-            )
+            modifier =
+                Modifier.width(
+                    15.dp
+                )
         )
 
 
@@ -917,36 +1550,42 @@ fun BuyerShopItem(
 
             Text(
 
-                text = shop.name,
+                text =
+                    shop.name,
 
-                fontSize = 15.sp,
+                fontSize =
+                    15.sp,
 
-                fontWeight = FontWeight.Medium
+                fontWeight =
+                    FontWeight.Medium
             )
 
 
             Spacer(
 
-                modifier = Modifier.height(
-                    4.dp
-                )
+                modifier =
+                    Modifier.height(
+                        4.dp
+                    )
             )
 
 
             Text(
 
-                text = shop.address,
+                text =
+                    shop.address,
 
-                fontSize = 12.sp,
+                fontSize =
+                    12.sp,
 
-                color = Color.Gray
+                color =
+                    Color.Gray
             )
         }
     }
 }
 
-
-// CREATE SHORT SHOP NAME
+// SHORT SHOP NAME
 private fun createShortName(
 
     shopName: String
@@ -954,10 +1593,14 @@ private fun createShortName(
 ): String {
 
 
-    val words = shopName.trim().split(" ").filter {
+    val words =
+        shopName
+            .trim()
+            .split(" ")
+            .filter {
 
-        it.isNotBlank()
-    }
+                it.isNotBlank()
+            }
 
 
     return when {
@@ -971,53 +1614,60 @@ private fun createShortName(
 
         words.size == 1 -> {
 
-            words.first().take(2).uppercase()
+            words
+                .first()
+                .take(2)
+                .uppercase()
         }
 
 
         else -> {
 
-            "${words[0].first()}${words[1].first()}".uppercase()
+            "${words[0].first()}${words[1].first()}"
+                .uppercase()
         }
     }
 }
 
-private fun isNearbyAddress(
-    buyerAddress: String, sellerAddress: String
-): Boolean {
+// CALCULATE DISTANCE
+private fun calculateDistanceKm(
 
-    if (buyerAddress.isBlank() || sellerAddress.isBlank()) {
-        return false
-    }
+    lat1: Double,
 
-    val buyerParts = buyerAddress.lowercase().split(",").map {
-            it.trim()
-        }.filter {
-            it.length >= 4 && !it.all(Char::isDigit)
-        }
+    lon1: Double,
 
-    val sellerParts = sellerAddress.lowercase().split(",").map {
-            it.trim()
-        }
+    lat2: Double,
 
-    return buyerParts.any { buyerPart ->
+    lon2: Double
 
-        sellerParts.any { sellerPart ->
+): Double {
 
-            sellerPart.contains(
-                buyerPart
-            ) ||
 
-                    buyerPart.contains(
-                        sellerPart
-                    )
-        }
-    }
+    val results =
+        FloatArray(
+            1
+        )
+
+
+    Location.distanceBetween(
+
+        lat1,
+        lon1,
+
+        lat2,
+        lon2,
+
+        results
+    )
+
+
+    return results[0] /
+            1000.0
 }
-
 
 @Preview(
-    showBackground = true, showSystemUi = true
+    showBackground = true,
+    showSystemUi = true
 )
 @Composable
 fun BuyerHomeScreenPreview() {

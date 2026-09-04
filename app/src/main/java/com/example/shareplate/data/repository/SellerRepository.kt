@@ -654,6 +654,71 @@ class SellerRepository {
     }
 
     /**
+     * Number of ACTIVE surplus listings
+     * belonging to this seller.
+     */
+    suspend fun getActiveListingCount(
+        sellerId: String
+    ): Int {
+
+        return getActiveListings(
+            sellerId
+        ).size
+    }
+
+
+    /**
+     * Number of pickups that the seller
+     * is still waiting for.
+     *
+     * Includes:
+     *
+     * BUYER
+     * - RESERVED
+     * - READY_FOR_PICKUP
+     *
+     * NGO
+     * - SCHEDULED
+     * - ON_THE_WAY
+     */
+    suspend fun getAwaitingPickupCount(
+        sellerId: String
+    ): Int {
+
+        val activities =
+            getSellerPickupActivities(
+                sellerId
+            )
+
+        return activities.count { activity ->
+
+            when (
+                activity.pickupType
+            ) {
+
+                "BUYER" -> {
+
+                    activity.status ==
+                            "RESERVED" ||
+                            activity.status ==
+                            "READY_FOR_PICKUP"
+                }
+
+                "NGO" -> {
+
+                    activity.status ==
+                            "SCHEDULED" ||
+                            activity.status ==
+                            "ON_THE_WAY"
+                }
+
+                else ->
+                    false
+            }
+        }
+    }
+
+    /**
      * Get buyer + NGO pickup activities
      * belonging to the current seller.
      */
@@ -765,7 +830,6 @@ class SellerRepository {
                          */
                         pickupTime =
                             listing.pickupEndAt,
-
                         status =
                             order.status
                     )
