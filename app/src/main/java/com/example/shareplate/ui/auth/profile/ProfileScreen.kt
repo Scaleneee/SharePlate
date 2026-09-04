@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import com.example.shareplate.data.local.SessionManager
 import com.example.shareplate.data.supabase.AuthRepository
 import com.example.shareplate.data.supabase.Profile
-import com.example.shareplate.ui.auth.component.AuthLogo
 import kotlinx.coroutines.launch
 
 @Composable
@@ -102,10 +101,6 @@ fun ProfileScreen(
         Column(
             modifier = Modifier.padding(24.dp).fillMaxWidth()
         ) {
-            AuthLogo(modifier = Modifier.align(Alignment.CenterHorizontally))
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
