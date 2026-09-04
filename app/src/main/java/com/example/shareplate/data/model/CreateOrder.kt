@@ -27,5 +27,11 @@ data class CreateOrder(
     @SerialName("pickup_code")
     val pickupCode: String,
 
+    @SerialName("pickup_note")
+    val pickupNote: String?,
+
+    @SerialName("payment_method")
+    val paymentMethod: String,
+
     val status: String
 )

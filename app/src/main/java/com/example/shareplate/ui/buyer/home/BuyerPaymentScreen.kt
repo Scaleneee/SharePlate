@@ -395,6 +395,8 @@ fun BuyerPaymentScreen(
 
                             actualViewModel?.submitOrder(
 
+                                    paymentMethod = selectedPaymentMethod,
+
                                     onSuccess = { pickupCode, totalPriceCent ->
 
 
