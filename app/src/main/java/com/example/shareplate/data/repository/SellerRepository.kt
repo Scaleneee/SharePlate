@@ -6,16 +6,139 @@ import com.example.shareplate.data.model.CreateFoodItem
 import com.example.shareplate.data.model.CreateSurplusListing
 import com.example.shareplate.data.remote.SupabaseProvider
 import com.example.shareplate.data.model.FoodItem
-import com.example.shareplate.data.model.SellerDonationRow
-import com.example.shareplate.data.model.SellerNgoPickupRow
-import com.example.shareplate.data.model.SellerOrderRow
 import com.example.shareplate.data.model.SellerPickupActivityItem
 import com.example.shareplate.data.model.SurplusListing
-import com.example.shareplate.data.model.UpdateSurplusPrice
 import com.example.shareplate.data.model.User
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.storage.storage
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import java.time.OffsetDateTime
+
+
+//data class SellerPickupActivityItem(
+//    val pickupId: Long,
+//    val donationId: Long? = null,
+//    val receiverName: String,
+//    val pickupType: String,
+//    val foodName: String,
+//    val quantity: Int,
+//    val pickupCode: String,
+//    val pickupTime: String,
+//    val status: String
+//)
+
+@Serializable
+private data class SellerOrderRow(
+    @SerialName("order_id")
+    val orderId: Long,
+
+    @SerialName("listing_id")
+    val listingId: Long,
+
+    @SerialName("buyer_id")
+    val buyerId: String,
+
+    val quantity: Int,
+
+    @SerialName("unit_price_cent")
+    val unitPriceCent: Int,
+
+    @SerialName("total_price_cent")
+    val totalPriceCent: Int,
+
+    @SerialName("ordered_at")
+    val orderedAt: String,
+
+    @SerialName("pickup_code")
+    val pickupCode: String,
+
+    val status: String
+)
+
+@Serializable
+private data class SellerDonationRow(
+    @SerialName("donation_id")
+    val donationId: Long,
+
+    @SerialName("listing_id")
+    val listingId: Long,
+
+    @SerialName("seller_id")
+    val sellerId: String,
+
+    @SerialName("ngo_id")
+    val ngoId: String? = null,
+
+    @SerialName("donation_quantity")
+    val donationQuantity: Int,
+
+    @SerialName("available_at")
+    val availableAt: String,
+
+    @SerialName("pickup_start_at")
+    val pickupStartAt: String,
+
+    @SerialName("pickup_end_at")
+    val pickupEndAt: String,
+
+    val status: String,
+
+    @SerialName("created_at")
+    val createdAt: String? = null
+)
+
+@Serializable
+private data class SellerNgoPickupRow(
+    @SerialName("pickup_id")
+    val pickupId: Long,
+
+    @SerialName("donation_id")
+    val donationId: Long,
+
+    @SerialName("ngo_id")
+    val ngoId: String,
+
+    @SerialName("selected_pickup_at")
+    val selectedPickupAt: String,
+
+    @SerialName("collector_name")
+    val collectorName: String,
+
+    @SerialName("pickup_code")
+    val pickupCode: String,
+
+    val status: String,
+
+    @SerialName("collected_at")
+    val collectedAt: String? = null,
+
+    @SerialName("created_at")
+    val createdAt: String? = null
+)
+
+@Serializable
+private data class UpdateStatusPayload(
+    val status: String
+)
+
+@Serializable
+private data class UpdateNgoPickupCollectedPayload(
+    val status: String,
+
+    @SerialName("collected_at")
+    val collectedAt: String
+)
+
+@Serializable
+private data class UpdateSurplusPricePayload(
+    @SerialName("current_discount_percent")
+    val currentDiscountPercent: Int,
+
+    @SerialName("current_price_cent")
+    val currentPriceCent: Int
+)
 
 class SellerRepository {
 
@@ -216,7 +339,6 @@ class SellerRepository {
             }
         }
 
-
         /**
          * =========================================
          * NGO PICKUPS
@@ -330,7 +452,102 @@ class SellerRepository {
         }
 
 
-        return pickupActivities
+        return pickupActivities.sortedByDescending { it.pickupTime }
+    }
+
+    /**
+     * Buyer picked up order.
+     *
+     * orders.status:
+     * READY_FOR_PICKUP -> COLLECTED
+     */
+    suspend fun markBuyerOrderCollected(
+        orderId: Long
+    ) {
+
+        val updateData =
+            UpdateStatusPayload(
+                status = "COLLECTED"
+            )
+
+
+        supabase
+            .from("orders")
+            .update(updateData) {
+
+                filter {
+
+                    eq(
+                        "order_id",
+                        orderId
+                    )
+                }
+            }
+    }
+
+    /**
+     * NGO collected donation.
+     */
+    suspend fun markNgoPickupCollected(
+        pickupId: Long,
+        donationId: Long
+    ) {
+
+        val collectedTime =
+            OffsetDateTime
+                .now()
+                .toString()
+
+
+        /**
+         * Update pickup
+         */
+        val pickupUpdate =
+            UpdateNgoPickupCollectedPayload(
+
+                status =
+                    "COLLECTED",
+
+                collectedAt =
+                    collectedTime
+            )
+
+
+        supabase
+            .from("pickups")
+            .update(pickupUpdate) {
+
+                filter {
+
+                    eq(
+                        "pickup_id",
+                        pickupId
+                    )
+                }
+            }
+
+
+        /**
+         * Also update the donation.
+         */
+        val donationUpdate =
+            UpdateStatusPayload(
+                status = "COLLECTED"
+            )
+
+
+        supabase
+            .from("donations")
+            .update(donationUpdate) {
+
+                filter {
+
+                    eq(
+                        "donation_id",
+                        donationId
+                    )
+                }
+            }
     }
     suspend fun updateListingPrice(
         listingId: Long,
@@ -339,7 +556,7 @@ class SellerRepository {
     ) {
 
         val updateData =
-            UpdateSurplusPrice(
+            UpdateSurplusPricePayload(
                 currentDiscountPercent =
                     discountPercent,
 

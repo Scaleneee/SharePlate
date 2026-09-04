@@ -51,9 +51,7 @@ import com.example.shareplate.ui.buyer.order.BuyerCheckoutScreen
 import com.example.shareplate.ui.buyer.order.BuyerPaymentScreen
 import com.example.shareplate.ui.buyer.order.BuyerQrCodeScreen
 import com.example.shareplate.ui.buyer.profile.BuyerProfileScreen
-import com.example.shareplate.ui.seller.activity.SellerActivityItem
 import com.example.shareplate.ui.seller.activity.SellerActivityScreen
-import com.example.shareplate.ui.seller.activity.SellerPickupActivityItem
 import io.github.jan.supabase.auth.status.SessionStatus
 
 @Composable
@@ -177,101 +175,86 @@ fun AppNavGraph(
             AppRoutes.SELLER_ACTIVITY
         ) {
 
+            val sellerId =
+                SupabaseProvider
+                    .client
+                    .auth
+                    .currentUserOrNull()
+                    ?.id
+
+
+            val pickupActivities by
+            sellerViewModel
+                .pickupActivities
+                .collectAsStateWithLifecycle()
+
+
+            /**
+             * Load pickups from Supabase
+             * when screen opens.
+             */
+            LaunchedEffect(
+                sellerId
+            ) {
+
+                if (
+                    sellerId != null
+                ) {
+
+                    sellerViewModel
+                        .loadPickupActivities(
+                            sellerId
+                        )
+                }
+            }
+
+
             SellerActivityScreen(
 
+                /**
+                 * We will connect real surplus
+                 * history next.
+                 */
                 surplusActivities =
-                    listOf(
+                    emptyList(),
 
-                        SellerActivityItem(
-
-                            listingId = 1,
-
-                            foodName =
-                                "Blueberry Bread",
-
-                            publishedQuantity =
-                                10,
-
-                            availableQuantity =
-                                6,
-
-                            discountPercent =
-                                70,
-
-                            currentPriceCent =
-                                165,
-
-                            status =
-                                "ACTIVE",
-
-                            publishedTime =
-                                "Today, 4:00 PM"
-                        )
-                    ),
-
+                /**
+                 * REAL SUPABASE DATA
+                 */
                 pickupActivities =
-                    listOf(
+                    pickupActivities,
 
-                        SellerPickupActivityItem(
 
-                            pickupId = 1,
+                /**
+                 * Mark as picked up.
+                 */
+                onMarkPickedUp = { pickup ->
 
-                            receiverName =
-                                "Jason Lim",
+                    if (
+                        sellerId != null
+                    ) {
 
-                            pickupType =
-                                "BUYER",
+                        sellerViewModel
+                            .markPickupCollected(
 
-                            foodName =
-                                "Blueberry Bread",
+                                pickup =
+                                    pickup,
 
-                            quantity =
-                                2,
+                                sellerId =
+                                    sellerId,
 
-                            pickupCode =
-                                "A821",
+                                onSuccess = {
 
-                            pickupTime =
-                                "Today, 8:30 PM",
-
-                            status =
-                                "READY_FOR_PICKUP"
-                        ),
-
-                        SellerPickupActivityItem(
-
-                            pickupId = 2,
-
-                            receiverName =
-                                "Penang Food Aid",
-
-                            pickupType =
-                                "NGO",
-
-                            foodName =
-                                "Croissant",
-
-                            quantity =
-                                4,
-
-                            pickupCode =
-                                "N381",
-
-                            pickupTime =
-                                "Today, 10:10 PM",
-
-                            status =
-                                "SCHEDULED"
-                        )
-                    ),
-                onMarkPickedUp = { pickupId ->
-
-                    Toast.makeText(
-                        context,
-                        "Pickup $pickupId marked as picked up",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                                    Toast.makeText(
+                                        context,
+                                        "Pickup completed",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            )
+                    }
                 },
+
 
                 onHomeClick = {
 
@@ -280,6 +263,7 @@ fun AppNavGraph(
                     )
                 },
 
+
                 onMenuClick = {
 
                     navController.navigate(
@@ -287,9 +271,12 @@ fun AppNavGraph(
                     )
                 },
 
+
                 onActivityClick = {
+
                     // already here
                 },
+
 
                 onProfileClick = {
 
@@ -733,9 +720,9 @@ fun AppNavGraph(
         // seller edit food screen
         composable(
             route = AppRoutes.SELLER_EDIT_FOOD, arguments = listOf(
-            navArgument("foodItemId") {
-                type = NavType.LongType
-            })) { backStackEntry ->
+                navArgument("foodItemId") {
+                    type = NavType.LongType
+                })) { backStackEntry ->
 
             val context = LocalContext.current
 
