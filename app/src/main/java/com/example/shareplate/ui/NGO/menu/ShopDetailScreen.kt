@@ -1,5 +1,6 @@
 package com.example.shareplate.ui.NGO
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,46 +32,61 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-data class MenuFoodItem(
-    val name: String,
-    val surplus: Int
-)
+import coil3.compose.AsyncImage
+import com.example.shareplate.ui.NGO.order.NGOCartItem
+import com.example.shareplate.R
 
 @Composable
 fun ShopDetailScreen(
     donation: FoodDonation,
     onBackClick: () -> Unit,
-    onAcceptClick: (List<String>) -> Unit
+    onAcceptClick: (List<NGOCartItem>) -> Unit
 ) {
-    val items = donation.foodItems.map { raw ->
-        val parts = raw.split(" - ")
-        val name = parts.getOrElse(0) { raw }
-        val surplus = parts.getOrNull(1)?.trim()?.toIntOrNull() ?: 0
-        MenuFoodItem(name = name, surplus = surplus)
+    val items = if (donation.inventory.isNotEmpty()) {
+        donation.inventory
+    } else {
+        donation.foodItems.mapIndexed { index, raw ->
+            val parts = raw.split(" - ")
+            val name = parts.getOrElse(0) { raw }
+            val qty = parts.getOrNull(1)?.trim()?.toIntOrNull() ?: 0
+            NGOCartItem(
+                listingId = index.toLong(),
+                foodItemId = index.toLong(),
+                sellerId = donation.sellerId,
+                shopName = donation.name,
+                foodName = name,
+                price = 0.0,
+                pickupTime = "Pickup today",
+                availableQuantity = qty,
+                quantity = qty
+            )
+        }
     }
 
-    var selectedItems by remember { mutableStateOf(emptyList<String>()) }
-    val allSelected = items.isNotEmpty() && selectedItems.size == items.size
+    var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
+    val selectedItems = items.filter { it.listingId in selectedIds }
+    val allSelected = items.isNotEmpty() && selectedIds.size == items.size
     val totalSurplus = donation.availableFood
 
-fun toggle(item: MenuFoodItem) {
-        val full = "${item.name} - ${item.surplus}"
-        selectedItems = if (selectedItems.contains(full)) {
-            selectedItems - full
+    fun toggle(item: NGOCartItem) {
+        selectedIds = if (item.listingId in selectedIds) {
+            selectedIds - item.listingId
         } else {
-            selectedItems + full
+            selectedIds + item.listingId
         }
     }
 
     fun toggleAll() {
-        selectedItems = if (allSelected) emptyList() else items.map { "${it.name} - ${it.surplus}" }
+        selectedIds = if (allSelected) emptySet() else items.map { it.listingId }.toSet()
     }
 
     Column(
@@ -86,7 +102,7 @@ fun toggle(item: MenuFoodItem) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Back", modifier = Modifier.size(26.dp))
             }
             Text("NGO Order", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
         }
@@ -119,7 +135,7 @@ fun toggle(item: MenuFoodItem) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(donation.name, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(2.dp))
-                Text("Today's Surplus Food: $totalSurplus", fontSize = 12.sp, color = Color.Gray)
+                Text(donation.location, fontSize = 12.sp, color = Color.Gray)
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     "Surplus available for consumption, don't miss the food!",
@@ -139,10 +155,7 @@ fun toggle(item: MenuFoodItem) {
                 .padding(vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Checkbox(
-                checked = allSelected,
-                onCheckedChange = { toggleAll() }
-            )
+            Checkbox(checked = allSelected, onCheckedChange = { toggleAll() })
             Text("Select All", fontSize = 13.sp, fontWeight = FontWeight.Medium)
         }
 
@@ -161,32 +174,46 @@ fun toggle(item: MenuFoodItem) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
-                        checked = selectedItems.contains("${item.name} - ${item.surplus}"),
+                        checked = item.listingId in selectedIds,
                         onCheckedChange = { toggle(item) }
                     )
 
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    Surface(
-                        modifier = Modifier.size(width = 76.dp, height = 68.dp),
-                        shape = RoundedCornerShape(6.dp),
-                        color = Color(0xFFFFF4D6)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = item.name.take(2).uppercase(),
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFD99B00)
-                            )
-                        }
+
+
+                    if (item.imageUrl != null) {
+                        AsyncImage(
+                            model = item.imageUrl,
+                            contentDescription = item.foodName,
+                            modifier = Modifier
+                                .size(width = 76.dp, height = 68.dp)
+                                .clip(RoundedCornerShape(6.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(R.drawable.food),
+                            contentDescription = "No food image",
+                            modifier = Modifier
+                                .size(width = 76.dp, height = 68.dp)
+                                .clip(RoundedCornerShape(6.dp)),
+                            contentScale = ContentScale.Crop
+                        )
                     }
+
+
 
                     Spacer(modifier = Modifier.width(12.dp))
 
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(item.name, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Text(item.foodName, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                         Spacer(modifier = Modifier.height(3.dp))
-                        Text("Best Before: 2 days • Surplus Food: ${item.surplus}", fontSize = 10.sp, color = Color.Gray)
+                        Text(
+                            "Best Before: 2 days • Surplus Food: ${item.availableQuantity}",
+                            fontSize = 10.sp,
+                            color = Color.Gray
+                        )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text("FREE", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     }
@@ -234,7 +261,27 @@ fun toggle(item: MenuFoodItem) {
 @Composable
 fun NGOOrderPreview() {
     ShopDetailScreen(
-        donation = FoodDonation("Ondo Bakery", "George Town - 5.0 km", 17, listOf("Blueberry Bread - 7", "Sausage Bread - 5", "Sweet Donuts - 5"), false, false),
+        donation = FoodDonation(
+            name = "Ondo Bakery",
+            location = "George Town - 5.0 km",
+            availableFood = 17,
+            foodItems = listOf("Blueberry Bread - 7"),
+            nearby = false,
+            liked = false,
+            inventory = listOf(
+                NGOCartItem(
+                    listingId = 1,
+                    foodItemId = 1,
+                    sellerId = "seller-1",
+                    shopName = "Ondo Bakery",
+                    foodName = "Blueberry Bread",
+                    price = 0.0,
+                    pickupTime = "Pickup today",
+                    availableQuantity = 7,
+                    quantity = 7
+                )
+            )
+        ),
         onBackClick = {},
         onAcceptClick = {}
     )

@@ -83,8 +83,6 @@ fun AppNavGraph(
     // Create SellerViewModel AFTER Supabase finished restoring session
     val sellerViewModel: SellerViewModel = viewModel()
 
-    val closingTime by sellerViewModel.closingTime.collectAsStateWithLifecycle()
-
     // Decide startup screen using Supabase Auth
     val startDestination =
         when (sessionStatus) {
@@ -255,19 +253,26 @@ fun AppNavGraph(
         }
 
         // seller home screen
+        // seller home screen
         composable(AppRoutes.SELLER_HOME) {
 
             val sellerName by sellerViewModel.sellerName.collectAsStateWithLifecycle()
 
             val foodItems by sellerViewModel.foodItems.collectAsStateWithLifecycle()
 
+            val closingTime by sellerViewModel.closingTime.collectAsStateWithLifecycle()
+
             val sellerId = SupabaseProvider.client.auth.currentUserOrNull()?.id
 
             LaunchedEffect(sellerId) {
+
                 if (sellerId != null) {
-                    // load seller name
+
                     sellerViewModel.fetchSellerName()
-                    sellerViewModel.loadFoodItems(sellerId)
+
+                    sellerViewModel.loadFoodItems(
+                        sellerId
+                    )
                 }
             }
 
@@ -318,7 +323,6 @@ fun AppNavGraph(
 
                                         successCount++
 
-                                        // all selected foods successfully published
                                         if (successCount == itemsToPublish.size) {
 
                                             Toast.makeText(
@@ -327,8 +331,7 @@ fun AppNavGraph(
                                                 Toast.LENGTH_SHORT
                                             ).show()
                                         }
-                                    }
-                                )
+                                    })
                             }
                         }
                     }
@@ -354,8 +357,7 @@ fun AppNavGraph(
                     navController.navigate(
                         AppRoutes.SELLER_PROFILE
                     )
-                }
-            )
+                })
         }
         // seller menu screen
         composable(AppRoutes.SELLER_MENU) {
@@ -447,7 +449,7 @@ fun AppNavGraph(
                                 category,
                                 originalPrice,
                                 bestBeforeDays,
-                                imageUri ->
+                                imageUri->
 
                     if (sellerId != null) {
 

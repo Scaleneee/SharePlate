@@ -25,8 +25,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -34,6 +36,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.shareplate.data.local.NgoLocalStore
+import com.example.shareplate.data.supabase.AuthRepository
+import com.example.shareplate.ui.NGO.order.NGOCartItem
+import java.util.Calendar
 
 data class FoodDonation(
     val name: String,
@@ -41,22 +47,26 @@ data class FoodDonation(
     val availableFood: Int,
     val foodItems: List<String>,
     val nearby: Boolean,
-    val liked: Boolean
+    val liked: Boolean,
+    val sellerId: String = "",
+    val inventory: List<NGOCartItem> = emptyList()
 )
 
 @Composable
 fun NGOHomeScreen(
-    onAcceptDonation: (FoodDonation, List<String>) -> Unit = { _, _ -> },
+    onAcceptDonation: (FoodDonation, List<NGOCartItem>) -> Unit = { _, _ -> },
+    onActivityClick: () -> Unit = {},
     onProfileClick: () -> Unit = {}
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
-    var selectedDonation by remember { mutableStateOf<FoodDonation?>(null) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var selectedDonationId by rememberSaveable { mutableStateOf<String?>(null) }
 
     val ngoViewModel: NGOViewModel = viewModel()
     val shops by ngoViewModel.shops.collectAsState()
-    val pickups by ngoViewModel.pickups.collectAsState()
     val isLoading by ngoViewModel.isLoading.collectAsState()
     val error by ngoViewModel.errorMessage.collectAsState()
+
+    val selectedDonation = selectedDonationId?.let { id -> shops.find { it.name == id } }
 
     LaunchedEffect(Unit) { ngoViewModel.loadShops() }
 
@@ -66,23 +76,18 @@ fun NGOHomeScreen(
                 selectedIndex = selectedTab,
                 onHomeClick = { selectedTab = 0 },
                 onMenuClick = { selectedTab = 1 },
-                onActivityClick = { selectedTab = 2 },
-                onProfileClick = { selectedTab = 3 }
+                onActivityClick = onActivityClick,
+                onProfileClick = onProfileClick
             )
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
             when (selectedTab) {
                 0 -> Column {
-                    SupabaseStatusBanner(
-                        isLoading = isLoading,
-                        errorMessage = error,
-                        itemCount = shops.size
-                    )
                     DonationListScreen(
                         donations = shops,
                         onDonationClick = { donation ->
-                            selectedDonation = donation
+                            selectedDonationId = donation.name
                             selectedTab = 1
                         }
                     )
@@ -93,7 +98,7 @@ fun NGOHomeScreen(
                     ShopDetailScreen(
                         donation = selectedDonation!!,
                         onBackClick = {
-                            selectedDonation = null
+                            selectedDonationId = null
                             selectedTab = 0
                         },
                         onAcceptClick = { items ->
@@ -101,7 +106,7 @@ fun NGOHomeScreen(
                         }
                     )
                 }
-                2 -> NGOActivityScreen(pickups = pickups)
+                2 -> onActivityClick()
                 else -> onProfileClick()
             }
         }
@@ -143,13 +148,38 @@ fun DonationListScreen(
     donations: List<FoodDonation>,
     onDonationClick: (FoodDonation) -> Unit
 ) {
-    var localDonations by remember(donations) { mutableStateOf(donations) }
+    val context = LocalContext.current
+    val store = remember { NgoLocalStore(context) }
+
+    var userName by remember { mutableStateOf("NGO User") }
+    LaunchedEffect(Unit) {
+        val profile = AuthRepository().getCurrentProfile()
+        userName = profile?.name?.takeIf { it.isNotBlank() }
+            ?: profile?.organisationName
+            ?: "NGO User"
+    }
+
+    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    val greeting = when (hour) {
+        in 0..11 -> "Good morning"
+        in 12..17 -> "Good afternoon"
+        else -> "Good evening"
+    }
+
+    var localDonations by remember(donations) {
+        mutableStateOf(donations.map { it.copy(liked = store.getFavourites().contains(it.name)) })
+    }
 
     var searchText by remember { mutableStateOf("") }
     var filter by remember { mutableStateOf("All") }
 
     val shownDonations = localDonations.filter { donation ->
-        val matchesSearch = donation.name.contains(searchText, ignoreCase = true)
+        val matchesSearch = if (searchText.isBlank()) {
+            true
+        } else {
+            donation.foodItems.any { it.contains(searchText, ignoreCase = true) } ||
+                donation.inventory.any { it.foodName.contains(searchText, ignoreCase = true) }
+        }
 
         val matchesFilter = when (filter) {
             "Near Me" -> donation.nearby
@@ -166,7 +196,7 @@ fun DonationListScreen(
             .verticalScroll(rememberScrollState())
             .padding(20.dp)
     ) {
-        Text("Good evening, Hope Orphanage", fontWeight = FontWeight.Bold)
+        Text("$greeting, $userName", fontWeight = FontWeight.Bold)
         Text("Penang")
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -234,9 +264,11 @@ fun DonationListScreen(
 
                         OutlinedButton(
                             onClick = {
+                                val newLiked = !donation.liked
                                 localDonations = localDonations.map {
-                                    if (it.name == donation.name) it.copy(liked = !it.liked) else it
+                                    if (it.name == donation.name) it.copy(liked = newLiked) else it
                                 }
+                                store.setFavourite(donation.name, newLiked)
                             },
                             modifier = Modifier.width(52.dp)
                         ) {

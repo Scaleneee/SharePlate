@@ -2,7 +2,16 @@ package com.example.shareplate.ui.NGO
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.shareplate.data.model.FoodItem
+import com.example.shareplate.data.model.Order
+import com.example.shareplate.data.model.SurplusListing
+import com.example.shareplate.data.model.User
+import com.example.shareplate.data.remote.SupabaseProvider
 import com.example.shareplate.data.repository.NGORepository
+import com.example.shareplate.ui.NGO.order.NGOCartItem
+import com.example.shareplate.ui.NGO.order.NGOOrderManager
+import com.example.shareplate.ui.NGO.order.NGOOrderResult
+import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,14 +21,18 @@ import java.util.Date
 import java.util.Locale
 
 class NGOViewModel(
-    private val repository: NGORepository = NGORepository()
+    private val repository: NGORepository = NGORepository(),
+    private val orderManager: NGOOrderManager = NGOOrderManager()
 ) : ViewModel() {
 
     private val _shops = MutableStateFlow<List<FoodDonation>>(emptyList())
     val shops: StateFlow<List<FoodDonation>> = _shops.asStateFlow()
 
-    private val _pickups = MutableStateFlow<List<NGOActivityItem>>(emptyList())
-    val pickups: StateFlow<List<NGOActivityItem>> = _pickups.asStateFlow()
+    private val _orders = MutableStateFlow<List<NGOActivityItem>>(emptyList())
+    val orders: StateFlow<List<NGOActivityItem>> = _orders.asStateFlow()
+
+    private val _orderResult = MutableStateFlow<NGOOrderResult?>(null)
+    val orderResult: StateFlow<NGOOrderResult?> = _orderResult.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -39,39 +52,38 @@ class NGOViewModel(
 
                 val shopList = sellers.map { seller ->
                     val sellerListings = listings.filter { it.sellerId == seller.userId }
-
-                    val itemStrings = sellerListings.map { listing ->
-                        val item = itemsById[listing.foodItemId]
-                        "${item?.foodName ?: "Food"} - ${listing.availableQuantity}"
+                    val sellerInventory = sellerListings.mapNotNull { listing ->
+                        val food = itemsById[listing.foodItemId] ?: return@mapNotNull null
+                        NGOCartItem(
+                            listingId = listing.listingId,
+                            foodItemId = food.foodItemId,
+                            sellerId = seller.userId,
+                            shopName = seller.organisationName ?: seller.name,
+                            foodName = food.foodName,
+                            price = 0.0,
+                            pickupTime = formatPickupTime(listing.pickupEndAt),
+                            availableQuantity = listing.availableQuantity,
+                            quantity = listing.availableQuantity,
+                            imageUrl = food.imageUrl
+                        )
                     }
+                    val itemStrings = sellerInventory.map { "${it.foodName} - ${it.availableQuantity}" }
 
                     FoodDonation(
                         name = seller.organisationName ?: seller.name,
                         location = seller.address ?: "",
-                        availableFood = sellerListings.sumOf { it.availableQuantity },
+                        availableFood = sellerInventory.sumOf { it.availableQuantity },
                         foodItems = itemStrings,
-                        nearby = false,
-                        liked = false
+                        nearby = (seller.address ?: "").lowercase().let {
+                            it.contains("penang") || it.contains("george")
+                        },
+                        liked = false,
+                        sellerId = seller.userId,
+                        inventory = sellerInventory
                     )
                 }
 
                 _shops.value = if (shopList.isEmpty()) sampleShops() else shopList
-
-                _pickups.value = listings.mapNotNull { listing ->
-                    val seller = sellers.find { it.userId == listing.sellerId }
-                        ?: return@mapNotNull null
-                    val item = itemsById[listing.foodItemId]
-                    val sellerName = seller.organisationName ?: seller.name
-
-                    NGOActivityItem(
-                        name = sellerName,
-                        location = seller.address ?: "",
-                        shortName = sellerName.take(2).uppercase(),
-                        pickupTime = "Pickup: ${formatTime(listing.pickupEndAt)}",
-                        items = "${item?.foodName ?: "Food"} - ${listing.availableQuantity}",
-                        done = false
-                    )
-                }
             } catch (e: Exception) {
                 _errorMessage.value = e.message
                 if (_shops.value.isEmpty()) {
@@ -83,16 +95,67 @@ class NGOViewModel(
         }
     }
 
-fun addPickup(donation: FoodDonation, items: List<String>) {
-        val pickup = NGOActivityItem(
-            name = donation.name,
-            location = donation.location,
-            shortName = donation.name.take(2).uppercase(),
-            pickupTime = "Pickup: today",
-            items = items.joinToString(", "),
-            done = false
+    fun loadOrders() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            try {
+                val currentUser = SupabaseProvider.client.auth.currentUserOrNull()
+                if (currentUser == null) {
+                    _errorMessage.value = "Please log in to view your donations."
+                    return@launch
+                }
+                val ngoOrders = repository.getNgoOrders(currentUser.id)
+                _orders.value = ngoOrders.mapNotNull { toActivityItem(it) }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Unable to load donations."
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun submitOrder(
+        onComplete: (success: Boolean, pickupCode: String, totalPriceCent: Int) -> Unit = { _, _, _ -> }
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            _orderResult.value = null
+            try {
+                val result = orderManager.submitOrder()
+                _orderResult.value = result
+                if (result.success) {
+                    onComplete(true, result.pickupCode ?: "", result.totalPriceCent)
+                } else {
+                    _errorMessage.value = result.message
+                    onComplete(false, "", 0)
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Unable to place donation."
+                onComplete(false, "", 0)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    private suspend fun toActivityItem(order: Order): NGOActivityItem? {
+        val listing = repository.getListingById(order.listingId) ?: return null
+        val food = repository.getFoodItemById(listing.foodItemId)
+        val seller = repository.getSellerById(listing.sellerId)
+        val shopName = seller?.organisationName?.takeIf { it.isNotBlank() } ?: seller?.name ?: "Shop"
+
+        return NGOActivityItem(
+            name = shopName,
+            location = seller?.address ?: "Address not provided",
+            shortName = shopName.take(2).uppercase(),
+            pickupTime = formatPickupTime(listing.pickupEndAt),
+            items = "${food?.foodName ?: "Food Item"} - ${order.quantity}",
+            pickupCode = order.pickupCode,
+            orderedAt = order.orderedAt,
+            done = order.status.uppercase() in setOf("COMPLETED", "CANCELLED")
         )
-        _pickups.value = listOf(pickup) + _pickups.value
     }
 
     private fun sampleShops(): List<FoodDonation> = listOf(
@@ -101,7 +164,7 @@ fun addPickup(donation: FoodDonation, items: List<String>) {
             location = "George Town - 5.0 km",
             availableFood = 22,
             foodItems = listOf("Bread - 8", "Cookie pack - 4", "Sweet Donuts - 5"),
-            nearby = false,
+            nearby = true,
             liked = false
         ),
         FoodDonation(
@@ -109,7 +172,7 @@ fun addPickup(donation: FoodDonation, items: List<String>) {
             location = "Kuala Lumpur",
             availableFood = 18,
             foodItems = listOf("Butter Croissant - 4", "Chocolate Muffin - 3", "Chicken Sandwich - 5"),
-            nearby = true,
+            nearby = false,
             liked = false
         ),
         FoodDonation(
@@ -122,8 +185,11 @@ fun addPickup(donation: FoodDonation, items: List<String>) {
         )
     )
 
-    private fun formatTime(epochMillis: Long): String =
-        SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(epochMillis))
+    private fun formatPickupTime(epochMillis: Long): String {
+        if (epochMillis <= 0) return "Pickup time unavailable"
+        val milliseconds = if (epochMillis < 100_000_000_000L) epochMillis * 1000 else epochMillis
+        return "Pickup before ${SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()).format(Date(milliseconds))}"
+    }
 
     fun clearError() {
         _errorMessage.value = null

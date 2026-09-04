@@ -12,7 +12,8 @@ data class NGOCartItem(
     val price: Double,
     val pickupTime: String,
     val availableQuantity: Int,
-    val quantity: Int = 1
+    val quantity: Int = 1,
+    val imageUrl: String? = null
 )
 
 object NGOCartStore {
