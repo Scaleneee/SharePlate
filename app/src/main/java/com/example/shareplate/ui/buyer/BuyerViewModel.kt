@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
+import com.example.shareplate.data.model.Notification
 
 data class BuyerOrderDetails(
 
@@ -62,6 +62,14 @@ class BuyerViewModel(
     private val _savedSellerIds = MutableStateFlow<Set<String>>(emptySet())
 
     val savedSellerIds: StateFlow<Set<String>> = _savedSellerIds.asStateFlow()
+
+    // NOTIFICATIONS
+    private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
+
+    val notifications: StateFlow<List<Notification>> = _notifications.asStateFlow()
+    private val _unreadNotificationCount = MutableStateFlow(0)
+
+    val unreadNotificationCount: StateFlow<Int> = _unreadNotificationCount.asStateFlow()
 
     // SELECTED SELLER
     private val _selectedSeller = MutableStateFlow<User?>(null)
@@ -151,11 +159,22 @@ class BuyerViewModel(
 
                 if (currentUser != null) {
 
-                    _savedSellerIds.value =
-                        repository
-                            .getSavedSellerIds(
-                                currentUser.id
-                            )
+                    // LOAD FAVOURITES
+                    _savedSellerIds.value = repository.getSavedSellerIds(
+                            currentUser.id
+                        )
+
+
+                    // LOAD NOTIFICATIONS
+                    val notificationList = repository.getNotifications(
+                            currentUser.id
+                        )
+
+                    _notifications.value = notificationList
+
+                    _unreadNotificationCount.value = notificationList.count {
+                        !it.isRead
+                    }
                 }
 
 
@@ -268,6 +287,114 @@ class BuyerViewModel(
                 onResult(
                     false, e.message ?: "Unable to update favourite."
                 )
+            }
+        }
+    }
+
+    // LOAD NOTIFICATIONS
+    fun loadNotifications() {
+
+        viewModelScope.launch {
+
+            try {
+
+                val currentUser = SupabaseProvider.client.auth.currentUserOrNull() ?: return@launch
+
+
+                val result = repository.getNotifications(
+                        currentUser.id
+                    )
+
+
+                _notifications.value = result
+
+
+                _unreadNotificationCount.value = result.count {
+                    !it.isRead
+                }
+
+
+            } catch (e: Exception) {
+
+                _errorMessage.value = e.message ?: "Unable to load notifications."
+            }
+        }
+    }
+
+    // MARK NOTIFICATION AS READ
+    fun markNotificationAsRead(
+        notificationId: Long
+    ) {
+
+        viewModelScope.launch {
+
+            try {
+
+                val currentUser = SupabaseProvider.client.auth.currentUserOrNull() ?: return@launch
+
+
+                repository.markNotificationAsRead(
+                        notificationId = notificationId,
+
+                        userId = currentUser.id
+                    )
+
+
+                _notifications.value = _notifications.value.map { notification ->
+
+                    if (notification.notificationId == notificationId) {
+
+                        notification.copy(
+                            isRead = true
+                        )
+
+                    } else {
+
+                        notification
+                    }
+                }
+
+
+                _unreadNotificationCount.value = _notifications.value.count {
+                    !it.isRead
+                }
+
+
+            } catch (e: Exception) {
+
+                _errorMessage.value = e.message ?: "Unable to update notification."
+            }
+        }
+    }
+
+    // MARK ALL NOTIFICATIONS AS READ
+    fun markAllNotificationsAsRead() {
+
+        viewModelScope.launch {
+
+            try {
+
+                val currentUser = SupabaseProvider.client.auth.currentUserOrNull() ?: return@launch
+
+
+                repository.markAllNotificationsAsRead(
+                        currentUser.id
+                    )
+
+
+                _notifications.value = _notifications.value.map {
+                    it.copy(
+                        isRead = true
+                    )
+                }
+
+
+                _unreadNotificationCount.value = 0
+
+
+            } catch (e: Exception) {
+
+                _errorMessage.value = e.message ?: "Unable to update notifications."
             }
         }
     }
@@ -828,15 +955,17 @@ class BuyerViewModel(
 
                 authRepository.signOut()
 
-
                 BuyerCartStore.clearCart()
-
 
                 _profile.value = null
 
                 _sellers.value = emptyList()
 
                 _savedSellerIds.value = emptySet()
+
+                _notifications.value = emptyList()
+
+                _unreadNotificationCount.value = 0
 
                 _selectedSeller.value = null
 

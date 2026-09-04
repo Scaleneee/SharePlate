@@ -11,6 +11,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.serialization.Serializable
 import com.example.shareplate.data.model.SavedSeller
+import com.example.shareplate.data.model.Notification
 
 @Serializable
 data class ReduceListingQuantityParams(
@@ -149,6 +150,77 @@ class BuyerRepository {
 
                 it.sellerId
             }.toSet()
+    }
+
+    // NOTIFICATIONS
+    // GET BUYER NOTIFICATIONS
+    suspend fun getNotifications(
+        userId: String
+    ): List<Notification> {
+
+        return supabase.from("notifications").select {
+
+                filter {
+                    eq(
+                        "user_id", userId
+                    )
+                }
+            }.decodeList<Notification>().sortedByDescending {
+                it.createdAt
+            }
+    }
+
+
+    // MARK ONE NOTIFICATION AS READ
+    suspend fun markNotificationAsRead(
+        notificationId: Long, userId: String
+    ) {
+
+        supabase.from("notifications").update(
+                {
+                    set(
+                        "is_read", true
+                    )
+                }) {
+
+                filter {
+
+                    eq(
+                        "notification_id", notificationId
+                    )
+
+                    eq(
+                        "user_id", userId
+                    )
+                }
+            }
+    }
+
+
+    // MARK ALL NOTIFICATIONS AS READ
+    suspend fun markAllNotificationsAsRead(
+        userId: String
+    ) {
+
+        supabase
+            .from("notifications")
+            .update(
+                {
+                    set(
+                        "is_read",
+                        true
+                    )
+                }
+            ) {
+
+                filter {
+
+                    eq(
+                        "user_id",
+                        userId
+                    )
+                }
+            }
     }
 
 
