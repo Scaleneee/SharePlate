@@ -35,7 +35,6 @@ import com.example.shareplate.ui.NGO.NGOViewModel
 import com.example.shareplate.ui.auth.login.LoginScreen
 import com.example.shareplate.ui.auth.password.NewPasswordScreen
 import com.example.shareplate.ui.auth.profile.ProfileScreen
-import com.example.shareplate.ui.auth.profile.SellerProfileScreen
 import com.example.shareplate.ui.auth.register.RegisterScreen
 import com.example.shareplate.ui.buyer.BuyerViewModel
 import com.example.shareplate.ui.seller.SellerViewModel
@@ -179,7 +178,7 @@ fun AppNavGraph(
         }
 
         composable(AppRoutes.SELLER_PROFILE) {
-            SellerProfileScreen(
+            ProfileScreen(
                 onLoggedOut = {
                     sessionManager.clearSession()
                     navController.navigate(AppRoutes.LOGIN) {
