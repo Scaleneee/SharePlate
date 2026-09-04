@@ -32,60 +32,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.shareplate.data.model.SellerPickupActivityItem
 import com.example.shareplate.ui.seller.navigation.SellerBottomBar
 import com.example.shareplate.ui.theme.SharePlateTheme
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 
-/**
- * Seller surplus activity
- */
 data class SellerActivityItem(
-
     val listingId: Long,
-
     val foodName: String,
-
     val publishedQuantity: Int,
-
     val availableQuantity: Int,
-
     val discountPercent: Int,
-
     val currentPriceCent: Int,
-
     val status: String,
-
     val publishedTime: String
 )
-
-
-/**
- * Seller pickup activity
- *
- * Can later represent:
- * Buyer pickup
- * NGO pickup
- */
-data class SellerPickupActivityItem(
-
-    val pickupId: Long,
-
-    val receiverName: String,
-
-    // BUYER or NGO
-    val pickupType: String,
-
-    val foodName: String,
-
-    val quantity: Int,
-
-    val pickupCode: String,
-
-    val pickupTime: String,
-
-    val status: String
-)
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,7 +57,7 @@ fun SellerActivityScreen(
     surplusActivities: List<SellerActivityItem>,
     pickupActivities: List<SellerPickupActivityItem>,
 
-    onMarkPickedUp: (Long) -> Unit = {},
+    onMarkPickedUp: (SellerPickupActivityItem) -> Unit = {},
 
     onHomeClick: () -> Unit = {},
     onMenuClick: () -> Unit = {},
@@ -573,7 +537,7 @@ fun SurplusActivityCard(
 @Composable
 fun PickupActivityList(
     pickupActivities: List<SellerPickupActivityItem>,
-    onMarkPickedUp: (Long) -> Unit
+    onMarkPickedUp: (SellerPickupActivityItem) -> Unit
 ) {
 
     Column(
@@ -625,16 +589,18 @@ fun PickupActivityList(
                 items(
                     items = pickupActivities,
                     key = {
-                        it.pickupId
+                        "${it.pickupType}-${it.pickupId}"
                     }
                 ) { pickup ->
 
                     PickupActivityCard(
+
                         pickup = pickup,
 
                         onMarkPickedUp = {
+
                             onMarkPickedUp(
-                                pickup.pickupId
+                                pickup
                             )
                         }
                     )
@@ -808,20 +774,21 @@ fun PickupActivityCard(
 
                 Text(
                     text =
-                        "Pickup Time",
-                    style =
-                        MaterialTheme
-                            .typography
-                            .bodySmall,
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant
+                        if (
+                            pickup.pickupType ==
+                            "BUYER"
+                        ) {
+                            "Pickup Before"
+                        } else {
+                            "Pickup Time"
+                        }
                 )
 
                 Text(
                     text =
-                        pickup.pickupTime,
+                        formatActivityTime(
+                            pickup.pickupTime
+                        ),
                     style =
                         MaterialTheme
                             .typography
@@ -845,7 +812,9 @@ fun PickupActivityCard(
 
             // cannot click again after collected
             enabled =
-                pickup.status != "COLLECTED",
+                pickup.status != "COLLECTED" &&
+                        pickup.status != "CANCELLED" &&
+                        pickup.status != "MISSED",
 
             modifier =
                 Modifier.fillMaxWidth()
@@ -1094,6 +1063,33 @@ fun EmptyActivity(
                         .onSurfaceVariant
             )
         }
+    }
+}
+
+
+
+fun formatActivityTime(
+    value: String
+): String {
+
+    return try {
+
+        val localTime =
+            OffsetDateTime
+                .parse(value)
+                .atZoneSameInstant(
+                    ZoneId.systemDefault()
+                )
+
+        localTime.format(
+            DateTimeFormatter.ofPattern(
+                "dd MMM, h:mm a"
+            )
+        )
+
+    } catch (e: Exception) {
+
+        value
     }
 }
 
