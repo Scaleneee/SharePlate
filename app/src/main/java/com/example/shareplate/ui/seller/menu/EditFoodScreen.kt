@@ -14,7 +14,6 @@ fun EditFoodScreen(
         originalPrice: String,
         bestBeforeDays: String,
         imageUri: Uri?,
-        isActive: Boolean
     ) -> Unit
 ) {
     // call the menu food form

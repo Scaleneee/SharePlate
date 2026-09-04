@@ -68,6 +68,10 @@ fun SellerHomeScreen(
     onActivityClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
+    onPublishClick: (
+        foodItems: List<FoodItem>,
+        quantities: Map<Long, String>
+    ) -> Unit,
     activeListings: Int = 0,
     awaitingPickup: Int = 0
 ) {
@@ -118,12 +122,22 @@ fun SellerHomeScreen(
             // surplus food list
             item {
                 SurplusFoodList(
-                    foodItems,
+                    foodItems = foodItems,
                     quantities = quantities,
+
                     onQuantityChange = { foodItemId, quantity ->
                         quantities[foodItemId] = quantity
                     },
-                    onPublishClick = {}
+
+                    onPublishClick = { foodItems, currentQuantities ->
+
+                        onPublishClick(
+                            foodItems,
+                            currentQuantities
+                        )
+                        quantities.clear()
+
+                    }
                 )
             }
         }
@@ -276,7 +290,10 @@ fun SurplusFoodList(
     foodItems: List<FoodItem>,
     quantities: Map<Long, String>,
     onQuantityChange: (Long, String) -> Unit,
-    onPublishClick: () -> Unit,
+    onPublishClick: (
+        foodItems: List<FoodItem>,
+        quantities: Map<Long, String>
+    ) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -320,7 +337,12 @@ fun SurplusFoodList(
                 (it.toIntOrNull() ?: 0) > 0
             }
             Button(
-                onClick = onPublishClick,
+                onClick = {
+                    onPublishClick(
+                        foodItems,
+                        quantities
+                    )
+                },
                 enabled = hasSurplus, // the button enable only when there has surplus
                 modifier = Modifier.fillMaxWidth(),
             ) {
