@@ -70,7 +70,7 @@ data class BuyerOrderDisplay(
     val pickupCode: String,
     val status: String,
     val orderedAt: String,
-    val pickupEndAt: Long
+    val pickupEndAt: String
 )
 
 //bottom bar
@@ -241,7 +241,7 @@ fun BuyerActivityScreen(
                 pickupCode = "SP4821",
                 status = "PENDING",
                 orderedAt = "2026-09-02T10:00:00.000Z",
-                pickupEndAt = System.currentTimeMillis() + 3_600_000
+                pickupEndAt = ""
             ),
 
             BuyerOrderDisplay(
@@ -255,7 +255,7 @@ fun BuyerActivityScreen(
                 pickupCode = "SP4821",
                 status = "COMPLETED",
                 orderedAt = "2026-09-01T10:00:00.000Z",
-                pickupEndAt = System.currentTimeMillis()
+                pickupEndAt = ""
             )
         )
 
@@ -288,7 +288,7 @@ fun BuyerActivityScreen(
                         pickupCode = order.pickupCode,
                         status = order.status,
                         orderedAt = order.orderedAt,
-                        pickupEndAt = listing?.pickupEndAt ?: 0L
+                        pickupEndAt = listing!!.pickupEndAt
                     )
                 } ?: emptyList()
         }
@@ -939,9 +939,8 @@ private fun BuyerOrderCard(
                         Text(
 
                             text =
-                                formatPickupTime(
                                     order.pickupEndAt
-                                ),
+                                ,
 
                             fontSize =
                                 11.sp,

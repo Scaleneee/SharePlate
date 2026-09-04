@@ -291,9 +291,9 @@ fun ShopDetailScreen(
                             listing.currentPriceCents
                         ),
 
-                        pickupTime = formatPickupTime(
+                        pickupTime =
                             listing.pickupEndAt
-                        ),
+                        ,
 
                         availableQuantity = listing.availableQuantity,
 

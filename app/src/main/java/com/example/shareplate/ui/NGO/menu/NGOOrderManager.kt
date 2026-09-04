@@ -90,6 +90,8 @@ class NGOOrderManager(
                     totalPriceCent = 0,
                     orderedAt = orderedAt,
                     pickupCode = pickupCode,
+                    pickupNote = "",
+                    paymentMethod = "",
                     status = "PENDING"
                 )
 
