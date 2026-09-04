@@ -1,13 +1,14 @@
 package com.example.shareplate.data.repository
 
+import com.example.shareplate.data.model.CreateDonation
 import com.example.shareplate.data.model.CreateOrder
+import com.example.shareplate.data.model.Donation
 import com.example.shareplate.data.model.FoodItem
 import com.example.shareplate.data.model.Order
 import com.example.shareplate.data.model.SurplusListing
 import com.example.shareplate.data.model.User
 import com.example.shareplate.data.remote.SupabaseProvider
 import io.github.jan.supabase.postgrest.from
-import kotlin.collections.copy
 
 class NGORepository {
 
@@ -73,57 +74,32 @@ class NGORepository {
     }
 
     // GET ALL ACTIVE SURPLUS LISTINGS
-    /**
-     * Get food that has been transferred
-     * from sellers to NGOs.
-     */
-    suspend fun getActiveListings():
-            List<SurplusListing> {
-
+    suspend fun getActiveListings(): List<SurplusListing> {
         return supabase
             .from("surplus_listings")
             .select {
-
                 filter {
-
-                    eq(
-                        "status",
-                        "TRANSFERRED_TO_NGO"
-                    )
+                    eq("status", "ACTIVE")
                 }
             }
             .decodeList<SurplusListing>()
             .filter {
-
                 it.availableQuantity > 0
             }
     }
 
     // GET ACTIVE SURPLUS LISTINGS FROM ONE SELLER
-    suspend fun getActiveListingsBySeller(
-        sellerId: String
-    ): List<SurplusListing> {
-
+    suspend fun getActiveListingsBySeller(sellerId: String): List<SurplusListing> {
         return supabase
             .from("surplus_listings")
             .select {
-
                 filter {
-
-                    eq(
-                        "seller_id",
-                        sellerId
-                    )
-
-                    eq(
-                        "status",
-                        "TRANSFERRED_TO_NGO"
-                    )
+                    eq("seller_id", sellerId)
+                    eq("status", "ACTIVE")
                 }
             }
             .decodeList<SurplusListing>()
             .filter {
-
                 it.availableQuantity > 0
             }
     }
@@ -209,16 +185,34 @@ class NGORepository {
     }
 
     // UPDATE ORDER STATUS
-    suspend fun updateOrderStatus(orderId: Long, status: String){
-        val order = getOrderById(orderId)?: return
+    suspend fun updateOrderStatus(orderId: Long, status: String) {
+        val order = getOrderById(orderId) ?: return
 
         supabase
             .from("orders")
-            .update(order.copy(status = status)){
+            .update(order.copy(status = status)) {
                 filter {
                     eq("order_id", orderId)
                 }
             }
     }
-}
 
+    // CREATE DONATION
+    suspend fun createDonation(donation: CreateDonation) {
+        supabase
+            .from("donations")
+            .insert(donation)
+    }
+
+    // GET DONATIONS FOR ONE NGO USER
+    suspend fun getDonations(ngoId: String): List<Donation> {
+        return supabase
+            .from("donations")
+            .select {
+                filter {
+                    eq("ngo_id", ngoId)
+                }
+            }
+            .decodeList<Donation>()
+    }
+}

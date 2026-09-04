@@ -1,5 +1,6 @@
 package com.example.shareplate.ui.NGO.menu
 
+import com.example.shareplate.data.model.CreateDonation
 import com.example.shareplate.data.model.CreateOrder
 import com.example.shareplate.data.model.SurplusListing
 import com.example.shareplate.data.remote.SupabaseProvider
@@ -7,6 +8,7 @@ import com.example.shareplate.data.repository.NGORepository
 import com.example.shareplate.ui.NGO.order.NGOCartItem
 import com.example.shareplate.ui.NGO.order.NGOCartStore
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.postgrest.from
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -96,6 +98,19 @@ class NGOOrderManager(
                 )
 
                 repository.createOrder(newOrder)
+
+                repository.createDonation(
+                    CreateDonation(
+                        listingId = cartItem.listingId,
+                        sellerId = cartItem.sellerId,
+                        ngoId = ngoId,
+                        donationQuantity = cartItem.quantity,
+                        availableAt = getCurrentDateTime(),
+                        pickupStartAt = getCurrentDateTime(),
+                        pickupEndAt = listing.pickupEndAt,
+                        status = "PENDING"
+                    )
+                )
 
                 val updated = repository.reduceListingQuantity(
                     listingId = cartItem.listingId,

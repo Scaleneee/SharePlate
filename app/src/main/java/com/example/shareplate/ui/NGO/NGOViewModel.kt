@@ -1,8 +1,8 @@
 package com.example.shareplate.ui.NGO
 
-import android.R.attr.value
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.shareplate.data.model.Donation
 import com.example.shareplate.data.model.Order
 import com.example.shareplate.data.remote.SupabaseProvider
 import com.example.shareplate.data.repository.NGORepository
@@ -17,7 +17,6 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.collections.copy
 
 class NGOViewModel(
     private val repository: NGORepository = NGORepository(),
@@ -105,8 +104,13 @@ class NGOViewModel(
                     _errorMessage.value = "Please log in to view your donations."
                     return@launch
                 }
+
                 val ngoOrders = repository.getNgoOrders(currentUser.id)
-                _orders.value = ngoOrders.mapNotNull { toActivityItem(it) }
+                val donations = repository.getDonations(currentUser.id)
+
+                _orders.value =
+                    (ngoOrders.mapNotNull { toActivityItem(it) } +
+                            donations.mapNotNull { toDonationActivityItem(it) })
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Unable to load donations."
             } finally {
@@ -140,6 +144,24 @@ class NGOViewModel(
         }
     }
 
+    private suspend fun toDonationActivityItem(donation: Donation): NGOActivityItem {
+        val listing = repository.getListingById(donation.listingId)
+        val food = if (listing != null) repository.getFoodItemById(listing.foodItemId) else null
+        val seller = repository.getSellerById(donation.sellerId)
+        val shopName = seller?.organisationName?.takeIf { it.isNotBlank() } ?: seller?.name ?: "Shop"
+
+        return NGOActivityItem(
+            name = shopName,
+            location = seller?.address ?: "Address not provided",
+            shortName = shopName.take(2).uppercase(),
+            pickupTime = "Pickup before ${donation.pickupEndAt}",
+            items = "${food?.foodName ?: "Food Item"} - ${donation.donationQuantity}",
+            pickupCode = "DON${donation.donationId}",
+            orderedAt = donation.createdAt ?: "",
+            orderId = donation.donationId,
+            done = donation.status.uppercase() in setOf("COMPLETED", "CANCELLED")
+        )
+    }
     private suspend fun toActivityItem(order: Order): NGOActivityItem? {
         val listing = repository.getListingById(order.listingId) ?: return null
         val food = repository.getFoodItemById(listing.foodItemId)

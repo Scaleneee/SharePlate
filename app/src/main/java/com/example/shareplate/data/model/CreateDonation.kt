@@ -5,7 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CreateDonation(
-
     @SerialName("listing_id")
     val listingId: Long,
 
@@ -13,7 +12,7 @@ data class CreateDonation(
     val sellerId: String,
 
     @SerialName("ngo_id")
-    val ngoId: String? = null,
+    val ngoId: String,
 
     @SerialName("donation_quantity")
     val donationQuantity: Int,
