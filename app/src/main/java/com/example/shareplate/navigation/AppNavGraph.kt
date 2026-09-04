@@ -54,6 +54,7 @@ import com.example.shareplate.ui.buyer.order.BuyerQrCodeScreen
 import com.example.shareplate.ui.buyer.profile.BuyerProfileScreen
 import com.example.shareplate.ui.seller.activity.SellerActivityItem
 import com.example.shareplate.ui.seller.activity.SellerActivityScreen
+import com.example.shareplate.ui.seller.activity.SellerPickupActivityItem
 import io.github.jan.supabase.auth.status.SessionStatus
 import com.example.shareplate.ui.buyer.home.BuyerNotificationScreen
 
@@ -177,53 +178,126 @@ fun AppNavGraph(
             )
         }
 
-        composable(AppRoutes.SELLER_ACTIVITY) {
+        composable(
+            AppRoutes.SELLER_ACTIVITY
+        ) {
 
             SellerActivityScreen(
 
-                // temporary testing data
-                activities = listOf(
+                surplusActivities =
+                    listOf(
 
-                    SellerActivityItem(
-                        listingId = 1,
-                        foodName = "Blueberry Bread",
-                        publishedQuantity = 10,
-                        availableQuantity = 6,
-                        discountPercent = 60,
-                        currentPriceCent = 220,
-                        status = "ACTIVE",
-                        publishedTime = "Today, 8:05 PM"
+                        SellerActivityItem(
+
+                            listingId = 1,
+
+                            foodName =
+                                "Blueberry Bread",
+
+                            publishedQuantity =
+                                10,
+
+                            availableQuantity =
+                                6,
+
+                            discountPercent =
+                                70,
+
+                            currentPriceCent =
+                                165,
+
+                            status =
+                                "ACTIVE",
+
+                            publishedTime =
+                                "Today, 4:00 PM"
+                        )
                     ),
 
-                    SellerActivityItem(
-                        listingId = 2,
-                        foodName = "Chocolate Croissant",
-                        publishedQuantity = 8,
-                        availableQuantity = 0,
-                        discountPercent = 80,
-                        currentPriceCent = 130,
-                        status = "SOLD_OUT",
-                        publishedTime = "Today, 8:10 PM"
-                    )
-                ),
+                pickupActivities =
+                    listOf(
+
+                        SellerPickupActivityItem(
+
+                            pickupId = 1,
+
+                            receiverName =
+                                "Jason Lim",
+
+                            pickupType =
+                                "BUYER",
+
+                            foodName =
+                                "Blueberry Bread",
+
+                            quantity =
+                                2,
+
+                            pickupCode =
+                                "A821",
+
+                            pickupTime =
+                                "Today, 8:30 PM",
+
+                            status =
+                                "READY_FOR_PICKUP"
+                        ),
+
+                        SellerPickupActivityItem(
+
+                            pickupId = 2,
+
+                            receiverName =
+                                "Penang Food Aid",
+
+                            pickupType =
+                                "NGO",
+
+                            foodName =
+                                "Croissant",
+
+                            quantity =
+                                4,
+
+                            pickupCode =
+                                "N381",
+
+                            pickupTime =
+                                "Today, 10:10 PM",
+
+                            status =
+                                "SCHEDULED"
+                        )
+                    ),
+                onMarkPickedUp = { pickupId ->
+
+                    Toast.makeText(
+                        context,
+                        "Pickup $pickupId marked as picked up",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                },
 
                 onHomeClick = {
+
                     navController.navigate(
                         AppRoutes.SELLER_HOME
                     )
                 },
 
                 onMenuClick = {
+
                     navController.navigate(
                         AppRoutes.SELLER_MENU
                     )
                 },
 
                 onActivityClick = {
-                    // already activity
+                    // already here
                 },
 
                 onProfileClick = {
+
                     navController.navigate(
                         AppRoutes.SELLER_PROFILE
                     )

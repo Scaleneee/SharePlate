@@ -14,12 +14,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -30,26 +37,63 @@ import com.example.shareplate.ui.theme.SharePlateTheme
 
 
 /**
- * UI model for seller activity.
- *
- * Later this data will come from surplus_listings.
+ * Seller surplus activity
  */
 data class SellerActivityItem(
+
     val listingId: Long,
+
     val foodName: String,
+
     val publishedQuantity: Int,
+
     val availableQuantity: Int,
+
     val discountPercent: Int,
+
     val currentPriceCent: Int,
+
     val status: String,
+
     val publishedTime: String
 )
+
+
+/**
+ * Seller pickup activity
+ *
+ * Can later represent:
+ * Buyer pickup
+ * NGO pickup
+ */
+data class SellerPickupActivityItem(
+
+    val pickupId: Long,
+
+    val receiverName: String,
+
+    // BUYER or NGO
+    val pickupType: String,
+
+    val foodName: String,
+
+    val quantity: Int,
+
+    val pickupCode: String,
+
+    val pickupTime: String,
+
+    val status: String
+)
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SellerActivityScreen(
+    surplusActivities: List<SellerActivityItem>,
+    pickupActivities: List<SellerPickupActivityItem>,
 
-    activities: List<SellerActivityItem>,
+    onMarkPickedUp: (Long) -> Unit = {},
 
     onHomeClick: () -> Unit = {},
     onMenuClick: () -> Unit = {},
@@ -57,19 +101,29 @@ fun SellerActivityScreen(
     onProfileClick: () -> Unit = {}
 ) {
 
+    // 0 = surplus
+    // 1 = pickup
+    var selectedTab by remember {
+        mutableIntStateOf(0)
+    }
+
+
     Scaffold(
 
         topBar = {
 
             TopAppBar(
+
                 title = {
 
                     Text(
                         text = "Activity",
+
                         style =
                             MaterialTheme
                                 .typography
                                 .headlineSmall,
+
                         fontWeight =
                             FontWeight.Bold
                     )
@@ -80,97 +134,100 @@ fun SellerActivityScreen(
         bottomBar = {
 
             SellerBottomBar(
+
                 selectedIndex = 2,
-                onHomeClick = onHomeClick,
-                onMenuClick = onMenuClick,
-                onActivityClick = onActivityClick,
-                onProfileClick = onProfileClick
+
+                onHomeClick =
+                    onHomeClick,
+
+                onMenuClick =
+                    onMenuClick,
+
+                onActivityClick =
+                    onActivityClick,
+
+                onProfileClick =
+                    onProfileClick
             )
         }
 
     ) { innerPadding ->
 
+
         Column(
+
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(
-                        horizontal = 20.dp
-                    )
         ) {
 
-            Spacer(
-                modifier =
-                    Modifier.height(12.dp)
-            )
 
-            Text(
-                text = "Surplus Activity",
-                style =
-                    MaterialTheme
-                        .typography
-                        .titleLarge,
-                fontWeight =
-                    FontWeight.Bold
-            )
-
-            Spacer(
-                modifier =
-                    Modifier.height(6.dp)
-            )
-
-            Text(
-                text =
-                    "Track today's published surplus and previous listings.",
-                style =
-                    MaterialTheme
-                        .typography
-                        .bodyMedium,
-                color =
-                    MaterialTheme
-                        .colorScheme
-                        .onSurfaceVariant
-            )
-
-            Spacer(
-                modifier =
-                    Modifier.height(20.dp)
-            )
+            /**
+             * Tabs
+             */
+            TabRow(
+                selectedTabIndex =
+                    selectedTab
+            ) {
 
 
-            if (activities.isEmpty()) {
+                Tab(
 
-                EmptyActivity()
+                    selected =
+                        selectedTab == 0,
 
-            } else {
+                    onClick = {
+                        selectedTab = 0
+                    },
 
-                LazyColumn(
-                    verticalArrangement =
-                        Arrangement.spacedBy(
-                            14.dp
-                        )
-                ) {
+                    text = {
 
-                    items(
-                        items = activities,
-                        key = {
-                            it.listingId
-                        }
-                    ) { activity ->
-
-                        ActivityCard(
-                            activity = activity
+                        Text(
+                            text =
+                                "Surplus"
                         )
                     }
+                )
 
-                    item {
 
-                        Spacer(
-                            modifier =
-                                Modifier.height(20.dp)
+                Tab(
+
+                    selected =
+                        selectedTab == 1,
+
+                    onClick = {
+                        selectedTab = 1
+                    },
+
+                    text = {
+
+                        Text(
+                            text =
+                                "Pickups"
                         )
                     }
+                )
+            }
+
+
+            when (selectedTab) {
+
+                0 -> {
+
+                    SurplusActivityList(
+                        activities =
+                            surplusActivities
+                    )
+                }
+
+
+                1 -> {
+
+                    PickupActivityList(
+                        pickupActivities = pickupActivities,
+                        onMarkPickedUp = onMarkPickedUp
+                    )
                 }
             }
         }
@@ -178,21 +235,159 @@ fun SellerActivityScreen(
 }
 
 
+/**
+ * SURPLUS ACTIVITY LIST
+ */
 @Composable
-fun ActivityCard(
-    activity: SellerActivityItem
+fun SurplusActivityList(
+
+    activities: List<SellerActivityItem>
+
 ) {
 
     Column(
+
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(
+                    horizontal = 20.dp
+                )
+    ) {
+
+
+        Spacer(
+            modifier =
+                Modifier.height(20.dp)
+        )
+
+
+        Text(
+
+            text =
+                "Surplus Activity",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .titleLarge,
+
+            fontWeight =
+                FontWeight.Bold
+        )
+
+
+        Spacer(
+            modifier =
+                Modifier.height(6.dp)
+        )
+
+
+        Text(
+
+            text =
+                "Track your published surplus food.",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .bodyMedium,
+
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+        )
+
+
+        Spacer(
+            modifier =
+                Modifier.height(20.dp)
+        )
+
+
+        if (
+            activities.isEmpty()
+        ) {
+
+            EmptyActivity(
+
+                title =
+                    "No surplus activity",
+
+                message =
+                    "Published surplus will appear here."
+            )
+
+        } else {
+
+            LazyColumn(
+
+                verticalArrangement =
+                    Arrangement.spacedBy(
+                        14.dp
+                    )
+            ) {
+
+
+                items(
+
+                    items =
+                        activities,
+
+                    key = {
+                        it.listingId
+                    }
+
+                ) { activity ->
+
+
+                    SurplusActivityCard(
+                        activity =
+                            activity
+                    )
+                }
+
+
+                item {
+
+                    Spacer(
+                        modifier =
+                            Modifier.height(
+                                20.dp
+                            )
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+/**
+ * SURPLUS ACTIVITY CARD
+ */
+@Composable
+fun SurplusActivityCard(
+
+    activity:
+    SellerActivityItem
+) {
+
+    Column(
+
         modifier =
             Modifier
                 .fillMaxWidth()
                 .border(
+
                     width = 1.dp,
+
                     color =
                         MaterialTheme
                             .colorScheme
                             .outlineVariant,
+
                     shape =
                         RoundedCornerShape(
                             18.dp
@@ -201,12 +396,294 @@ fun ActivityCard(
                 .padding(18.dp)
     ) {
 
-        // Food name + status
+
+        Row(
+
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            horizontalArrangement =
+                Arrangement.SpaceBetween,
+
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+
+
+            Column(
+
+                modifier =
+                    Modifier.weight(1f)
+            ) {
+
+
+                Text(
+
+                    text =
+                        activity.foodName,
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .titleMedium,
+
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            4.dp
+                        )
+                )
+
+
+                Text(
+
+                    text =
+                        activity
+                            .publishedTime,
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
+
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
+                )
+            }
+
+
+            Spacer(
+                modifier =
+                    Modifier.width(
+                        10.dp
+                    )
+            )
+
+
+            StatusBadge(
+                status =
+                    activity.status
+            )
+        }
+
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    18.dp
+                )
+        )
+
+
+        Row(
+
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            horizontalArrangement =
+                Arrangement.SpaceBetween
+        ) {
+
+
+            ActivityInfo(
+
+                title =
+                    "Published",
+
+                value =
+                    activity
+                        .publishedQuantity
+                        .toString()
+            )
+
+
+            ActivityInfo(
+
+                title =
+                    "Remaining",
+
+                value =
+                    activity
+                        .availableQuantity
+                        .toString()
+            )
+
+
+            ActivityInfo(
+
+                title =
+                    "Discount",
+
+                value =
+                    "${activity.discountPercent}%"
+            )
+        }
+
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    18.dp
+                )
+        )
+
+
+        Row(
+
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            horizontalArrangement =
+                Arrangement.SpaceBetween
+        ) {
+
+
+            Text(
+                text =
+                    "Current Price"
+            )
+
+
+            Text(
+
+                text =
+                    formatPrice(
+                        activity
+                            .currentPriceCent
+                    ),
+
+                fontWeight =
+                    FontWeight.Bold
+            )
+        }
+    }
+}
+
+
+/**
+ * PICKUP ACTIVITY LIST
+ */
+@Composable
+fun PickupActivityList(
+    pickupActivities: List<SellerPickupActivityItem>,
+    onMarkPickedUp: (Long) -> Unit
+) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp)
+    ) {
+
+        Spacer(
+            modifier = Modifier.height(20.dp)
+        )
+
+        Text(
+            text = "Pickup Activity",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(
+            modifier = Modifier.height(6.dp)
+        )
+
+        Text(
+            text = "Track buyer and NGO pickups.",
+            style = MaterialTheme.typography.bodyMedium,
+            color =
+                MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(
+            modifier = Modifier.height(20.dp)
+        )
+
+        if (pickupActivities.isEmpty()) {
+
+            EmptyActivity(
+                title = "No pickup activity",
+                message =
+                    "Buyer and NGO pickups will appear here."
+            )
+
+        } else {
+
+            LazyColumn(
+                verticalArrangement =
+                    Arrangement.spacedBy(14.dp)
+            ) {
+
+                items(
+                    items = pickupActivities,
+                    key = {
+                        it.pickupId
+                    }
+                ) { pickup ->
+
+                    PickupActivityCard(
+                        pickup = pickup,
+
+                        onMarkPickedUp = {
+                            onMarkPickedUp(
+                                pickup.pickupId
+                            )
+                        }
+                    )
+                }
+
+                item {
+                    Spacer(
+                        modifier =
+                            Modifier.height(20.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+/**
+ * PICKUP ACTIVITY CARD
+ */
+@Composable
+fun PickupActivityCard(
+    pickup: SellerPickupActivityItem,
+    onMarkPickedUp: () -> Unit
+) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .outlineVariant,
+                shape =
+                    RoundedCornerShape(18.dp)
+            )
+            .padding(18.dp)
+    ) {
+
+        // Receiver + status
         Row(
             modifier =
                 Modifier.fillMaxWidth(),
+
             horizontalArrangement =
                 Arrangement.SpaceBetween,
+
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
@@ -218,7 +695,7 @@ fun ActivityCard(
 
                 Text(
                     text =
-                        activity.foodName,
+                        pickup.receiverName,
                     style =
                         MaterialTheme
                             .typography
@@ -234,7 +711,7 @@ fun ActivityCard(
 
                 Text(
                     text =
-                        activity.publishedTime,
+                        pickup.pickupType,
                     style =
                         MaterialTheme
                             .typography
@@ -246,146 +723,160 @@ fun ActivityCard(
                 )
             }
 
-            Spacer(
-                modifier =
-                    Modifier.width(12.dp)
-            )
-
-            ActivityStatus(
+            StatusBadge(
                 status =
-                    activity.status
+                    pickup.status
             )
         }
-
 
         Spacer(
             modifier =
                 Modifier.height(18.dp)
         )
 
+        // Food
+        Text(
+            text =
+                pickup.foodName,
+            style =
+                MaterialTheme
+                    .typography
+                    .bodyLarge,
+            fontWeight =
+                FontWeight.SemiBold
+        )
 
-        // Quantity
+        Spacer(
+            modifier =
+                Modifier.height(4.dp)
+        )
+
+        Text(
+            text =
+                "Quantity: ${pickup.quantity}",
+            style =
+                MaterialTheme
+                    .typography
+                    .bodyMedium
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(16.dp)
+        )
+
+        // Pickup information
         Row(
             modifier =
                 Modifier.fillMaxWidth(),
+
             horizontalArrangement =
                 Arrangement.SpaceBetween
         ) {
 
-            ActivityInformation(
-                title = "Published",
-                value =
-                    activity
-                        .publishedQuantity
-                        .toString()
-            )
+            Column {
 
-            ActivityInformation(
-                title = "Remaining",
-                value =
-                    activity
-                        .availableQuantity
-                        .toString()
-            )
+                Text(
+                    text =
+                        "Pickup Code",
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
+                )
 
-            ActivityInformation(
-                title = "Discount",
-                value =
-                    "${activity.discountPercent}%"
-            )
+                Text(
+                    text =
+                        pickup.pickupCode,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .titleMedium,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+            }
+
+            Column(
+                horizontalAlignment =
+                    Alignment.End
+            ) {
+
+                Text(
+                    text =
+                        "Pickup Time",
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
+                )
+
+                Text(
+                    text =
+                        pickup.pickupTime,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodyMedium,
+                    fontWeight =
+                        FontWeight.SemiBold
+                )
+            }
         }
-
 
         Spacer(
             modifier =
                 Modifier.height(18.dp)
         )
 
+        // PICKED UP BUTTON
+        Button(
+            onClick = {
+                onMarkPickedUp()
+            },
 
-        // Current price
-        Row(
+            // cannot click again after collected
+            enabled =
+                pickup.status != "COLLECTED",
+
             modifier =
-                Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.SpaceBetween,
-            verticalAlignment =
-                Alignment.CenterVertically
+                Modifier.fillMaxWidth()
         ) {
 
             Text(
                 text =
-                    "Current Price",
-                style =
-                    MaterialTheme
-                        .typography
-                        .bodyMedium
-            )
-
-            Text(
-                text =
-                    formatPrice(
-                        activity
-                            .currentPriceCent
-                    ),
-                style =
-                    MaterialTheme
-                        .typography
-                        .titleMedium,
-                fontWeight =
-                    FontWeight.Bold
+                    if (
+                        pickup.status ==
+                        "COLLECTED"
+                    ) {
+                        "Picked Up"
+                    } else {
+                        "Mark as Picked Up"
+                    }
             )
         }
     }
 }
 
 
+/**
+ * STATUS
+ */
 @Composable
-fun ActivityInformation(
-    title: String,
-    value: String
-) {
+fun StatusBadge(
 
-    Column(
-        horizontalAlignment =
-            Alignment.CenterHorizontally
-    ) {
-
-        Text(
-            text = value,
-            style =
-                MaterialTheme
-                    .typography
-                    .titleMedium,
-            fontWeight =
-                FontWeight.Bold
-        )
-
-        Spacer(
-            modifier =
-                Modifier.height(3.dp)
-        )
-
-        Text(
-            text = title,
-            style =
-                MaterialTheme
-                    .typography
-                    .bodySmall,
-            color =
-                MaterialTheme
-                    .colorScheme
-                    .onSurfaceVariant
-        )
-    }
-}
-
-
-@Composable
-fun ActivityStatus(
     status: String
 ) {
 
-    val displayText =
+    val text =
         when (status) {
 
             "ACTIVE" ->
@@ -400,42 +891,74 @@ fun ActivityStatus(
             "COMPLETED" ->
                 "Completed"
 
+            "RESERVED" ->
+                "Reserved"
+
+            "READY_FOR_PICKUP" ->
+                "Ready"
+
+            "SCHEDULED" ->
+                "Scheduled"
+
+            "ON_THE_WAY" ->
+                "On The Way"
+
+            "COLLECTED" ->
+                "Collected"
+
+            "MISSED" ->
+                "Missed"
+
             "CANCELLED" ->
                 "Cancelled"
 
             else ->
                 status
+                    .replace(
+                        "_",
+                        " "
+                    )
         }
 
 
     Box(
+
         modifier =
             Modifier
                 .border(
+
                     width = 1.dp,
+
                     color =
                         MaterialTheme
                             .colorScheme
                             .outline,
+
                     shape =
                         RoundedCornerShape(
                             50.dp
                         )
                 )
                 .padding(
-                    horizontal = 12.dp,
-                    vertical = 6.dp
-                ),
-        contentAlignment =
-            Alignment.Center
+
+                    horizontal =
+                        10.dp,
+
+                    vertical =
+                        5.dp
+                )
     ) {
 
+
         Text(
-            text = displayText,
+
+            text = text,
+
             style =
                 MaterialTheme
                     .typography
                     .labelMedium,
+
             fontWeight =
                 FontWeight.Bold
         )
@@ -443,44 +966,128 @@ fun ActivityStatus(
 }
 
 
+/**
+ * SMALL INFORMATION COLUMN
+ */
 @Composable
-fun EmptyActivity() {
+fun ActivityInfo(
+
+    title: String,
+
+    value: String
+) {
+
+    Column(
+
+        horizontalAlignment =
+            Alignment.CenterHorizontally
+    ) {
+
+
+        Text(
+
+            text = value,
+
+            style =
+                MaterialTheme
+                    .typography
+                    .titleMedium,
+
+            fontWeight =
+                FontWeight.Bold
+        )
+
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    3.dp
+                )
+        )
+
+
+        Text(
+
+            text = title,
+
+            style =
+                MaterialTheme
+                    .typography
+                    .bodySmall,
+
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+        )
+    }
+}
+
+
+/**
+ * EMPTY SCREEN
+ */
+@Composable
+fun EmptyActivity(
+
+    title: String,
+
+    message: String
+) {
 
     Box(
+
         modifier =
-            Modifier.fillMaxSize(),
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    vertical =
+                        80.dp
+                ),
+
         contentAlignment =
             Alignment.Center
     ) {
 
+
         Column(
+
             horizontalAlignment =
                 Alignment.CenterHorizontally
         ) {
 
+
             Text(
-                text =
-                    "No activity yet",
+
+                text = title,
+
                 style =
                     MaterialTheme
                         .typography
                         .titleMedium,
+
                 fontWeight =
                     FontWeight.Bold
             )
 
+
             Spacer(
                 modifier =
-                    Modifier.height(8.dp)
+                    Modifier.height(
+                        8.dp
+                    )
             )
 
+
             Text(
-                text =
-                    "Published surplus will appear here.",
+
+                text = message,
+
                 style =
                     MaterialTheme
                         .typography
                         .bodyMedium,
+
                 color =
                     MaterialTheme
                         .colorScheme
@@ -512,47 +1119,89 @@ fun PreviewSellerActivityScreen() {
 
         SellerActivityScreen(
 
-            activities =
+            surplusActivities =
                 listOf(
 
                     SellerActivityItem(
+
                         listingId = 1,
+
                         foodName =
                             "Blueberry Bread",
-                        publishedQuantity = 10,
-                        availableQuantity = 6,
-                        discountPercent = 60,
-                        currentPriceCent = 220,
-                        status = "ACTIVE",
+
+                        publishedQuantity =
+                            10,
+
+                        availableQuantity =
+                            6,
+
+                        discountPercent =
+                            70,
+
+                        currentPriceCent =
+                            165,
+
+                        status =
+                            "ACTIVE",
+
                         publishedTime =
-                            "Today, 8:05 PM"
+                            "Today, 4:00 PM"
+                    )
+                ),
+
+            pickupActivities =
+                listOf(
+
+                    SellerPickupActivityItem(
+
+                        pickupId = 1,
+
+                        receiverName =
+                            "Brian",
+
+                        pickupType =
+                            "BUYER",
+
+                        foodName =
+                            "Blueberry Bread",
+
+                        quantity =
+                            2,
+
+                        pickupCode =
+                            "B823",
+
+                        pickupTime =
+                            "Today, 8:30 PM",
+
+                        status =
+                            "READY_FOR_PICKUP"
                     ),
 
-                    SellerActivityItem(
-                        listingId = 2,
+                    SellerPickupActivityItem(
+
+                        pickupId = 2,
+
+                        receiverName =
+                            "Food Aid Penang",
+
+                        pickupType =
+                            "NGO",
+
                         foodName =
                             "Chocolate Croissant",
-                        publishedQuantity = 8,
-                        availableQuantity = 0,
-                        discountPercent = 80,
-                        currentPriceCent = 130,
-                        status = "SOLD_OUT",
-                        publishedTime =
-                            "Today, 8:10 PM"
-                    ),
 
-                    SellerActivityItem(
-                        listingId = 3,
-                        foodName =
-                            "Chicken Sandwich",
-                        publishedQuantity = 5,
-                        availableQuantity = 2,
-                        discountPercent = 80,
-                        currentPriceCent = 160,
+                        quantity =
+                            5,
+
+                        pickupCode =
+                            "N572",
+
+                        pickupTime =
+                            "Today, 10:15 PM",
+
                         status =
-                            "TRANSFERRED_TO_NGO",
-                        publishedTime =
-                            "Yesterday, 9:50 PM"
+                            "SCHEDULED"
                     )
                 )
         )
