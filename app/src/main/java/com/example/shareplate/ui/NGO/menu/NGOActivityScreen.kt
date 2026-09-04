@@ -17,13 +17,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.QrCode2
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -60,6 +59,7 @@ data class NGOActivityItem(
     val items: String,
     val pickupCode: String = "",
     val orderedAt: String = "",
+    val orderId: Long = 0,
     val done: Boolean
 )
 
@@ -88,12 +88,13 @@ fun NGOActivityScreen(
     val errorMessage = errorState?.value
     val supabaseOrders = if (isPreview) emptyList() else ordersState?.value ?: emptyList()
 
+    val ngoStore = remember { NgoLocalStore(context) }
+
     val orders = if (isPreview) {
         previewOrders
     } else {
-        val store = remember { NgoLocalStore(context) }
-        val localOrders = store.getOrders().map { parseOrder(it) }
-        if (supabaseOrders.isNotEmpty()) supabaseOrders else localOrders
+        val localOrders = ngoStore.getOrders().map { parseOrder(it) }
+        (supabaseOrders + localOrders).distinctBy { it.pickupCode }
     }
 
     val activeOrders = orders.filter { !it.done }
@@ -140,7 +141,11 @@ fun NGOActivityScreen(
                     NGOOrderList(
                         orders = activeOrders,
                         emptyMessage = "No active orders",
-                        showQrCode = true
+                        onConfirmPickup = {
+                            activity -> actualViewModel?.confirmPickup(activity)
+                            ngoStore.markOrderDone(activity.pickupCode)
+                            selectedTab = 1
+                        }
                     )
                 }
 
@@ -148,7 +153,11 @@ fun NGOActivityScreen(
                     NGOOrderList(
                         orders = historyOrders,
                         emptyMessage = "No order history",
-                        showQrCode = false
+                        onConfirmPickup = {
+                            activity -> actualViewModel?.confirmPickup(activity)
+                            ngoStore.markOrderDone(activity.pickupCode)
+                            selectedTab = 1
+                        }
                     )
                 }
             }
@@ -208,7 +217,7 @@ fun NGOActivityTabs(selectedTab: Int, onTabSelected: (Int) -> Unit) {
 private fun NGOOrderList(
     orders: List<NGOActivityItem>,
     emptyMessage: String,
-    showQrCode: Boolean
+    onConfirmPickup: (NGOActivityItem) -> Unit
 ) {
     if (orders.isEmpty()) {
         Box(
@@ -230,14 +239,18 @@ private fun NGOOrderList(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(orders) { activity ->
-                NGOOrderCard(activity = activity, showQrCode = showQrCode)
+                NGOOrderCard(activity = activity, onConfirmPickup = onConfirmPickup)
             }
         }
     }
 }
 
 @Composable
-private fun NGOOrderCard(activity: NGOActivityItem, showQrCode: Boolean) {
+private fun NGOOrderCard(
+    activity: NGOActivityItem,
+    onConfirmPickup: (NGOActivityItem) -> Unit
+) {
+
     val code = activity.pickupCode.ifBlank { pickupCodeFor(activity) }
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -255,22 +268,6 @@ private fun NGOOrderCard(activity: NGOActivityItem, showQrCode: Boolean) {
                     Text(activity.name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(activity.location, fontSize = 11.sp, color = Color.Gray)
-                }
-                if (showQrCode) {
-                    Column(
-                        modifier = Modifier.clickable { }.padding(5.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            Icons.Outlined.QrCode2,
-                            contentDescription = "QR Code",
-                            modifier = Modifier.size(30.dp),
-                            tint = Color.DarkGray
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text("QR code", fontSize = 8.sp, color = Color.Gray)
-                        Text(code, fontSize = 8.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF388E3C))
-                    }
                 }
             }
 
@@ -294,25 +291,36 @@ private fun NGOOrderCard(activity: NGOActivityItem, showQrCode: Boolean) {
             Spacer(modifier = Modifier.height(6.dp))
             OrderInfoRow("Ordered", formatOrderDate(activity.orderedAt))
 
-            if (showQrCode) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                color = Color(0xFFE8F5E9)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text("Pickup Code", fontSize = 11.sp, color = Color.DarkGray)
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(code, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF388E3C))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(activity.pickupTime, fontSize = 11.sp, color = Color.DarkGray)
+                }
+            }
+
+            if (!activity.done) {
                 Spacer(modifier = Modifier.height(12.dp))
-                Surface(
+                Button(
+                    onClick = { onConfirmPickup(activity) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFFE8F5E9)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text("Pickup Code", fontSize = 11.sp, color = Color.DarkGray)
-                        Spacer(modifier = Modifier.height(3.dp))
-                        Text(code, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF388E3C))
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(activity.pickupTime, fontSize = 11.sp, color = Color.DarkGray)
-                    }
+                    Text("Confirm Pickup", color = Color.White)
                 }
             }
         }
     }
 }
+
 
 @Composable
 private fun OrderInfoRow(

@@ -1,5 +1,6 @@
 package com.example.shareplate.ui.NGO
 
+import android.R.attr.value
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shareplate.data.model.Order
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.collections.copy
 
 class NGOViewModel(
     private val repository: NGORepository = NGORepository(),
@@ -49,19 +51,20 @@ class NGOViewModel(
 
                 val shopList = sellers.map { seller ->
                     val sellerListings = listings.filter { it.sellerId == seller.userId }
-                    val sellerInventory = sellerListings.mapNotNull { listing ->
-                        val food = itemsById[listing.foodItemId] ?: return@mapNotNull null
+
+                    val sellerInventory = sellerListings.map { listing ->
+                        val food = itemsById[listing.foodItemId]
                         NGOCartItem(
                             listingId = listing.listingId,
-                            foodItemId = food.foodItemId,
+                            foodItemId = listing.foodItemId,
                             sellerId = seller.userId,
                             shopName = seller.organisationName ?: seller.name,
-                            foodName = food.foodName,
+                            foodName = food?.foodName?: "Food",
                             price = 0.0,
                             pickupTime = formatPickupTime(listing.pickupEndAt),
                             availableQuantity = listing.availableQuantity,
                             quantity = listing.availableQuantity,
-                            imageUrl = food.imageUrl
+                            imageUrl = food?.imageUrl
                         )
                     }
                     val itemStrings = sellerInventory.map { "${it.foodName} - ${it.availableQuantity}" }
@@ -151,6 +154,7 @@ class NGOViewModel(
             items = "${food?.foodName ?: "Food Item"} - ${order.quantity}",
             pickupCode = order.pickupCode,
             orderedAt = order.orderedAt,
+            orderId = order.orderId,
             done = order.status.uppercase() in setOf("COMPLETED", "CANCELLED")
         )
     }
@@ -182,13 +186,44 @@ class NGOViewModel(
         )
     )
 
-    private fun formatPickupTime(epochMillis: Long): String {
+    private fun formatPickupTime(value: String):String {
+        val epochMillis = parseTimeToMillis(value)
         if (epochMillis <= 0) return "Pickup time unavailable"
         val milliseconds = if (epochMillis < 100_000_000_000L) epochMillis * 1000 else epochMillis
         return "Pickup before ${SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()).format(Date(milliseconds))}"
     }
 
+    private fun parseTimeToMillis(value: String): Long {
+        if (value.isBlank()) return 0L
+        value.toLongOrNull()?.let {
+            return if (it < 100_000_000_000L) it * 1000 else it
+        }
+        return try {
+            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).parse(value)?.time ?: 0L
+        } catch (e: Exception) {
+            try {
+                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).parse(value)?.time ?: 0L
+            } catch (e2: Exception) {
+                0L
+            }
+        }
+    }
+
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    fun confirmPickup(activity: NGOActivityItem) {
+        _orders.value = _orders.value.map {
+            if (it.orderId != 0L && it.orderId == activity.orderId) it.copy(done = true) else it
+        }
+        if (activity.orderId != 0L) {
+            viewModelScope.launch {
+                try {
+                    repository.updateOrderStatus(activity.orderId, "COMPLETED")
+                } catch (_: Exception) {
+                }
+            }
+        }
     }
 }

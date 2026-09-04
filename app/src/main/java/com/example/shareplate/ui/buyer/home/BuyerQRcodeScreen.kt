@@ -127,11 +127,11 @@ fun BuyerQrCodeScreen(
 
                 currentPriceCents = 100,
 
-                publishedAt = System.currentTimeMillis(),
+                publishedAt = "",
 
                 closingAt = "",
 
-                pickupEndAt = System.currentTimeMillis() + 3_600_000,
+                pickupEndAt = "",
 
                 status = "ACTIVE"
             ),
@@ -713,10 +713,10 @@ fun BuyerQrCodeScreen(
 
                                         label = "Pickup",
 
-                                        value = formatPickupTime(
+                                        value =
 
-                                            listing?.pickupEndAt ?: 0L
-                                        )
+                                            listing!!.pickupEndAt
+
                                     )
                                 }
                             }

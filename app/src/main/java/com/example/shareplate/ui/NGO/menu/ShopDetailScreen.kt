@@ -102,7 +102,9 @@ fun ShopDetailScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "Back", modifier = Modifier.size(26.dp))
+                Icon(
+                    Icons.Filled.ArrowBack,
+                    contentDescription = "Back", modifier = Modifier.size(26.dp))
             }
             Text("NGO Order", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
         }

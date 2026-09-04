@@ -55,6 +55,7 @@ import com.example.shareplate.ui.buyer.profile.BuyerProfileScreen
 import com.example.shareplate.ui.seller.activity.SellerActivityScreen
 import io.github.jan.supabase.auth.status.SessionStatus
 import com.example.shareplate.ui.buyer.home.BuyerNotificationScreen
+import com.example.shareplate.ui.seller.notification.SellerNotificationScreen
 
 @Composable
 fun AppNavGraph(
@@ -161,6 +162,17 @@ fun AppNavGraph(
                     navController.navigate(AppRoutes.LOGIN) {
                         popUpTo(0)
                     }
+                },
+                onHome = {
+                    navController.navigate(homeRouteFor(sessionManager.getRole()))
+                },
+                onMenu = {
+                    val role = sessionManager.getRole()
+                    navController.navigate(if (role == "SELLER") AppRoutes.SELLER_MENU else homeRouteFor(role))
+                },
+                onActivity = {
+                    val role = sessionManager.getRole()
+                    navController.navigate(if (role == "SELLER") AppRoutes.SELLER_ACTIVITY else homeRouteFor(role))
                 }
             )
         }
@@ -172,6 +184,17 @@ fun AppNavGraph(
                     navController.navigate(AppRoutes.LOGIN) {
                         popUpTo(0)
                     }
+                },
+                onHome = {
+                    navController.navigate(homeRouteFor(sessionManager.getRole()))
+                },
+                onMenu = {
+                    val role = sessionManager.getRole()
+                    navController.navigate(if (role == "SELLER") AppRoutes.SELLER_MENU else homeRouteFor(role))
+                },
+                onActivity = {
+                    val role = sessionManager.getRole()
+                    navController.navigate(if (role == "SELLER") AppRoutes.SELLER_ACTIVITY else homeRouteFor(role))
                 }
             )
         }
@@ -188,16 +211,18 @@ fun AppNavGraph(
                     ?.id
 
 
+            val surplusActivities by
+            sellerViewModel
+                .surplusActivities
+                .collectAsStateWithLifecycle()
+
+
             val pickupActivities by
             sellerViewModel
                 .pickupActivities
                 .collectAsStateWithLifecycle()
 
 
-            /**
-             * Load pickups from Supabase
-             * when screen opens.
-             */
             LaunchedEffect(
                 sellerId
             ) {
@@ -207,32 +232,56 @@ fun AppNavGraph(
                 ) {
 
                     sellerViewModel
+                        .loadSurplusActivities(
+                            sellerId
+                        )
+
+                    sellerViewModel
                         .loadPickupActivities(
                             sellerId
                         )
                 }
             }
-
-
             SellerActivityScreen(
 
-                /**
-                 * We will connect real surplus
-                 * history next.
-                 */
                 surplusActivities =
-                    emptyList(),
+                    surplusActivities,
 
-                /**
-                 * REAL SUPABASE DATA
-                 */
                 pickupActivities =
                     pickupActivities,
 
+                onUpdateQuantity = {
+                        activity,
+                        newQuantity ->
 
-                /**
-                 * Mark as picked up.
-                 */
+                    if (
+                        sellerId != null
+                    ) {
+
+                        sellerViewModel
+                            .updatePublishedSurplusQuantity(
+
+                                activity =
+                                    activity,
+
+                                newPublishedQuantity =
+                                    newQuantity,
+
+                                sellerId =
+                                    sellerId,
+
+                                onSuccess = {
+
+                                    Toast.makeText(
+                                        context,
+                                        "Quantity updated",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            )
+                    }
+                },
+
                 onMarkPickedUp = { pickup ->
 
                     if (
@@ -260,14 +309,12 @@ fun AppNavGraph(
                     }
                 },
 
-
                 onHomeClick = {
 
                     navController.navigate(
                         AppRoutes.SELLER_HOME
                     )
                 },
-
 
                 onMenuClick = {
 
@@ -276,12 +323,9 @@ fun AppNavGraph(
                     )
                 },
 
-
                 onActivityClick = {
-
                     // already here
                 },
-
 
                 onProfileClick = {
 
@@ -494,7 +538,9 @@ fun AppNavGraph(
             SellerHomeScreen(
                 sellerName = sellerName,
                 foodItems = foodItems,
-
+                onNotificationClick = {
+                    navController.navigate(AppRoutes.SELLER_NOTIFICATION)
+                },
                 onPublishClick = { foodItems, quantities ->
 
                     val itemsToPublish =
@@ -591,6 +637,17 @@ fun AppNavGraph(
                 }
             )
         }
+
+        composable(AppRoutes.SELLER_NOTIFICATION) {
+            SellerNotificationScreen(
+
+                onBackClick = {
+
+                    navController.popBackStack()
+                }
+            )
+        }
+
         // seller menu screen
         composable(AppRoutes.SELLER_MENU) {
             // get the food items of the seller

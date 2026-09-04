@@ -44,7 +44,10 @@ fun NGOPaymentScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                Icon(
+                    Icons.Filled.ArrowBack,
+                    contentDescription = "Back"
+                )
             }
             Text("Payment", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
         }
