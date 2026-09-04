@@ -1,5 +1,6 @@
 package com.example.shareplate.ui.NGO
 
+import android.R.attr.value
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shareplate.data.model.Order
@@ -185,10 +186,27 @@ class NGOViewModel(
         )
     )
 
-    private fun formatPickupTime(epochMillis: Long): String {
+    private fun formatPickupTime(value: String):String {
+        val epochMillis = parseTimeToMillis(value)
         if (epochMillis <= 0) return "Pickup time unavailable"
         val milliseconds = if (epochMillis < 100_000_000_000L) epochMillis * 1000 else epochMillis
         return "Pickup before ${SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()).format(Date(milliseconds))}"
+    }
+
+    private fun parseTimeToMillis(value: String): Long {
+        if (value.isBlank()) return 0L
+        value.toLongOrNull()?.let {
+            return if (it < 100_000_000_000L) it * 1000 else it
+        }
+        return try {
+            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).parse(value)?.time ?: 0L
+        } catch (e: Exception) {
+            try {
+                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).parse(value)?.time ?: 0L
+            } catch (e2: Exception) {
+                0L
+            }
+        }
     }
 
     fun clearError() {
