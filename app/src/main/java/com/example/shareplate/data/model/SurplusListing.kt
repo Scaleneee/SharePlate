@@ -48,7 +48,7 @@ data class SurplusListing(
     // last allowed pickup time
     @SerialName("pickup_end_at")
     @Serializable(with = FlexibleTimestampSerializer::class)
-    val pickupEndAt: String,
+    val pickupEndAt: Long,
 
     // listing status
     val status: String = "ACTIVE",

@@ -55,8 +55,6 @@ import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 
 data class BuyerOrderDisplay(
 
