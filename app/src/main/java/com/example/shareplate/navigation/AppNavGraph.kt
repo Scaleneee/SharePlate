@@ -55,6 +55,7 @@ import com.example.shareplate.ui.buyer.profile.BuyerProfileScreen
 import com.example.shareplate.ui.seller.activity.SellerActivityScreen
 import io.github.jan.supabase.auth.status.SessionStatus
 import com.example.shareplate.ui.buyer.home.BuyerNotificationScreen
+import com.example.shareplate.ui.seller.notification.SellerNotificationScreen
 
 @Composable
 fun AppNavGraph(
@@ -537,7 +538,9 @@ fun AppNavGraph(
             SellerHomeScreen(
                 sellerName = sellerName,
                 foodItems = foodItems,
-
+                onNotificationClick = {
+                    navController.navigate(AppRoutes.SELLER_NOTIFICATION)
+                },
                 onPublishClick = { foodItems, quantities ->
 
                     val itemsToPublish =
@@ -634,6 +637,17 @@ fun AppNavGraph(
                 }
             )
         }
+
+        composable(AppRoutes.SELLER_NOTIFICATION) {
+            SellerNotificationScreen(
+
+                onBackClick = {
+
+                    navController.popBackStack()
+                }
+            )
+        }
+
         // seller menu screen
         composable(AppRoutes.SELLER_MENU) {
             // get the food items of the seller

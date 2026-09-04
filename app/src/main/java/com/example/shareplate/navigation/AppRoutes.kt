@@ -13,6 +13,7 @@ object AppRoutes {
     const val SELLER_PROFILE = "seller/profile"
     const val SELLER_ADD_FOOD = "seller/add-food"
     const val SELLER_EDIT_FOOD = "seller/edit-food/{foodItemId}"
+    const val SELLER_NOTIFICATION = "seller/notification"
 
 
     const val BUYER_HOME = "buyer_home"
