@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.example.shareplate.data.local.SessionManager
 import com.example.shareplate.data.supabase.AuthRepository
 import com.example.shareplate.data.supabase.Profile
+import com.example.shareplate.ui.seller.navigation.SellerBottomBar
 import kotlinx.coroutines.launch
 
 @Composable
@@ -239,32 +240,13 @@ fun ProfileScreen(
             }
         }
 
-        NavigationBar {
-            NavigationBarItem(
-                selected = false,
-                onClick = onHome,
-                icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
-                label = { Text("Home") }
-            )
-            NavigationBarItem(
-                selected = false,
-                onClick = onMenu,
-                icon = { Icon(Icons.Filled.List, contentDescription = "Menu") },
-                label = { Text("Menu") }
-            )
-            NavigationBarItem(
-                selected = false,
-                onClick = onActivity,
-                icon = { Icon(Icons.Filled.History, contentDescription = "Activity") },
-                label = { Text("Activity") }
-            )
-            NavigationBarItem(
-                selected = true,
-                onClick = {},
-                icon = { Icon(Icons.Filled.Person, contentDescription = "Profile") },
-                label = { Text("Profile") }
-            )
-        }
+        SellerBottomBar(
+            selectedIndex = 3,
+            onHomeClick = onHome,
+            onMenuClick = onMenu,
+            onActivityClick = onActivity,
+            onProfileClick = {}
+        )
     }
 }
 
