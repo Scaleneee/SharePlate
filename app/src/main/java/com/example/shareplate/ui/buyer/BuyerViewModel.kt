@@ -36,258 +36,157 @@ data class BuyerOrderDetails(
 
 class BuyerViewModel(
 
-    private val repository: BuyerRepository =
-        BuyerRepository(),
+    private val repository: BuyerRepository = BuyerRepository(),
 
-    private val authRepository: AuthRepository =
-        AuthRepository(),
+    private val authRepository: AuthRepository = AuthRepository(),
 
-    private val orderManager: BuyerOrderManager =
-        BuyerOrderManager()
+    private val orderManager: BuyerOrderManager = BuyerOrderManager()
 
 ) : ViewModel() {
 
 
-    // =================================================
     // BUYER PROFILE
-    // =================================================
+    private val _profile = MutableStateFlow<Profile?>(null)
 
-    private val _profile =
-        MutableStateFlow<Profile?>(null)
-
-    val profile: StateFlow<Profile?> =
-        _profile.asStateFlow()
+    val profile: StateFlow<Profile?> = _profile.asStateFlow()
 
 
-    // =================================================
     // SELLERS / SHOPS
-    // =================================================
+    private val _sellers = MutableStateFlow<List<User>>(
+        emptyList()
+    )
 
-    private val _sellers =
-        MutableStateFlow<List<User>>(
-            emptyList()
-        )
+    val sellers: StateFlow<List<User>> = _sellers.asStateFlow()
 
-    val sellers: StateFlow<List<User>> =
-        _sellers.asStateFlow()
-
-
-    // =================================================
     // SELECTED SELLER
-    // =================================================
+    private val _selectedSeller = MutableStateFlow<User?>(null)
 
-    private val _selectedSeller =
-        MutableStateFlow<User?>(null)
+    val selectedSeller: StateFlow<User?> = _selectedSeller.asStateFlow()
 
-    val selectedSeller: StateFlow<User?> =
-        _selectedSeller.asStateFlow()
-
-
-    // =================================================
     // FOOD ITEMS
-    // =================================================
+    private val _foodItems = MutableStateFlow<List<FoodItem>>(
+        emptyList()
+    )
 
-    private val _foodItems =
-        MutableStateFlow<List<FoodItem>>(
-            emptyList()
-        )
+    val foodItems: StateFlow<List<FoodItem>> = _foodItems.asStateFlow()
 
-    val foodItems: StateFlow<List<FoodItem>> =
-        _foodItems.asStateFlow()
-
-
-    // =================================================
     // SURPLUS LISTINGS
-    // =================================================
+    private val _listings = MutableStateFlow<List<SurplusListing>>(
+        emptyList()
+    )
 
-    private val _listings =
-        MutableStateFlow<List<SurplusListing>>(
-            emptyList()
-        )
+    val listings: StateFlow<List<SurplusListing>> = _listings.asStateFlow()
 
-    val listings: StateFlow<List<SurplusListing>> =
-        _listings.asStateFlow()
-
-
-    // =================================================
     // BUYER ORDERS
-    // =================================================
+    private val _orders = MutableStateFlow<List<BuyerOrderDetails>>(
+        emptyList()
+    )
 
-    private val _orders =
-        MutableStateFlow<List<BuyerOrderDetails>>(
-            emptyList()
-        )
+    val orders: StateFlow<List<BuyerOrderDetails>> = _orders.asStateFlow()
 
-    val orders: StateFlow<List<BuyerOrderDetails>> =
-        _orders.asStateFlow()
-
-
-    // =================================================
     // SELECTED ORDER
-    // =================================================
+    private val _selectedOrder = MutableStateFlow<BuyerOrderDetails?>(
+        null
+    )
 
-    private val _selectedOrder =
-        MutableStateFlow<BuyerOrderDetails?>(
-            null
-        )
+    val selectedOrder: StateFlow<BuyerOrderDetails?> = _selectedOrder.asStateFlow()
 
-    val selectedOrder: StateFlow<BuyerOrderDetails?> =
-        _selectedOrder.asStateFlow()
-
-
-    // =================================================
     // ORDER RESULT
-    // =================================================
+    private val _orderResult = MutableStateFlow<BuyerOrderResult?>(
+        null
+    )
 
-    private val _orderResult =
-        MutableStateFlow<BuyerOrderResult?>(
-            null
-        )
+    val orderResult: StateFlow<BuyerOrderResult?> = _orderResult.asStateFlow()
 
-    val orderResult: StateFlow<BuyerOrderResult?> =
-        _orderResult.asStateFlow()
-
-
-    // =================================================
     // LOADING
-    // =================================================
+    private val _isLoading = MutableStateFlow(false)
 
-    private val _isLoading =
-        MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    val isLoading: StateFlow<Boolean> =
-        _isLoading.asStateFlow()
-
-
-    // =================================================
     // ERROR
-    // =================================================
+    private val _errorMessage = MutableStateFlow<String?>(null)
 
-    private val _errorMessage =
-        MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    val errorMessage: StateFlow<String?> =
-        _errorMessage.asStateFlow()
-
-
-    // =================================================
     // SUCCESS MESSAGE
-    // =================================================
+    private val _successMessage = MutableStateFlow<String?>(null)
 
-    private val _successMessage =
-        MutableStateFlow<String?>(null)
+    val successMessage: StateFlow<String?> = _successMessage.asStateFlow()
 
-    val successMessage: StateFlow<String?> =
-        _successMessage.asStateFlow()
-
-
-    // =================================================
     // CART
-    // =================================================
-
     val cartItems: List<BuyerCartItem>
-        get() =
-            BuyerCartStore.cartItems
+        get() = BuyerCartStore.cartItems
 
 
-    // =================================================
     // LOAD BUYER HOME
-    // =================================================
-
     fun loadBuyerHome() {
 
         viewModelScope.launch {
 
-            _isLoading.value =
-                true
+            _isLoading.value = true
 
-            _errorMessage.value =
-                null
+            _errorMessage.value = null
 
 
             try {
 
                 // GET CURRENT BUYER
-                _profile.value =
-                    authRepository
-                        .getCurrentProfile()
+                _profile.value = authRepository.getCurrentProfile()
 
 
                 // GET SELLERS / SHOPS
-                _sellers.value =
-                    repository
-                        .getSellers()
+                _sellers.value = repository.getSellers()
 
 
             } catch (e: Exception) {
 
-                _errorMessage.value =
-                    e.message
-                        ?: "Unable to load Buyer Home."
+                _errorMessage.value = e.message ?: "Unable to load Buyer Home."
 
             } finally {
 
-                _isLoading.value =
-                    false
+                _isLoading.value = false
             }
         }
     }
 
-
-    // =================================================
     // LOAD PROFILE
-    // =================================================
-
     fun loadProfile() {
 
         viewModelScope.launch {
 
-            _isLoading.value =
-                true
+            _isLoading.value = true
 
-            _errorMessage.value =
-                null
+            _errorMessage.value = null
 
 
             try {
 
-                val currentProfile =
-                    authRepository
-                        .getCurrentProfile()
+                val currentProfile = authRepository.getCurrentProfile()
 
 
                 if (currentProfile == null) {
 
-                    _errorMessage.value =
-                        "Profile not found."
+                    _errorMessage.value = "Profile not found."
 
                     return@launch
                 }
 
 
-                _profile.value =
-                    currentProfile
+                _profile.value = currentProfile
 
 
             } catch (e: Exception) {
 
-                _errorMessage.value =
-                    e.message
-                        ?: "Unable to load profile."
+                _errorMessage.value = e.message ?: "Unable to load profile."
 
             } finally {
 
-                _isLoading.value =
-                    false
+                _isLoading.value = false
             }
         }
     }
 
-
-    // =================================================
     // UPDATE PROFILE
-    // =================================================
-
     fun updateProfile(
 
         name: String,
@@ -302,95 +201,68 @@ class BuyerViewModel(
 
         viewModelScope.launch {
 
-            _isLoading.value =
-                true
+            _isLoading.value = true
 
-            _errorMessage.value =
-                null
+            _errorMessage.value = null
 
-            _successMessage.value =
-                null
+            _successMessage.value = null
 
 
             try {
 
-                val currentProfile =
-                    _profile.value
-                        ?: authRepository
-                            .getCurrentProfile()
+                val currentProfile = _profile.value ?: authRepository.getCurrentProfile()
 
 
                 if (currentProfile == null) {
 
-                    _errorMessage.value =
-                        "Profile not found."
+                    _errorMessage.value = "Profile not found."
 
                     return@launch
                 }
 
 
-                val updatedProfile =
-                    currentProfile.copy(
+                val updatedProfile = currentProfile.copy(
 
-                        name =
-                            name.trim(),
+                    name = name.trim(),
 
-                        phone =
-                            phone.trim(),
+                    phone = phone.trim(),
 
-                        address =
-                            address
-                                .trim()
-                                .ifBlank {
-                                    null
-                                }
+                    address = address.trim().ifBlank {
+                            null
+                        })
+
+
+                val result = authRepository.updateProfile(
+                        updatedProfile
                     )
-
-
-                val result =
-                    authRepository
-                        .updateProfile(
-                            updatedProfile
-                        )
 
 
                 result.onSuccess {
 
-                    _profile.value =
-                        it
+                    _profile.value = it
 
-                    _successMessage.value =
-                        "Profile updated successfully."
+                    _successMessage.value = "Profile updated successfully."
 
                     onSuccess()
 
                 }.onFailure {
 
-                    _errorMessage.value =
-                        it.message
-                            ?: "Unable to update profile."
+                    _errorMessage.value = it.message ?: "Unable to update profile."
                 }
 
 
             } catch (e: Exception) {
 
-                _errorMessage.value =
-                    e.message
-                        ?: "Unable to update profile."
+                _errorMessage.value = e.message ?: "Unable to update profile."
 
             } finally {
 
-                _isLoading.value =
-                    false
+                _isLoading.value = false
             }
         }
     }
 
-
-    // =================================================
     // LOAD SHOP
-    // =================================================
-
     fun loadShop(
 
         sellerId: String
@@ -399,75 +271,54 @@ class BuyerViewModel(
 
         viewModelScope.launch {
 
-            _isLoading.value =
-                true
+            _isLoading.value = true
 
-            _errorMessage.value =
-                null
+            _errorMessage.value = null
 
 
             try {
 
-                val seller =
-                    repository
-                        .getSellerById(
-                            sellerId
-                        )
+                val seller = repository.getSellerById(
+                        sellerId
+                    )
 
 
                 if (seller == null) {
 
-                    _errorMessage.value =
-                        "Seller not found."
+                    _errorMessage.value = "Seller not found."
 
                     return@launch
                 }
 
 
-                _selectedSeller.value =
-                    seller
+                _selectedSeller.value = seller
 
 
-                _foodItems.value =
-                    repository
-                        .getFoodItemsBySeller(
-                            sellerId
-                        )
+                _foodItems.value = repository.getFoodItemsBySeller(
+                        sellerId
+                    )
 
 
-                _listings.value =
-                    repository
-                        .getActiveListingsBySeller(
-                            sellerId
-                        )
+                _listings.value = repository.getActiveListingsBySeller(
+                        sellerId
+                    )
 
 
             } catch (e: Exception) {
 
-                _errorMessage.value =
-                    e.message
-                        ?: "Unable to load shop."
+                _errorMessage.value = e.message ?: "Unable to load shop."
 
             } finally {
 
-                _isLoading.value =
-                    false
+                _isLoading.value = false
             }
         }
     }
 
-
-    // =================================================
     // REFRESH SHOP
-    // =================================================
-
     fun refreshShop() {
 
-        val sellerId =
-            _selectedSeller
-                .value
-                ?.userId
-                ?: return
+        val sellerId = _selectedSeller.value?.userId ?: return
 
 
         loadShop(
@@ -475,11 +326,7 @@ class BuyerViewModel(
         )
     }
 
-
-    // =================================================
     // ADD TO CART
-    // =================================================
-
     fun addToCart(
 
         shopName: String,
@@ -488,278 +335,199 @@ class BuyerViewModel(
 
     ): Boolean {
 
-        return BuyerCartStore
-            .addItem(
+        return BuyerCartStore.addItem(
 
-                shopName =
-                    shopName,
+                shopName = shopName,
 
-                foodDeal =
-                    foodDeal
+                foodDeal = foodDeal
             )
     }
 
 
-    // =================================================
     // CHECK SELLER
-    // =================================================
-
     fun canAddFromSeller(
 
         sellerId: String
 
     ): Boolean {
 
-        return BuyerCartStore
-            .canAddFromSeller(
+        return BuyerCartStore.canAddFromSeller(
                 sellerId
             )
     }
 
-
-    // =================================================
     // CART ITEM QUANTITY
-    // =================================================
-
     fun getQuantityForListing(
 
         listingId: Long
 
     ): Int {
 
-        return BuyerCartStore
-            .getQuantityForListing(
+        return BuyerCartStore.getQuantityForListing(
                 listingId
             )
     }
 
-
-    // =================================================
     // INCREASE QUANTITY
-    // =================================================
-
     fun increaseCartQuantity(
 
         index: Int
 
     ): Boolean {
 
-        return BuyerCartStore
-            .increaseQuantity(
+        return BuyerCartStore.increaseQuantity(
                 index
             )
     }
 
-
-    // =================================================
     // DECREASE QUANTITY
-    // =================================================
-
     fun decreaseCartQuantity(
 
         index: Int
 
     ) {
 
-        BuyerCartStore
-            .decreaseQuantity(
+        BuyerCartStore.decreaseQuantity(
                 index
             )
     }
 
-
-    // =================================================
     // REMOVE CART ITEM
-    // =================================================
-
     fun removeCartItem(
 
         index: Int
 
     ) {
 
-        BuyerCartStore
-            .removeItem(
+        BuyerCartStore.removeItem(
                 index
             )
     }
 
-
-    // =================================================
     // CLEAR CART
-    // =================================================
-
     fun clearCart() {
 
-        BuyerCartStore
-            .clearCart()
+        BuyerCartStore.clearCart()
     }
 
-
-    // =================================================
     // CART TOTAL
-    // =================================================
-
     fun getCartTotal(): Double {
 
-        return BuyerCartStore
-            .getTotalPrice()
+        return BuyerCartStore.getTotalPrice()
     }
 
-
-    // =================================================
     // CART TOTAL QUANTITY
-    // =================================================
-
     fun getCartQuantity(): Int {
 
-        return BuyerCartStore
-            .getTotalQuantity()
+        return BuyerCartStore.getTotalQuantity()
     }
 
-
-    // =================================================
     // CHECK CART EMPTY
-    // =================================================
-
     fun isCartEmpty(): Boolean {
 
-        return BuyerCartStore
-            .isCartEmpty()
+        return BuyerCartStore.isCartEmpty()
     }
 
-
-    // =================================================
     // SUBMIT ORDER
-    // =================================================
-
     fun submitOrder(
 
         onSuccess: (
-            pickupCode: String,
-            totalPriceCent: Int
+            pickupCode: String, totalPriceCent: Int
         ) -> Unit = { _, _ -> }
 
     ) {
 
         viewModelScope.launch {
 
-            _isLoading.value =
-                true
+            _isLoading.value = true
 
-            _errorMessage.value =
-                null
+            _errorMessage.value = null
 
-            _orderResult.value =
-                null
+            _orderResult.value = null
 
 
             try {
 
-                val result =
-                    orderManager
-                        .submitOrder()
+                val result = orderManager.submitOrder()
 
 
-                _orderResult.value =
-                    result
+                _orderResult.value = result
 
 
                 if (result.success) {
 
-                    _successMessage.value =
-                        result.message
+                    _successMessage.value = result.message
 
 
                     onSuccess(
 
-                        result.pickupCode
-                            ?: "",
+                        result.pickupCode ?: "",
 
                         result.totalPriceCent
                     )
 
                 } else {
 
-                    _errorMessage.value =
-                        result.message
+                    _errorMessage.value = result.message
                 }
 
 
             } catch (e: Exception) {
 
-                _errorMessage.value =
-                    e.message
-                        ?: "Unable to place order."
+                _errorMessage.value = e.message ?: "Unable to place order."
 
             } finally {
 
-                _isLoading.value =
-                    false
+                _isLoading.value = false
             }
         }
     }
 
-
-    // =================================================
     // LOAD ORDERS
-    // =================================================
-
-    fun loadOrders() {
+    fun loadOrders(
+        showLoading: Boolean = true
+    ) {
 
         viewModelScope.launch {
 
-            _isLoading.value =
-                true
+            if (showLoading) {
+                _isLoading.value = true
+            }
 
-            _errorMessage.value =
-                null
-
+            _errorMessage.value = null
 
             try {
 
-                val currentUser =
-                    SupabaseProvider
-                        .client
-                        .auth
-                        .currentUserOrNull()
-
+                val currentUser = SupabaseProvider.client.auth.currentUserOrNull()
 
                 if (currentUser == null) {
 
-                    _errorMessage.value =
-                        "Please log in to view your orders."
+                    _errorMessage.value = "Please log in to view your orders."
 
                     return@launch
                 }
 
 
-                val buyerOrders =
-                    repository
-                        .getBuyerOrders(
-                            currentUser.id
-                        )
+                val buyerOrders = repository.getBuyerOrders(
+                        currentUser.id
+                    )
 
 
-                val orderDetails =
-                    mutableListOf<BuyerOrderDetails>()
+                val orderDetails = mutableListOf<BuyerOrderDetails>()
 
 
                 for (order in buyerOrders) {
 
-                    val listing =
-                        repository
-                            .getListingById(
-                                order.listingId
-                            )
+                    val listing = repository.getListingById(
+                            order.listingId
+                        )
 
 
                     val foodItem =
 
                         if (listing != null) {
 
-                            repository
-                                .getFoodItemById(
+                            repository.getFoodItemById(
                                     listing.foodItemId
                                 )
 
@@ -773,8 +541,7 @@ class BuyerViewModel(
 
                         if (listing != null) {
 
-                            repository
-                                .getSellerById(
+                            repository.getSellerById(
                                     listing.sellerId
                                 )
 
@@ -788,45 +555,35 @@ class BuyerViewModel(
 
                         BuyerOrderDetails(
 
-                            order =
-                                order,
+                            order = order,
 
-                            listing =
-                                listing,
+                            listing = listing,
 
-                            foodItem =
-                                foodItem,
+                            foodItem = foodItem,
 
-                            seller =
-                                seller
+                            seller = seller
                         )
                     )
                 }
 
 
-                _orders.value =
-                    orderDetails
+                _orders.value = orderDetails
 
 
             } catch (e: Exception) {
 
-                _errorMessage.value =
-                    e.message
-                        ?: "Unable to load orders."
+                _errorMessage.value = e.message ?: "Unable to load orders."
 
             } finally {
 
-                _isLoading.value =
-                    false
+                if (showLoading) {
+                    _isLoading.value = false
+                }
             }
         }
     }
 
-
-    // =================================================
     // LOAD ONE ORDER
-    // =================================================
-
     fun loadOrder(
 
         orderId: Long
@@ -835,72 +592,55 @@ class BuyerViewModel(
 
         viewModelScope.launch {
 
-            _isLoading.value =
-                true
+            _isLoading.value = true
 
-            _errorMessage.value =
-                null
+            _errorMessage.value = null
 
 
             try {
 
-                val currentUser =
-                    SupabaseProvider
-                        .client
-                        .auth
-                        .currentUserOrNull()
+                val currentUser = SupabaseProvider.client.auth.currentUserOrNull()
 
 
                 if (currentUser == null) {
 
-                    _errorMessage.value =
-                        "Please log in first."
+                    _errorMessage.value = "Please log in first."
 
                     return@launch
                 }
 
 
-                val order =
-                    repository
-                        .getOrderById(
-                            orderId
-                        )
+                val order = repository.getOrderById(
+                        orderId
+                    )
 
 
                 if (order == null) {
 
-                    _errorMessage.value =
-                        "Order not found."
+                    _errorMessage.value = "Order not found."
 
                     return@launch
                 }
 
 
-                if (
-                    order.buyerId !=
-                    currentUser.id
-                ) {
+                if (order.buyerId != currentUser.id) {
 
-                    _errorMessage.value =
-                        "Unable to access this order."
+                    _errorMessage.value = "Unable to access this order."
 
                     return@launch
                 }
 
 
-                val listing =
-                    repository
-                        .getListingById(
-                            order.listingId
-                        )
+                val listing = repository.getListingById(
+                        order.listingId
+                    )
 
 
                 val foodItem =
 
                     if (listing != null) {
 
-                        repository
-                            .getFoodItemById(
+                        repository.getFoodItemById(
                                 listing.foodItemId
                             )
 
@@ -914,8 +654,7 @@ class BuyerViewModel(
 
                     if (listing != null) {
 
-                        repository
-                            .getSellerById(
+                        repository.getSellerById(
                                 listing.sellerId
                             )
 
@@ -925,42 +664,30 @@ class BuyerViewModel(
                     }
 
 
-                _selectedOrder.value =
-                    BuyerOrderDetails(
+                _selectedOrder.value = BuyerOrderDetails(
 
-                        order =
-                            order,
+                    order = order,
 
-                        listing =
-                            listing,
+                    listing = listing,
 
-                        foodItem =
-                            foodItem,
+                    foodItem = foodItem,
 
-                        seller =
-                            seller
-                    )
+                    seller = seller
+                )
 
 
             } catch (e: Exception) {
 
-                _errorMessage.value =
-                    e.message
-                        ?: "Unable to load order."
+                _errorMessage.value = e.message ?: "Unable to load order."
 
             } finally {
 
-                _isLoading.value =
-                    false
+                _isLoading.value = false
             }
         }
     }
 
-
-    // =================================================
     // SIGN OUT
-    // =================================================
-
     fun signOut(
 
         onSuccess: () -> Unit = {}
@@ -969,46 +696,34 @@ class BuyerViewModel(
 
         viewModelScope.launch {
 
-            _isLoading.value =
-                true
+            _isLoading.value = true
 
-            _errorMessage.value =
-                null
+            _errorMessage.value = null
 
 
             try {
 
-                authRepository
-                    .signOut()
+                authRepository.signOut()
 
 
-                BuyerCartStore
-                    .clearCart()
+                BuyerCartStore.clearCart()
 
 
-                _profile.value =
-                    null
+                _profile.value = null
 
-                _sellers.value =
-                    emptyList()
+                _sellers.value = emptyList()
 
-                _selectedSeller.value =
-                    null
+                _selectedSeller.value = null
 
-                _foodItems.value =
-                    emptyList()
+                _foodItems.value = emptyList()
 
-                _listings.value =
-                    emptyList()
+                _listings.value = emptyList()
 
-                _orders.value =
-                    emptyList()
+                _orders.value = emptyList()
 
-                _selectedOrder.value =
-                    null
+                _selectedOrder.value = null
 
-                _orderResult.value =
-                    null
+                _orderResult.value = null
 
 
                 onSuccess()
@@ -1016,48 +731,30 @@ class BuyerViewModel(
 
             } catch (e: Exception) {
 
-                _errorMessage.value =
-                    e.message
-                        ?: "Unable to log out."
+                _errorMessage.value = e.message ?: "Unable to log out."
 
             } finally {
 
-                _isLoading.value =
-                    false
+                _isLoading.value = false
             }
         }
     }
 
-
-    // =================================================
     // CLEAR ERROR
-    // =================================================
-
     fun clearError() {
 
-        _errorMessage.value =
-            null
+        _errorMessage.value = null
     }
 
-
-    // =================================================
     // CLEAR SUCCESS
-    // =================================================
-
     fun clearSuccessMessage() {
 
-        _successMessage.value =
-            null
+        _successMessage.value = null
     }
 
-
-    // =================================================
     // CLEAR ORDER RESULT
-    // =================================================
-
     fun clearOrderResult() {
 
-        _orderResult.value =
-            null
+        _orderResult.value = null
     }
 }

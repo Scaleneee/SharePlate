@@ -53,6 +53,8 @@ import com.example.shareplate.ui.theme.SharePlateTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 
 data class BuyerOrderDisplay(
@@ -297,8 +299,20 @@ fun BuyerActivityScreen(
     ) {
 
         if (!isPreview) {
-            actualViewModel
-                ?.loadOrders()
+
+            // First load
+            actualViewModel?.loadOrders()
+
+
+            // Automatically refresh orders
+            while (isActive) {
+
+                delay(3000)
+
+                actualViewModel?.loadOrders(
+                        showLoading = false
+                    )
+            }
         }
     }
 
