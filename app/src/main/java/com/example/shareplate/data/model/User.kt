@@ -22,6 +22,10 @@ data class User(
 
     val address: String? = null,
 
+    val latitude: Double? = null,
+
+    val longitude: Double? = null,
+
     @SerialName("profile_image_url")
     val profileImageUrl: String? = null,
 

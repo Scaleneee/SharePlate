@@ -28,10 +28,10 @@ data class CreateOrder(
     val pickupCode: String,
 
     @SerialName("pickup_note")
-    val pickupNote: String?,
+    val pickupNote: String? = null,
 
     @SerialName("payment_method")
-    val paymentMethod: String,
+    val paymentMethod: String? = null,
 
     val status: String
 )

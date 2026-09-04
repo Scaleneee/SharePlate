@@ -764,8 +764,11 @@ class SellerRepository {
                          * Use the listing pickup deadline.
                          */
                         pickupTime =
-                            listing.pickupEndAt,
-
+                            java.time.Instant
+                                .ofEpochMilli(
+                                    listing.pickupEndAt
+                                )
+                                .toString(),
                         status =
                             order.status
                     )
