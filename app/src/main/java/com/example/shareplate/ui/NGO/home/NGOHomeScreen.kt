@@ -55,6 +55,7 @@ data class FoodDonation(
 @Composable
 fun NGOHomeScreen(
     onAcceptDonation: (FoodDonation, List<NGOCartItem>) -> Unit = { _, _ -> },
+    onMenuClick: () -> Unit = {},
     onActivityClick: () -> Unit = {},
     onProfileClick: () -> Unit = {}
 ) {
@@ -75,7 +76,7 @@ fun NGOHomeScreen(
             NGOBottomBar(
                 selectedIndex = selectedTab,
                 onHomeClick = { selectedTab = 0 },
-                onMenuClick = { selectedTab = 1 },
+                onMenuClick = onMenuClick,
                 onActivityClick = onActivityClick,
                 onProfileClick = onProfileClick
             )

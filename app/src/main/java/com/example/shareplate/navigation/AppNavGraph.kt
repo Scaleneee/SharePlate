@@ -253,6 +253,11 @@ fun AppNavGraph(
                 },
                 onProfileClick = {
                     navController.navigate(AppRoutes.NGO_PROFILE)
+                },
+                onMenuClick = {
+                    navController.navigate(AppRoutes.NGO_CART){
+                        launchSingleTop = true
+                    }
                 }
             )
         }
