@@ -349,9 +349,16 @@ fun AppNavGraph(
 
                 if (sellerId != null) {
 
+                    // seller information
                     sellerViewModel.fetchSellerName()
 
+                    // frequently wasted foods
                     sellerViewModel.loadFoodItems(
+                        sellerId
+                    )
+
+                    // start automatic smart pricing
+                    sellerViewModel.startSmartPricing(
                         sellerId
                     )
                 }
